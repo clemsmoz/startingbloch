@@ -1,0 +1,24 @@
+services:
+  dbSB:
+    container_name: mysql8SB
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment: 
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: clems
+      MYSQL_PASSWORD: clems
+    ports:
+      - "3306:3306"
+
+  phpmya:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: pmaSB
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: dbSB
+      PMA_USER: clems
+      PMA_PASSWORD: clems
+      UPLOAD_LIMIT: 320M
+    ports:
+      - "8899:80"

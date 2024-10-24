@@ -1,0 +1,457 @@
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form, Card, Row, Col } from 'react-bootstrap';
+import { FaPlus, FaMinus, FaSave } from 'react-icons/fa';
+import axios from 'axios';
+
+const EditBrevetModal = ({ show, handleClose, brevetId, refreshBrevets }) => {
+  const [formData, setFormData] = useState({
+    reference_famille: '',
+    titre: '',
+    date_depot: '',
+    numero_delivrance: '',
+    date_delivrance: '',
+    licence: false,
+    id_client: '',
+    id_statuts: '',
+    pays: [{ id_pays: '', numero_depot: '', numero_publication: '' }],
+    inventeurs: [{ nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' }],
+    titulaires: [{ nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false }],
+    deposants: [{ nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' }],
+    cabinets_procedure: [{ id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' }],
+    cabinets_annuite: [{ id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }],
+    commentaire: '',
+    piece_jointe: null,
+  });
+
+  const [clients, setClients] = useState([]);
+  const [statuts, setStatuts] = useState([]);
+  const [paysList, setPaysList] = useState([]);
+  const [cabinets, setCabinets] = useState({ procedure: [], annuite: [] });
+  const [contactsProcedure, setContactsProcedure] = useState([]);
+  const [contactsAnnuite, setContactsAnnuite] = useState([]);
+
+  useEffect(() => {
+    if (brevetId) {
+      axios.get(`http://localhost:3100/brevets/${brevetId}`)
+        .then(response => {
+          const brevetData = response.data.data;
+          console.log('Brevet data:', brevetData);
+
+          // Récupérer les données du brevet
+          setFormData({
+            reference_famille: brevetData.reference_famille || '',
+            titre: brevetData.titre || '',
+            date_depot: brevetData.date_depot ? new Date(brevetData.date_depot).toISOString().split('T')[0] : '',
+            numero_delivrance: brevetData.numero_delivrance || '',
+            date_delivrance: brevetData.date_delivrance ? new Date(brevetData.date_delivrance).toISOString().split('T')[0] : '',
+            licence: brevetData.licence || false,
+            id_client: brevetData.id_client || '',
+            id_statuts: brevetData.id_statuts || '',
+            pays: Array.isArray(brevetData.pays) && brevetData.pays.length ? brevetData.pays : [{ id_pays: '', numero_depot: '', numero_publication: '' }],
+            inventeurs: brevetData.inventeurs || [],
+            titulaires: brevetData.titulaires || [],
+            deposants: brevetData.deposants || [],
+            cabinets_procedure: brevetData.cabinets_procedure || [],
+            cabinets_annuite: brevetData.cabinets_annuite || [],
+            commentaire: brevetData.commentaire || '',
+            piece_jointe: null
+          });
+        })
+        .catch(error => console.error('Erreur lors du chargement des données du brevet:', error));
+    }
+
+    // Récupérer les clients, statuts, pays, cabinets, etc.
+    axios.get('http://localhost:3100/clients')
+      .then(response => setClients(response.data.data || []))
+      .catch(error => console.error('Erreur lors de la récupération des clients:', error));
+
+    axios.get('http://localhost:3100/statuts')
+      .then(response => setStatuts(response.data.data || []))
+      .catch(error => console.error('Erreur lors de la récupération des statuts:', error));
+
+    axios.get('http://localhost:3100/pays')
+      .then(response => setPaysList(response.data.data || []))
+      .catch(error => console.error('Erreur lors de la récupération des pays:', error));
+
+    axios.get('http://localhost:3100/cabinet')
+      .then(response => {
+        const { procedure, annuite } = response.data;
+        setCabinets({
+          procedure: Array.isArray(procedure) ? procedure : [],
+          annuite: Array.isArray(annuite) ? annuite : []
+        });
+      })
+      .catch(error => console.error('Erreur lors de la récupération des cabinets:', error));
+  }, [brevetId]);
+
+  const fetchContacts = (cabinetId, type) => {
+    axios.get(`http://localhost:3100/contacts/cabinets/${cabinetId}`)
+      .then(response => {
+        if (type === 'procedure') {
+          setContactsProcedure(response.data.data || []);
+        } else {
+          setContactsAnnuite(response.data.data || []);
+        }
+      })
+      .catch(error => console.error('Erreur lors de la récupération des contacts:', error));
+  };
+
+
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleDynamicChange = (e, index, field) => {
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? (checked ? 1 : 0) : value;
+
+    const newDynamicFields = formData[field].map((item, idx) => (
+      idx === index ? { ...item, [name]: newValue } : item
+    ));
+
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: newDynamicFields
+    }));
+  };
+
+  const handleAddField = (field) => {
+    const emptyField = {
+      pays: { id_pays: '', numero_depot: '', numero_publication: '' },
+      inventeurs: { nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' },
+      titulaires: { nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false },
+      deposants: { nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' },
+      cabinets_procedure: { id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' },
+      cabinets_annuite: { id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }
+    }[field];
+
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: [...prevData[field], emptyField]
+    }));
+  };
+
+  const handleRemoveField = (index, field) => {
+    const newDynamicFields = formData[field].filter((_, idx) => idx !== index);
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: newDynamicFields
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    axios.put(`http://localhost:3100/brevets/${brevetId}`, formData)
+      .then(() => {
+        refreshBrevets();
+        handleClose();
+      })
+      .catch(error => {
+        console.error('Erreur lors de la mise à jour du brevet:', error);
+      });
+  };
+
+  return (
+    <Modal show={show} onHide={handleClose} size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>Éditer un brevet</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form onSubmit={handleSubmit}>
+          <Card className="mb-3">
+            <Card.Header>Informations Générales</Card.Header>
+            <Card.Body>
+              <Row className="mb-3">
+                <Form.Group as={Col} controlId="formReferenceFamille">
+                  <Form.Label>Référence Famille</Form.Label>
+                  <Form.Control type="text" name="reference_famille" value={formData.reference_famille} onChange={handleChange} />
+                </Form.Group>
+              </Row>
+              <Row className="mb-3">
+                <Form.Group as={Col} controlId="formTitre">
+                  <Form.Label>Titre</Form.Label>
+                  <Form.Control type="text" name="titre" value={formData.titre} onChange={handleChange} />
+                </Form.Group>
+              </Row>
+              <Row className="mb-3">
+                <Form.Group as={Col} controlId="formDateDepot">
+                  <Form.Label>Date Dépôt</Form.Label>
+                  <Form.Control type="date" name="date_depot" value={formData.date_depot} onChange={handleChange} />
+                </Form.Group>
+                <Form.Group as={Col} controlId="formNumeroDelivrance">
+                  <Form.Label>Numéro Délivrance</Form.Label>
+                  <Form.Control type="text" name="numero_delivrance" value={formData.numero_delivrance} onChange={handleChange} />
+                </Form.Group>
+                <Form.Group as={Col} controlId="formDateDelivrance">
+                  <Form.Label>Date Délivrance</Form.Label>
+                  <Form.Control type="date" name="date_delivrance" value={formData.date_delivrance} onChange={handleChange} />
+                </Form.Group>
+              </Row>
+              <Form.Group controlId="formLicence" className="mb-3">
+                <Form.Check type="checkbox" label="Licence" name="licence" checked={formData.licence} onChange={handleChange} />
+              </Form.Group>
+              <Row className="mb-3">
+                <Form.Group as={Col} controlId="formClient">
+                  <Form.Label>Client</Form.Label>
+                  <Form.Control as="select" name="id_client" value={formData.id_client} onChange={handleChange}>
+                    <option value="">Sélectionner un client</option>
+                    {clients.map(client => (
+                      <option key={client.id_client} value={client.id_client}>
+                        {client.nom_client}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+                <Form.Group as={Col} controlId="formStatut">
+                  <Form.Label>Statut</Form.Label>
+                  <Form.Control as="select" name="id_statuts" value={formData.id_statuts} onChange={handleChange}>
+                    <option value="">Sélectionner un statut</option>
+                    {statuts.map(statut => (
+                      <option key={statut.id_statuts} value={statut.id_statuts}>
+                        {statut.valeur}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Pays */}
+          <Card className="mb-3">
+            <Card.Header>Pays, Numéro de Dépôt et Numéro de Publication</Card.Header>
+            <Card.Body>
+              {formData.pays.map((item, index) => (
+                <Row key={index} className="mb-2">
+                  <Form.Group as={Col}>
+                    <Form.Control as="select" name="id_pays" value={item.id_pays} onChange={(e) => handleDynamicChange(e, index, 'pays')} className="me-2">
+                      <option value="">Sélectionner un pays</option>
+                      {paysList.map(paysItem => (
+                        <option key={paysItem.id_pays} value={paysItem.id_pays}>
+                          {paysItem.nom_fr_fr}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="numero_depot" value={item.numero_depot} onChange={(e) => handleDynamicChange(e, index, 'pays')} placeholder="Numéro de dépôt" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="numero_publication" value={item.numero_publication} onChange={(e) => handleDynamicChange(e, index, 'pays')} placeholder="Numéro de publication" className="me-2" />
+                  </Form.Group>
+                  <Col xs="auto">
+                    <Button variant="danger" onClick={() => handleRemoveField(index, 'pays')}><FaMinus /></Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button variant="success" onClick={() => handleAddField('pays')}><FaPlus /> Ajouter un pays</Button>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Inventeurs */}
+          <Card className="mb-3">
+            <Card.Header>Inventeurs</Card.Header>
+            <Card.Body>
+              {formData.inventeurs.map((item, index) => (
+                <Row key={index} className="mb-2">
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="nom_inventeur" value={item.nom_inventeur} onChange={(e) => handleDynamicChange(e, index, 'inventeurs')} placeholder="Nom" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="prenom_inventeur" value={item.prenom_inventeur} onChange={(e) => handleDynamicChange(e, index, 'inventeurs')} placeholder="Prénom" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="email" name="email_inventeur" value={item.email_inventeur} onChange={(e) => handleDynamicChange(e, index, 'inventeurs')} placeholder="Email" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="telephone_inventeur" value={item.telephone_inventeur} onChange={(e) => handleDynamicChange(e, index, 'inventeurs')} placeholder="Téléphone" className="me-2" />
+                  </Form.Group>
+                  <Col xs="auto">
+                    <Button variant="danger" onClick={() => handleRemoveField(index, 'inventeurs')}><FaMinus /></Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button variant="success" onClick={() => handleAddField('inventeurs')}><FaPlus /> Ajouter un inventeur</Button>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Déposants */}
+          <Card className="mb-3">
+            <Card.Header>Déposants</Card.Header>
+            <Card.Body>
+              {formData.deposants.map((item, index) => (
+                <Row key={index} className="mb-2">
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="nom_deposant" value={item.nom_deposant} onChange={(e) => handleDynamicChange(e, index, 'deposants')} placeholder="Nom" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="prenom_deposant" value={item.prenom_deposant} onChange={(e) => handleDynamicChange(e, index, 'deposants')} placeholder="Prénom" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="email" name="email_deposant" value={item.email_deposant} onChange={(e) => handleDynamicChange(e, index, 'deposants')} placeholder="Email" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="telephone_deposant" value={item.telephone_deposant} onChange={(e) => handleDynamicChange(e, index, 'deposants')} placeholder="Téléphone" className="me-2" />
+                  </Form.Group>
+                  <Col xs="auto">
+                    <Button variant="danger" onClick={() => handleRemoveField(index, 'deposants')}><FaMinus /></Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button variant="success" onClick={() => handleAddField('deposants')}><FaPlus /> Ajouter un déposant</Button>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Titulaires */}
+          <Card className="mb-3">
+            <Card.Header>Titulaires</Card.Header>
+            <Card.Body>
+              {formData.titulaires.map((item, index) => (
+                <Row key={index} className="mb-2">
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="nom_titulaire" value={item.nom_titulaire} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} placeholder="Nom" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="prenom_titulaire" value={item.prenom_titulaire} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} placeholder="Prénom" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="email" name="email_titulaire" value={item.email_titulaire} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} placeholder="Email" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="telephone_titulaire" value={item.telephone_titulaire} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} placeholder="Téléphone" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="number" name="part_pi" value={item.part_pi} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} placeholder="Part PI" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col} className="d-flex align-items-center">
+                    <Form.Check type="checkbox" name="executant" checked={item.executant} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} label="Exécutant" className="me-2" />
+                    <Form.Check type="checkbox" name="client_correspondant" checked={item.client_correspondant} onChange={(e) => handleDynamicChange(e, index, 'titulaires')} label="Client Correspondant" className="me-2" />
+                  </Form.Group>
+                  <Col xs="auto">
+                    <Button variant="danger" onClick={() => handleRemoveField(index, 'titulaires')}><FaMinus /></Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button variant="success" onClick={() => handleAddField('titulaires')}><FaPlus /> Ajouter un titulaire</Button>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Cabinets de Procédure */}
+          <Card className="mb-3">
+            <Card.Header>Cabinets de Procédure et Contacts</Card.Header>
+            <Card.Body>
+              {formData.cabinets_procedure.map((item, index) => (
+                <Row key={index} className="mb-2">
+                  <Form.Group as={Col}>
+                    <Form.Control as="select" name="id_cabinet_procedure" value={item.id_cabinet_procedure} onChange={(e) => {
+                      handleDynamicChange(e, index, 'cabinets_procedure');
+                      fetchContacts(e.target.value, 'procedure');
+                    }} className="me-2">
+                      <option value="">Sélectionner un cabinet</option>
+                      {cabinets.procedure.map(cabinet => (
+                        <option key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
+                          {cabinet.nom_cabinet}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="reference" value={item.reference} onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')} placeholder="Référence" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col} className="d-flex align-items-center">
+                    <Form.Check type="checkbox" name="dernier_intervenant" checked={item.dernier_intervenant} onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')} label="Dernier Intervenant" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control as="select" name="id_contact_procedure" value={item.id_contact_procedure} onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')} className="me-2">
+                      <option value="">Sélectionner un contact</option>
+                      {contactsProcedure.map(contact => (
+                        <option key={contact.id_contact} value={contact.id_contact}>
+                          {contact.nom} {contact.prenom}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
+                  <Col xs="auto">
+                    <Button variant="danger" onClick={() => handleRemoveField(index, 'cabinets_procedure')}><FaMinus /></Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button variant="success" onClick={() => handleAddField('cabinets_procedure')}><FaPlus /> Ajouter un cabinet de procédure</Button>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Cabinets d'Annuité */}
+          <Card className="mb-3">
+            <Card.Header>Cabinets d'Annuité et Contacts</Card.Header>
+            <Card.Body>
+              {formData.cabinets_annuite.map((item, index) => (
+                <Row key={index} className="mb-2">
+                  <Form.Group as={Col}>
+                    <Form.Control as="select" name="id_cabinet_annuite" value={item.id_cabinet_annuite} onChange={(e) => {
+                      handleDynamicChange(e, index, 'cabinets_annuite');
+                      fetchContacts(e.target.value, 'annuite');
+                    }} className="me-2">
+                      <option value="">Sélectionner un cabinet</option>
+                      {cabinets.annuite.map(cabinet => (
+                        <option key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
+                          {cabinet.nom_cabinet}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control type="text" name="reference" value={item.reference} onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')} placeholder="Référence" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col} className="d-flex align-items-center">
+                    <Form.Check type="checkbox" name="dernier_intervenant" checked={item.dernier_intervenant} onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')} label="Dernier Intervenant" className="me-2" />
+                  </Form.Group>
+                  <Form.Group as={Col}>
+                    <Form.Control as="select" name="id_contact_annuite" value={item.id_contact_annuite} onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')} className="me-2">
+                      <option value="">Sélectionner un contact</option>
+                      {contactsAnnuite.map(contact => (
+                        <option key={contact.id_contact} value={contact.id_contact}>
+                          {contact.nom} {contact.prenom}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </Form.Group>
+                  <Col xs="auto">
+                    <Button variant="danger" onClick={() => handleRemoveField(index, 'cabinets_annuite')}><FaMinus /></Button>
+                  </Col>
+                </Row>
+              ))}
+              <Button variant="success" onClick={() => handleAddField('cabinets_annuite')}><FaPlus /> Ajouter un cabinet d'annuité</Button>
+            </Card.Body>
+          </Card>
+
+          {/* Section pour Commentaire et Pièce Jointe */}
+          <Card className="mb-3">
+            <Card.Header>Commentaire et Pièce Jointe</Card.Header>
+            <Card.Body>
+              <Form.Group controlId="formCommentaire" className="mb-3">
+                <Form.Label>Commentaire</Form.Label>
+                <Form.Control as="textarea" name="commentaire" value={formData.commentaire} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group controlId="formPieceJointe" className="mb-3">
+                <Form.Label>Pièce Jointe</Form.Label>
+                <Form.Control type="file" name="piece_jointe" onChange={(e) => setFormData(prevData => ({ ...prevData, piece_jointe: e.target.files[0] }))} />
+              </Form.Group>
+            </Card.Body>
+          </Card>
+
+          <Button variant="primary" type="submit" className="w-100">
+            <FaSave /> Enregistrer les modifications
+          </Button>
+        </Form>
+      </Modal.Body>
+    </Modal>
+  );
+};
+
+export default EditBrevetModal;
