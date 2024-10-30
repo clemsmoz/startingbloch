@@ -9,9 +9,9 @@ class User {
   }
 
   static create(userData, callback) {
-    const { nom_user, prenom_user, email_user, password } = userData;
-    const query = 'INSERT INTO users (nom_user, prenom_user, email_user, password_user) VALUES (?, ?, ?, ?)';
-    db.query(query, [nom_user, prenom_user, email_user, password], (err, results) => {
+    const { nom_user, prenom_user, email_user, password, salt } = userData;
+    const query = 'INSERT INTO users (nom_user, prenom_user, email_user, password_user, salt) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [nom_user, prenom_user, email_user, password, salt], (err, results) => {
       if (err) {
         return callback(err);
       }
@@ -40,9 +40,9 @@ class User {
   }
 
   static update(id, userData, callback) {
-    const { nom_user, prenom_user, email_user, password } = userData;
-    const query = 'UPDATE users SET nom_user = ?, prenom_user = ?, email_user = ?, password_user = ? WHERE id_users = ?';
-    db.query(query, [nom_user, prenom_user, email_user, password, id], (err, results) => {
+    const { nom_user, prenom_user, email_user, password, salt } = userData;
+    const query = 'UPDATE users SET nom_user = ?, prenom_user = ?, email_user = ?, password_user = ?, salt = ? WHERE id_users = ?';
+    db.query(query, [nom_user, prenom_user, email_user, password, salt, id], (err, results) => {
       if (err) {
         return callback(err);
       }
@@ -60,14 +60,15 @@ class User {
     });
   }
 
-  static authenticate(email, password, callback) {
-    const query = 'SELECT * FROM users WHERE email_user = ? AND password_user = ?';
-    db.query(query, [email, password], (err, results) => {
+  static authenticate(email, callback) {
+    // Récupère l'utilisateur uniquement par email pour obtenir le hash et le sel dans le contrôleur
+    const query = 'SELECT * FROM users WHERE email_user = ?';
+    db.query(query, [email], (err, results) => {
       if (err) {
         return callback(err);
       }
       if (results.length > 0) {
-        callback(null, results[0]);
+        callback(null, results[0]); // Retourne l'utilisateur pour vérification dans le contrôleur
       } else {
         callback(new Error('Invalid email or password'));
       }
