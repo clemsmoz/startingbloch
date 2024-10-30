@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Container, Typography, Box, IconButton, Modal, Paper } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { FaBars } from 'react-icons/fa';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
 
 const LoginPage = () => {
@@ -27,7 +26,7 @@ const LoginPage = () => {
       setTimeout(() => {
         setShowModal(false);
         navigate('/acceuil');
-      }, 2000);
+      }, 1500);
     })
     .catch(error => {
       console.error("Erreur lors de la tentative d'authentication", error);
@@ -35,7 +34,7 @@ const LoginPage = () => {
       setShowModal(true);
       setTimeout(() => {
         setShowModal(false);
-      }, 2000);
+      }, 1500);
     });
   };
 
