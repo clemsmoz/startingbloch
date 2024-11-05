@@ -463,7 +463,7 @@ const generatePDF = () => {
     }
 
     // Sauvegarde du fichier PDF
-    doc.save(`brevet_${brevetId}.pdf`);
+    doc.save(`brevet_${brevet.titre}.pdf`);
   };
 };
 
