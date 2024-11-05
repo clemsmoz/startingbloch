@@ -131,9 +131,13 @@ setPays(paysWithStatut);
           );
           const contactsAnnuiteResults = await Promise.all(contactsAnnuitePromises);
           setContactsAnnuite(contactsAnnuiteResults.flatMap(result => result.data.data || []));
-
+          
+          
           const piecesJointesResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}/piece-jointe`);
-          setPiecesJointes(piecesJointesResponse.data.data || []);
+          const piecesData = piecesJointesResponse.data.data; // Assurez-vous de bien récupérer les pièces jointes
+          setPiecesJointes(piecesData);
+          console.log('Pièces jointes:', piecesData); // Ajoutez ce log pour voir le contenu des pièces jointes
+          
           
         } catch (error) {
           console.error('Erreur lors de la récupération des données:', error);
@@ -155,7 +159,7 @@ const generatePDF = () => {
   const checkPageOverflow = (additionalSpace = 0) => {
     if (yOffset + additionalSpace > 280) { // Limite avant d'ajouter une nouvelle page
       doc.addPage();
-      yOffset = 20; // Réinitialiser yOffset pour la nouvelle page
+      yOffset = 10; // Réinitialiser yOffset pour la nouvelle page
     }
   };
 
@@ -218,6 +222,7 @@ const generatePDF = () => {
       setTextStyle();
 
       clients.forEach((client) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${client.nom_client}`, 30, yOffset);
         yOffset += 5;
 
@@ -240,8 +245,6 @@ const generatePDF = () => {
           doc.text(`Téléphone: ${client.telephone_client}`, 30, yOffset);
           yOffset += 10;
         }
-
-        checkPageOverflow(20);
       });
     }
 
@@ -254,6 +257,7 @@ const generatePDF = () => {
       setTextStyle();
 
       inventeurs.forEach((inventeur) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${inventeur.nom} ${inventeur.prenom}`, 30, yOffset);
         yOffset += 5;
         if (inventeur.email) {
@@ -264,7 +268,6 @@ const generatePDF = () => {
           doc.text(`Téléphone: ${inventeur.telephone}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
     }
 
@@ -277,6 +280,7 @@ const generatePDF = () => {
       setTextStyle();
 
       deposants.forEach((deposant) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${deposant.nom} ${deposant.prenom}`, 30, yOffset);
         yOffset += 5;
         if (deposant.email) {
@@ -287,7 +291,6 @@ const generatePDF = () => {
           doc.text(`Téléphone: ${deposant.telephone}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
     }
 
@@ -300,6 +303,7 @@ const generatePDF = () => {
       setTextStyle();
 
       titulaires.forEach((titulaire) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${titulaire.nom} ${titulaire.prenom}`, 30, yOffset);
         yOffset += 5;
         if (titulaire.email) {
@@ -310,7 +314,6 @@ const generatePDF = () => {
           doc.text(`Téléphone: ${titulaire.telephone}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
     }
 
@@ -323,6 +326,7 @@ const generatePDF = () => {
       setTextStyle();
     
       pays.forEach((paysItem) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${paysItem.nom_fr_fr}`, 30, yOffset);
         yOffset += 5;
         if (paysItem.numero_publication) {
@@ -333,11 +337,9 @@ const generatePDF = () => {
           doc.text(`Numéro de Dépôt: ${paysItem.numero_depot}`, 30, yOffset);
           yOffset += 5;
         }
-        // Trouver le statut correspondant pour chaque pays
         const matchingStatut = statutsList.find(st => st.id_statuts === paysItem.id_statuts);
-        doc.text(`Statut: ${matchingStatut ? matchingStatut.valeur : 'N/A'}`, 30, yOffset); // Afficher le statut ici
+        doc.text(`Statut: ${matchingStatut ? matchingStatut.valeur : 'N/A'}`, 30, yOffset);
         yOffset += 10;
-        checkPageOverflow(20);
       });
     }
 
@@ -350,13 +352,13 @@ const generatePDF = () => {
       setTextStyle();
 
       procedureCabinets.forEach((cabinet) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${cabinet.nom_cabinet}`, 30, yOffset);
         yOffset += 5;
         if (cabinet.reference) {
           doc.text(`Référence: ${cabinet.reference}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
     }
 
@@ -369,6 +371,7 @@ const generatePDF = () => {
       setTextStyle();
 
       contactsProcedure.forEach((contact) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${contact.nom} ${contact.prenom}`, 30, yOffset);
         yOffset += 5;
         if (contact.fonction) {
@@ -383,7 +386,6 @@ const generatePDF = () => {
           doc.text(`Téléphone: ${contact.telephone}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
     }
 
@@ -396,13 +398,13 @@ const generatePDF = () => {
       setTextStyle();
 
       annuiteCabinets.forEach((cabinet) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${cabinet.nom_cabinet}`, 30, yOffset);
         yOffset += 5;
         if (cabinet.reference) {
           doc.text(`Référence: ${cabinet.reference}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
     }
 
@@ -415,6 +417,7 @@ const generatePDF = () => {
       setTextStyle();
 
       contactsAnnuite.forEach((contact) => {
+        checkPageOverflow(20); // Vérifiez avant d'ajouter
         doc.text(`Nom: ${contact.nom} ${contact.prenom}`, 30, yOffset);
         yOffset += 5;
         if (contact.fonction) {
@@ -429,8 +432,19 @@ const generatePDF = () => {
           doc.text(`Téléphone: ${contact.telephone}`, 30, yOffset);
           yOffset += 10;
         }
-        checkPageOverflow(20);
       });
+    }
+    
+    // Commentaires
+    if (brevet.commentaire) {
+      drawSeparator();
+      setSectionTitleStyle();
+      doc.text('Commentaire:', 20, yOffset);
+      yOffset += 10;
+      setTextStyle();
+      doc.text(brevet.commentaire || 'Aucun commentaire', 30, yOffset);
+      yOffset += 10;
+      checkPageOverflow(10);
     }
 
     // Pièces jointes
@@ -442,9 +456,9 @@ const generatePDF = () => {
       setTextStyle();
 
       piecesJointes.forEach((piece) => {
+        checkPageOverflow(10); // Vérifiez avant d'ajouter
         doc.text(`- ${piece.nom_fichier}`, 20, yOffset);
         yOffset += 5;
-        checkPageOverflow(10);
       });
     }
 

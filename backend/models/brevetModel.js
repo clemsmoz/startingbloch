@@ -409,25 +409,37 @@ class Brevet {
           );
         },
 
-        // Récupération des pièces jointes depuis la table `brevet_pieces_jointes`
-        pieces_jointes: (cb) => {
-          db.query(
-            'SELECT nom_fichier, type_fichier, donnees FROM brevet_pieces_jointes WHERE id_brevet = ?',
-            [id],
-            (err, results) => {
-              if (err) {
-                console.error('Error retrieving pieces_jointes:', err);
-                return cb(err);
-              }
-              cb(null, results.map(r => ({
-                nom_fichier: r.nom_fichier,
-                type_fichier: r.type_fichier,
-                donnees: r.donnees, // Assurez-vous de gérer correctement les données binaires côté frontend
-                date_ajout: r.date_ajout
-              })));
+       // Récupération des pièces jointes depuis la table `brevet_pieces_jointes`
+       pieces_jointes: (cb) => {
+        db.query(
+          'SELECT nom_fichier, type_fichier, donnees FROM brevet_pieces_jointes WHERE id_brevet = ?',
+          [id],
+          (err, results) => {
+            if (err) {
+              console.error('Erreur lors de la récupération des pièces jointes:', err);
+              return cb(err);
             }
-          );
-        }
+            
+            // Vérifiez si les résultats sont vides ou non
+            if (!Array.isArray(results)) {
+              console.warn('Les résultats ne sont pas un tableau:', results);
+              return cb(null, []); // Retournez un tableau vide si aucune pièce jointe
+            }
+      
+            // Convertir les données des fichiers en base64
+            const fichiers = results.map(result => ({
+              nom_fichier: result.nom_fichier,
+              type_fichier: result.type_fichier,
+              donnees: result.donnees instanceof Buffer ? result.donnees.toString('base64') : null, // Assurez-vous que donnees est un Buffer
+            }));
+      
+            cb(null, fichiers);
+          }
+        );
+      },
+      
+      
+
       }, (err, results) => {
         if (err) {
           return callback(err);

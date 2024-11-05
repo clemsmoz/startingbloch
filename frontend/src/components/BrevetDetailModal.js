@@ -362,47 +362,48 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
 
                   {/* Commentaire et Pièce Jointe */}
                   <td>
-                    <div>
-                      <strong>Commentaire:</strong> {brevet.commentaire || 'Aucun commentaire'}
-                    </div>
-                    {piecesJointes && piecesJointes.length > 0 ? (
-                      piecesJointes.map((piece, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: '10px',
-                          }}
-                        >
-                          <h4 style={{ marginRight: '10px' }}>{piece.nom_fichier}</h4>
+  <div>
+    <strong>Commentaire:</strong> {brevet.commentaire || 'Aucun commentaire'}
+  </div>
+  {piecesJointes && piecesJointes.length > 0 ? (
+    piecesJointes.map((piece, index) => (
+      <div
+        key={index}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '10px',
+        }}
+      >
+        <h4 style={{ marginRight: '10px' }}>{piece.nom_fichier}</h4>
 
-                          {/* Bouton de téléchargement */}
-                          <IconButton
-                            href={`data:${piece.type_fichier};base64,${piece.donnees.toString('base64')}`}
-                            download={piece.nom_fichier}
-                            color="primary"
-                            style={{ marginRight: '10px' }}
-                          >
-                            <DownloadIcon />
-                          </IconButton>
+        {/* Bouton de téléchargement */}
+        <IconButton
+          href={`data:${piece.type_fichier};base64,${piece.donnees}`}
+          download={piece.nom_fichier}
+          color="primary"
+          style={{ marginRight: '10px' }}
+        >
+          <DownloadIcon />
+        </IconButton>
 
-                          {/* Bouton de prévisualisation */}
-                          <IconButton
-                            onClick={() => {
-                              setShowPreview(piece);
-                            }}
-                            color="primary"
-                          >
-                            <VisibilityIcon />
-                          </IconButton>
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucune pièce jointe disponible</p>
-                    )}
-                  </td>
+        {/* Bouton de prévisualisation */}
+        <IconButton
+          onClick={() => {
+            setShowPreview(piece);
+          }}
+          color="primary"
+        >
+          <VisibilityIcon />
+        </IconButton>
+      </div>
+    ))
+  ) : (
+    <p>Aucune pièce jointe disponible</p>
+  )}
+</td>
+
                 </tr>
               </tbody>
             </Table>

@@ -155,28 +155,34 @@ const brevetController = {
  getPiecesJointesByBrevetId: (req, res) => {
   const brevetId = req.params.id;
 
-  Brevet.getByBrevetId(brevetId, (err, results) => {
+  Brevet.getById(brevetId, (err, brevet) => {
     if (err) {
-      console.error('Erreur lors de la récupération des pièces jointes:', err);
-      return res.status(500).json({ error: 'Erreur lors de la récupération des pièces jointes' });
+      console.error('Erreur lors de la récupération du brevet:', err);
+      return res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
     }
-    
-    if (results.length === 0) {
+
+    if (!brevet) {
+      return res.status(404).json({ message: 'Brevet non trouvé' });
+    }
+
+    // Ici, vous accédez directement aux pièces jointes de l'objet brevet
+    const fichiers = brevet.pieces_jointes || [];
+
+    if (fichiers.length === 0) {
       return res.status(404).json({ message: 'Aucune pièce jointe trouvée pour ce brevet' });
     }
 
     // Convertir les données des fichiers en base64
-    const fichiers = results.map(result => ({
-      id_piece_jointe: result.id_piece_jointe,
-      id_brevet: result.id_brevet,
+    const fichiersBase64 = fichiers.map(result => ({
       nom_fichier: result.nom_fichier,
       type_fichier: result.type_fichier,
-      donnees: result.donnees.toString('base64') // Convertir les données en base64
+      donnees: result.donnees ? result.donnees.toString('base64') : null // Assurez-vous que donnees est un Buffer
     }));
 
-    res.status(200).json({ data: fichiers });
+    res.status(200).json({ data: fichiersBase64 });
   });
 },
+
 
 
 
