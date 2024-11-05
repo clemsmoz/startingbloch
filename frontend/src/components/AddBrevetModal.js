@@ -206,29 +206,13 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     }
                     label="Licence"
                   />
-                  <FormControl fullWidth>
-                    <InputLabel>Statut</InputLabel>
-                    <Select
-                      value={formData.id_statuts}
-                      onChange={handleChange}
-                      name="id_statuts"
-                      required
-                    >
-                      <MenuItem value="">Sélectionner un statut</MenuItem>
-                      {statuts.map((statut) => (
-                        <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
-                          {statut.valeur}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
                 </Stack>
               </Card>
 
-              {/* Pays, Numéro de Dépôt et Numéro de Publication */}
+              {/* Pays, Numéro de Dépôt et Numéro de Publication + Statut */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">
-                  Pays, Numéro de Dépôt et Numéro de Publication
+                  Pays, Numéro de Dépôt, Numéro de Publication et Statut
                 </Typography>
                 {formData.pays.map((item, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
@@ -263,6 +247,23 @@ const AddBrevetModal = ({ show, handleClose }) => {
                       value={item.numero_publication}
                       onChange={(e) => handleDynamicChange(e, index, 'pays')}
                     />
+                   <FormControl fullWidth>
+  <InputLabel>Statut</InputLabel>
+  <Select
+    value={item.id_statuts} // Utilisation correcte de la propriété `item.id_statuts`
+    onChange={(e) => handleDynamicChange(e, index, 'pays')}
+    name="id_statuts"
+    required
+  >
+    <MenuItem value="">Sélectionner un statut</MenuItem>
+    {statuts.map((statut) => (
+      <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
+        {statut.valeur}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
                     <Button
                       variant="contained"
                       color="error"

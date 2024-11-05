@@ -3,7 +3,7 @@ const db = require('../config/dbconfig');
 const NumeroPays = {
   getByBrevetId: (brevetId, callback) => {
     const sql = `
-      SELECT numero_pays.id_brevet, numero_pays.numero_depot, numero_pays.numero_publication, pays.nom_fr_fr
+      SELECT numero_pays.id_brevet, numero_pays.numero_depot, numero_pays.numero_publication, pays.nom_fr_fr, id_statuts
       FROM numero_pays
       JOIN pays ON numero_pays.id_pays = pays.id_pays
       WHERE numero_pays.id_brevet = ?

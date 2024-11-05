@@ -4,7 +4,6 @@ import qs from 'qs';
 import { jsPDF } from 'jspdf'; // Importation de jsPDF
 import logo from '../assets/startigbloch_transparent_corrected.png';
 
-
 const useBrevetData = (brevetId) => {
   const [brevet, setBrevet] = useState(null);
   const [procedureCabinets, setProcedureCabinets] = useState([]);
@@ -27,20 +26,48 @@ const useBrevetData = (brevetId) => {
       const fetchBrevetData = async () => {
         try {
           const brevetResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}`);
+          console.log('Brevet Response:', brevetResponse.data); // Log pour voir la réponse
           const brevetData = brevetResponse.data.data;
           setBrevet(brevetData);
 
           const clientsResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}/clients`);
+          console.log('Clients Response:', clientsResponse.data); // Log pour les clients
           setClients(clientsResponse.data.data || []);
 
           const statutsResponse = await axios.get(`http://localhost:3100/statuts`);
+          console.log('Statuts Response:', statutsResponse.data);
           const allStatuts = statutsResponse.data.data;
           setStatutsList(allStatuts);
-          const matchingStatut = allStatuts.find(st => st.id_statuts === brevetData.id_statuts);
-          setStatut(matchingStatut);
+  
+          // Récupérer tous les pays et leurs statuts
+          if (brevetData.numero_pays && brevetData.numero_pays.length > 0) {
+          // Récupérer les pays et les statuts correspondants
+const paysResponse = await axios.get(`http://localhost:3100/numeros_pays`, {
+  params: { id_brevet: brevetId }
+});
+console.log('Pays Response:', paysResponse.data); // Log pour les pays
+const paysData = paysResponse.data.data;
+
+// Associer chaque pays avec son statut
+const paysWithStatut = paysData.map((paysItem) => {
+  const matchingStatut = allStatuts.find(st => st.id_statuts === paysItem.id_statuts);
+  console.log('Matching Statut for paysItem:', paysItem, '=>', matchingStatut); // Debugging line
+  return {
+      ...paysItem,
+      statut: matchingStatut ? matchingStatut.valeur : 'N/A',
+  };
+});
+
+setPays(paysWithStatut);
+
+        } else {
+            console.warn('Aucun numero_pays trouvé dans brevetData');
+        }
+        
 
           if (brevetData.inventeurs && brevetData.inventeurs.length > 0) {
             const inventeurIds = brevetData.inventeurs.map(inv => inv.id_inventeur);
+            console.log('Inventeur IDs:', inventeurIds); // Ajoutez un log ici pour vérifier les IDs
             const inventeursResponse = await axios.get(`http://localhost:3100/inventeur`, {
               params: { id_inventeurs: inventeurIds },
               paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
@@ -52,6 +79,7 @@ const useBrevetData = (brevetId) => {
 
           if (brevetData.deposants && brevetData.deposants.length > 0) {
             const deposantIds = brevetData.deposants.map(dep => dep.id_deposant);
+            console.log('Déposant IDs:', deposantIds); // Log pour les IDs des déposants
             const deposantsResponse = await axios.get(`http://localhost:3100/deposant`, {
               params: { id_deposants: deposantIds }
             });
@@ -62,6 +90,7 @@ const useBrevetData = (brevetId) => {
 
           if (brevetData.titulaires && brevetData.titulaires.length > 0) {
             const titulaireIds = brevetData.titulaires.map(tit => tit.id_titulaire);
+            console.log('Titulaire IDs:', titulaireIds); // Log pour les IDs des titulaires
             const titulairesResponse = await axios.get(`http://localhost:3100/titulaire`, {
               params: { id_titulaires: titulaireIds }
             });
@@ -73,6 +102,7 @@ const useBrevetData = (brevetId) => {
           const paysResponse = await axios.get(`http://localhost:3100/numeros_pays`, {
             params: { id_brevet: brevetId }
           });
+          console.log('Pays Response:', paysResponse.data); // Log pour les pays
           setPays(paysResponse.data.data || []);
 
           const cabinetsResponse = await axios.get(`http://localhost:3100/cabinets`, {
@@ -114,7 +144,9 @@ const useBrevetData = (brevetId) => {
     }
   }, [brevetId]);
 
+
   // Fonction pour générer un PDF
+// Fonction pour générer un PDF
 const generatePDF = () => {
   const doc = new jsPDF();
   let yOffset = 20; // Initialiser à 20 pour laisser de l'espace pour le titre
@@ -152,7 +184,6 @@ const generatePDF = () => {
   const img = new Image();
   img.src = logo; // Le logo doit être spécifié correctement
   img.onload = () => {
-    // Agrandir le logo en ajustant la largeur et la hauteur (ex. 100px de large et 30px de haut)
     doc.addImage(img, 'PNG', 55, 10, 100, 30); // Centré à 55 pour un format A4
     yOffset = 50; // Ajuster l'espace après le logo
 
@@ -174,8 +205,6 @@ const generatePDF = () => {
       doc.text(`Date de Dépôt: ${new Date(brevet.date_depot).toLocaleDateString()}`, 30, yOffset);
       yOffset += 5;
       doc.text(`Numéro de Délivrance: ${brevet.numero_delivrance || 'N/A'}`, 30, yOffset);
-      yOffset += 5;
-      doc.text(`Statut: ${statut ? statut.valeur : 'N/A'}`, 30, yOffset);
       yOffset += 10;
       checkPageOverflow(15);
     }
@@ -285,14 +314,14 @@ const generatePDF = () => {
       });
     }
 
-    // Pays
+    // Pays et Statut
     if (pays && pays.length > 0) {
       drawSeparator();
       setSectionTitleStyle();
-      doc.text('Pays:', 20, yOffset);
+      doc.text('Pays et Statut:', 20, yOffset);
       yOffset += 10;
       setTextStyle();
-
+    
       pays.forEach((paysItem) => {
         doc.text(`Nom: ${paysItem.nom_fr_fr}`, 30, yOffset);
         yOffset += 5;
@@ -302,8 +331,12 @@ const generatePDF = () => {
         }
         if (paysItem.numero_depot) {
           doc.text(`Numéro de Dépôt: ${paysItem.numero_depot}`, 30, yOffset);
-          yOffset += 10;
+          yOffset += 5;
         }
+        // Trouver le statut correspondant pour chaque pays
+        const matchingStatut = statutsList.find(st => st.id_statuts === paysItem.id_statuts);
+        doc.text(`Statut: ${matchingStatut ? matchingStatut.valeur : 'N/A'}`, 30, yOffset); // Afficher le statut ici
+        yOffset += 10;
         checkPageOverflow(20);
       });
     }
@@ -326,32 +359,34 @@ const generatePDF = () => {
         checkPageOverflow(20);
       });
     }
-// Contacts de procédure
-if (contactsProcedure && contactsProcedure.length > 0) {
-  drawSeparator();
-  setSectionTitleStyle();
-  doc.text('Contacts de procédure:', 20, yOffset);
-  yOffset += 10;
-  setTextStyle();
 
-  contactsProcedure.forEach((contact) => {
-    doc.text(`Nom: ${contact.nom} ${contact.prenom}`, 30, yOffset);
-    yOffset += 5;
-    if (contact.fonction) {
-      doc.text(`Fonction: ${contact.fonction}`, 30, yOffset);
-      yOffset += 5;
-    }
-    if (contact.email) {
-      doc.text(`Email: ${contact.email}`, 30, yOffset);
-      yOffset += 5;
-    }
-    if (contact.telephone) {
-      doc.text(`Téléphone: ${contact.telephone}`, 30, yOffset);
+    // Contacts de procédure
+    if (contactsProcedure && contactsProcedure.length > 0) {
+      drawSeparator();
+      setSectionTitleStyle();
+      doc.text('Contacts de procédure:', 20, yOffset);
       yOffset += 10;
+      setTextStyle();
+
+      contactsProcedure.forEach((contact) => {
+        doc.text(`Nom: ${contact.nom} ${contact.prenom}`, 30, yOffset);
+        yOffset += 5;
+        if (contact.fonction) {
+          doc.text(`Fonction: ${contact.fonction}`, 30, yOffset);
+          yOffset += 5;
+        }
+        if (contact.email) {
+          doc.text(`Email: ${contact.email}`, 30, yOffset);
+          yOffset += 5;
+        }
+        if (contact.telephone) {
+          doc.text(`Téléphone: ${contact.telephone}`, 30, yOffset);
+          yOffset += 10;
+        }
+        checkPageOverflow(20);
+      });
     }
-    checkPageOverflow(20);
-  });
-}
+
     // Cabinets d'annuité
     if (annuiteCabinets && annuiteCabinets.length > 0) {
       drawSeparator();
@@ -370,8 +405,6 @@ if (contactsProcedure && contactsProcedure.length > 0) {
         checkPageOverflow(20);
       });
     }
-
-    
 
     // Contacts d'annuité
     if (contactsAnnuite && contactsAnnuite.length > 0) {
@@ -420,7 +453,6 @@ if (contactsProcedure && contactsProcedure.length > 0) {
   };
 };
 
-  
 
   return {
     brevet,

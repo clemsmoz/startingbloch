@@ -9,15 +9,14 @@ const useAddBrevet = (handleClose) => {
     numero_delivrance: '',
     date_delivrance: '',
     licence: false,
-    id_statuts: '',
-    pays: [{ id_pays: '', numero_depot: '', numero_publication: '' }],
-    inventeurs: [{ nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' }],
-    titulaires: [{ nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false }],
-    deposants: [{ nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' }],
-    cabinets_procedure: [{ id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' }],
-    cabinets_annuite: [{ id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }],
+    pays: [{ id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '' }],
+    inventeurs: [{ nom: '', prenom: '', email: '', telephone: '' }],
+    titulaires: [{ nom: '', prenom: '', email: '', telephone: '', part_pi: '', executant: false, client_correspondant: false }],
+    deposants: [{ nom: '', prenom: '', email: '', telephone: '' }],
+    cabinets_procedure: [{ id_cabinet: '', reference: '', dernier_intervenant: false }],
+    cabinets_annuite: [{ id_cabinet: '', reference: '', dernier_intervenant: false }],
     commentaire: '',
-    pieces_jointes: [], // Ajouté pour gérer plusieurs pièces jointes
+    pieces_jointes: [],
     clients: [{ id_client: '' }]
   });
 
@@ -30,8 +29,6 @@ const useAddBrevet = (handleClose) => {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // État pour la modale de confirmation
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [isError, setIsError] = useState(false);
@@ -75,7 +72,6 @@ const useAddBrevet = (handleClose) => {
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (name.startsWith('pieces_jointes')) {
-      // Gestion des pièces jointes
       const filesArray = Array.from(files);
       setFormData(prevData => ({
         ...prevData,
@@ -88,29 +84,33 @@ const useAddBrevet = (handleClose) => {
       }));
     }
   };
-  
+
   const handleDynamicChange = (e, index, field) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? (checked ? 1 : 0) : value;
 
-    const newDynamicFields = formData[field].map((item, idx) => (
+    console.log(`Field: ${field}, Index: ${index}, Name: ${name}, New Value: ${newValue}`); // Log pour débogage
+
+    const updatedField = formData[field].map((item, idx) => (
       idx === index ? { ...item, [name]: newValue } : item
     ));
 
+    console.log('Updated Field:', updatedField); // Log pour vérifier le champ mis à jour
+
     setFormData(prevData => ({
       ...prevData,
-      [field]: newDynamicFields
+      [field]: updatedField
     }));
   };
 
   const handleAddField = (field) => {
     const emptyField = {
-      pays: { id_pays: '', numero_depot: '', numero_publication: '' },
-      inventeurs: { nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' },
-      titulaires: { nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false },
-      deposants: { nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' },
-      cabinets_procedure: { id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' },
-      cabinets_annuite: { id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' },
+      pays: { id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '' },
+      inventeurs: { nom: '', prenom: '', email: '', telephone: '' },
+      titulaires: { nom: '', prenom: '', email: '', telephone: '', part_pi: '', executant: false, client_correspondant: false },
+      deposants: { nom: '', prenom: '', email: '', telephone: '' },
+      cabinets_procedure: { id_cabinet: '', reference: '', dernier_intervenant: false },
+      cabinets_annuite: { id_cabinet: '', reference: '', dernier_intervenant: false },
       clients: { id_client: '' }
     }[field];
 
@@ -132,21 +132,27 @@ const useAddBrevet = (handleClose) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-  
-    // Préparer les données pour l'envoi
+
     const dataToSubmit = new FormData();
-  
-    // Ajouter les champs simples
+
     dataToSubmit.append('reference_famille', formData.reference_famille);
     dataToSubmit.append('titre', formData.titre);
     dataToSubmit.append('date_depot', formData.date_depot);
     dataToSubmit.append('numero_delivrance', formData.numero_delivrance);
     dataToSubmit.append('date_delivrance', formData.date_delivrance);
     dataToSubmit.append('licence', formData.licence);
-    dataToSubmit.append('id_statuts', formData.id_statuts);
     dataToSubmit.append('commentaire', formData.commentaire);
-  
-    // Ajouter les champs complexes (tableaux)
+
+    console.log('FormData avant l\'envoi :', formData); // Log pour vérifier formData
+
+    // Vérification des pays pour id_statuts
+    formData.pays.forEach((pays, index) => {
+      console.log(`Pays ${index}:`, pays);
+      if (!pays.id_statuts) {
+        console.warn(`id_statuts pour le pays ${index} est null ou vide.`);
+      }
+    });
+
     dataToSubmit.append('pays', JSON.stringify(formData.pays));
     dataToSubmit.append('inventeurs', JSON.stringify(formData.inventeurs));
     dataToSubmit.append('titulaires', JSON.stringify(formData.titulaires));
@@ -154,15 +160,14 @@ const useAddBrevet = (handleClose) => {
     dataToSubmit.append('cabinets_procedure', JSON.stringify(formData.cabinets_procedure));
     dataToSubmit.append('cabinets_annuite', JSON.stringify(formData.cabinets_annuite));
     dataToSubmit.append('clients', JSON.stringify(formData.clients));
-  
-  // Ajouter les pièces jointes
-if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
-  formData.pieces_jointes.forEach((file, index) => {
-    dataToSubmit.append(`pieces_jointes[${index}][nom_fichier]`, file.name);
-    dataToSubmit.append(`pieces_jointes[${index}][type_fichier]`, file.type);
-    dataToSubmit.append(`pieces_jointes[${index}][donnees]`, file); // Envoie le fichier directement
-  });
-}
+
+    if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
+      formData.pieces_jointes.forEach((file, index) => {
+        dataToSubmit.append(`pieces_jointes[${index}][nom_fichier]`, file.name);
+        dataToSubmit.append(`pieces_jointes[${index}][type_fichier]`, file.type);
+        dataToSubmit.append(`pieces_jointes[${index}][donnees]`, file);
+      });
+    }
 
     try {
       await axios.post('http://localhost:3100/brevets', dataToSubmit, {
@@ -173,7 +178,7 @@ if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
       setConfirmationMessage('Le brevet a été ajouté avec succès.');
       setIsError(false);
     } catch (err) {
-      setConfirmationMessage('Une erreur est survenue lors de l\'ajout du brevet.');
+      setConfirmationMessage("Une erreur est survenue lors de l'ajout du brevet.");
       setIsError(true);
       console.error('Erreur lors de la création du brevet:', err);
     } finally {
@@ -181,7 +186,6 @@ if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
       setConfirmationModal(true);
     }
   };
-  
 
   const handleCloseConfirmationModal = () => {
     setConfirmationModal(false);
@@ -192,7 +196,7 @@ if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
 
   return {
     formData,
-    setFormData, 
+    setFormData,
     clientsList,
     statuts,
     paysList,
