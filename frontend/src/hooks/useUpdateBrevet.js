@@ -35,7 +35,6 @@ const useUpdateBrevet = (brevetId, handleClose) => {
     handleDynamicChange,
     handleAddField,
     handleRemoveField,
-    handleSubmit: handleAddSubmit,
     setLoading,
     setError,
     setConfirmationMessage,

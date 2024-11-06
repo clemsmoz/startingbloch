@@ -15,7 +15,6 @@ import {
   CircularProgress,
   IconButton,
   Typography,
-  Chip,
   List,
   ListItem,
   ListItemText,
@@ -44,22 +43,19 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
     statuts = [],
     paysList = [],
     cabinets = { procedure: [], annuite: [] },
-    contactsProcedure = [],
-    contactsAnnuite = [],
+  
     loading,
     handleChange,
     handleDynamicChange,
     handleAddField,
     handleRemoveField,
     handleUpdateSubmit,
-    fetchContacts,
     isError,
     confirmationModal,
     confirmationMessage,
     handleCloseConfirmationModal,
     setFormData,
-    procedureCabinets, // Ajoutez cette ligne
-    annuiteCabinets,   // Ajoutez cette ligne
+   
   } = useUpdateBrevet(brevetId, handleClose);
   
 

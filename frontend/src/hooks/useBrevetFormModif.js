@@ -25,8 +25,7 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
   const [statuts, setStatuts] = useState([]);
   const [paysList, setPaysList] = useState([]);
   const [cabinets, setCabinets] = useState({ procedure: [], annuite: [] });
-  const [contactsProcedure, setContactsProcedure] = useState([]);
-  const [contactsAnnuite, setContactsAnnuite] = useState([]);
+ 
 
   useEffect(() => {
     if (brevetId) {
@@ -174,8 +173,6 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
     statuts,
     paysList,
     cabinets,
-    contactsProcedure,
-    contactsAnnuite,
     handleChange,
     handleDynamicChange,
     handleAddField,
