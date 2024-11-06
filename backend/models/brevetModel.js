@@ -458,6 +458,254 @@ class Brevet {
     });
   }
 
+  static update(brevetId, updatedData, callback) {
+    // 1. Mise à jour de la table principale `brevet`
+    const updateBrevetSql = `
+      UPDATE brevet SET
+        reference_famille = ?,
+        titre = ?,
+        date_depot = ?,
+        numero_delivrance = ?,
+        date_delivrance = ?,
+        licence = ?,
+        commentaire = ?
+      WHERE id_brevet = ?
+    `;
+    const brevetValues = [
+      updatedData.reference_famille || null,
+      updatedData.titre || null,
+      updatedData.date_depot || null,
+      updatedData.numero_delivrance || null,
+      updatedData.date_delivrance || null,
+      updatedData.licence ? 1 : 0,
+      updatedData.commentaire || null,
+      brevetId
+    ];
+  
+    db.query(updateBrevetSql, brevetValues, (err, result) => {
+      if (err) {
+        console.error('Error during brevet update:', err);
+        return callback(err);
+      }
+  
+      async.parallel([
+        // Mise à jour des clients
+        (cb) => {
+          db.query('DELETE FROM brevet_client WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.clients && updatedData.clients.length > 0) {
+              async.each(updatedData.clients, (client, callback) => {
+                const insertClientSql = `INSERT INTO brevet_client (id_brevet, id_client) VALUES (?, ?)`;
+                db.query(insertClientSql, [brevetId, client.id_client], callback);
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des inventeurs
+        (cb) => {
+          db.query('DELETE FROM brevet_inventeur WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.inventeurs && updatedData.inventeurs.length > 0) {
+              async.each(updatedData.inventeurs, (inventeur, callback) => {
+                const insertInventeurSql = `
+                  INSERT INTO inventeur (nom, prenom, email, telephone)
+                  VALUES (?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE nom = VALUES(nom), prenom = VALUES(prenom), email = VALUES(email), telephone = VALUES(telephone)
+                `;
+                const inventeurValues = [
+                  inventeur.nom_inventeur || null,
+                  inventeur.prenom_inventeur || null,
+                  inventeur.email_inventeur || null,
+                  inventeur.telephone_inventeur || null
+                ];
+                db.query(insertInventeurSql, inventeurValues, (err, result) => {
+                  if (err) return callback(err);
+                  const inventeurId = result.insertId || inventeur.id_inventeur;
+                  db.query('INSERT INTO brevet_inventeur (id_brevet, id_inventeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE id_inventeur = VALUES(id_inventeur)', [brevetId, inventeurId], callback);
+                });
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des déposants
+        (cb) => {
+          db.query('DELETE FROM brevet_deposant WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.deposants && updatedData.deposants.length > 0) {
+              async.each(updatedData.deposants, (deposant, callback) => {
+                const insertDeposantSql = `
+                  INSERT INTO deposant (nom, prenom, email, telephone)
+                  VALUES (?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE nom = VALUES(nom), prenom = VALUES(prenom), email = VALUES(email), telephone = VALUES(telephone)
+                `;
+                const deposantValues = [
+                  deposant.nom_deposant || null,
+                  deposant.prenom_deposant || null,
+                  deposant.email_deposant || null,
+                  deposant.telephone_deposant || null
+                ];
+                db.query(insertDeposantSql, deposantValues, (err, result) => {
+                  if (err) return callback(err);
+                  const deposantId = result.insertId || deposant.id_deposant;
+                  db.query('INSERT INTO brevet_deposant (id_brevet, id_deposant) VALUES (?, ?) ON DUPLICATE KEY UPDATE id_deposant = VALUES(id_deposant)', [brevetId, deposantId], callback);
+                });
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des titulaires
+        (cb) => {
+          db.query('DELETE FROM brevet_titulaire WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.titulaires && updatedData.titulaires.length > 0) {
+              async.each(updatedData.titulaires, (titulaire, callback) => {
+                const insertTitulaireSql = `
+                  INSERT INTO titulaire (nom, prenom, email, telephone, part_pi, client_correspondant, executant)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE nom = VALUES(nom), prenom = VALUES(prenom), email = VALUES(email), telephone = VALUES(telephone), part_pi = VALUES(part_pi), client_correspondant = VALUES(client_correspondant), executant = VALUES(executant)
+                `;
+                const titulaireValues = [
+                  titulaire.nom_titulaire || null,
+                  titulaire.prenom_titulaire || null,
+                  titulaire.email_titulaire || null,
+                  titulaire.telephone_titulaire || null,
+                  titulaire.part_pi || null,
+                  titulaire.client_correspondant ? 1 : 0,
+                  titulaire.executant ? 1 : 0
+                ];
+                db.query(insertTitulaireSql, titulaireValues, (err, result) => {
+                  if (err) return callback(err);
+                  const titulaireId = result.insertId || titulaire.id_titulaire;
+                  db.query('INSERT INTO brevet_titulaire (id_brevet, id_titulaire) VALUES (?, ?) ON DUPLICATE KEY UPDATE id_titulaire = VALUES(id_titulaire)', [brevetId, titulaireId], callback);
+                });
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des numéros de pays
+        (cb) => {
+          db.query('DELETE FROM numero_pays WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.pays && updatedData.pays.length > 0) {
+              async.each(updatedData.pays, (paysData, callback) => {
+                const insertNumeroPaysSql = `
+                  INSERT INTO numero_pays (id_brevet, id_pays, numero_depot, numero_publication, id_statuts)
+                  VALUES (?, ?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE numero_depot = VALUES(numero_depot), numero_publication = VALUES(numero_publication), id_statuts = VALUES(id_statuts)
+                `;
+                const numeroPaysValues = [
+                  brevetId,
+                  paysData.id_pays || null,
+                  paysData.numero_depot || null,
+                  paysData.numero_publication || null,
+                  paysData.id_statuts ? parseInt(paysData.id_statuts) : null
+                ];
+                db.query(insertNumeroPaysSql, numeroPaysValues, callback);
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des cabinets_procedure
+        (cb) => {
+          db.query('DELETE FROM brevet_cabinet WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.cabinets_procedure && updatedData.cabinets_procedure.length > 0) {
+              async.each(updatedData.cabinets_procedure, (cabinet, callback) => {
+                const insertCabinetProcedureSql = `
+                  INSERT INTO brevet_cabinet (id_brevet, id_cabinet, reference, dernier_intervenant)
+                  VALUES (?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE reference = VALUES(reference), dernier_intervenant = VALUES(dernier_intervenant)
+                `;
+                const cabinetValues = [
+                  brevetId,
+                  cabinet.id_cabinet_procedure || null,
+                  cabinet.reference || null,
+                  cabinet.dernier_intervenant ? 1 : 0
+                ];
+                db.query(insertCabinetProcedureSql, cabinetValues, callback);
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des cabinets_annuite
+        (cb) => {
+          db.query('DELETE FROM brevet_cabinet WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.cabinets_annuite && updatedData.cabinets_annuite.length > 0) {
+              async.each(updatedData.cabinets_annuite, (cabinet, callback) => {
+                const insertCabinetAnnuiteSql = `
+                  INSERT INTO brevet_cabinet (id_brevet, id_cabinet, reference, dernier_intervenant)
+                  VALUES (?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE reference = VALUES(reference), dernier_intervenant = VALUES(dernier_intervenant)
+                `;
+                const cabinetValues = [
+                  brevetId,
+                  cabinet.id_cabinet_annuite || null,
+                  cabinet.reference || null,
+                  cabinet.dernier_intervenant ? 1 : 0
+                ];
+                db.query(insertCabinetAnnuiteSql, cabinetValues, callback);
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        },
+  
+        // Mise à jour des pièces jointes
+        (cb) => {
+          db.query('DELETE FROM brevet_pieces_jointes WHERE id_brevet = ?', [brevetId], (err) => {
+            if (err) return cb(err);
+            if (updatedData.pieces_jointes && updatedData.pieces_jointes.length > 0) {
+              async.each(updatedData.pieces_jointes, (pieceJointe, callback) => {
+                const pieceJointeSql = `
+                  INSERT INTO brevet_pieces_jointes (id_brevet, nom_fichier, type_fichier, donnees)
+                  VALUES (?, ?, ?, ?)
+                  ON DUPLICATE KEY UPDATE nom_fichier = VALUES(nom_fichier), type_fichier = VALUES(type_fichier), donnees = VALUES(donnees)
+                `;
+                const pieceJointeValues = [
+                  brevetId,
+                  pieceJointe.nom_fichier || null,
+                  pieceJointe.type_fichier || null,
+                  pieceJointe.donnees || null
+                ];
+                db.query(pieceJointeSql, pieceJointeValues, callback);
+              }, cb);
+            } else {
+              cb(null);
+            }
+          });
+        }
+  
+      ], (err) => {
+        if (err) {
+          console.error('Error updating related data:', err);
+          return callback(err);
+        }
+        callback(null, { message: 'Brevet updated successfully' });
+      });
+    });
+  }
+  
+
   // Autres méthodes pour récupérer les inventeurs, déposants, titulaires, etc.
   static getInventeursByBrevetId(brevetId, callback) {
     const query = `
