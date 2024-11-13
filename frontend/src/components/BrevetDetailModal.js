@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal as BootstrapModal, Button as BootstrapButton, Table, Container } from 'react-bootstrap';
+import Flag from 'react-world-flags';
+
 import { Modal, Box, Typography, IconButton, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -333,20 +335,24 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
                   </td>
 
                   {/* Pays et Statut */}
-<td>
+                  <td>
   {pays && pays.length > 0 ? (
     pays.map((p, index) => {
       // Trouvez le statut correspondant pour chaque pays
       const matchingStatut = statutsList.find(st => st.id_statuts === p.id_statuts);
       return (
-        <div key={index}>
-          <strong>Pays:</strong> {p.nom_fr_fr}
-          <br />
-          <strong>Numéro de Dépôt:</strong> {p.numero_depot}
-          <br />
-          <strong>Numéro de Publication:</strong> {p.numero_publication}
-          <br />
-          <strong>Statut:</strong> {matchingStatut ? matchingStatut.valeur : 'N/A'}
+        <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Affichage du drapeau */}
+          <Flag code={p.alpha2} width="32" style={{ marginRight: '8px' }} />
+          <div>
+            <strong>Pays:</strong> {p.nom_fr_fr}
+            <br />
+            <strong>Numéro de Dépôt:</strong> {p.numero_depot}
+            <br />
+            <strong>Numéro de Publication:</strong> {p.numero_publication}
+            <br />
+            <strong>Statut:</strong> {matchingStatut ? matchingStatut.valeur : 'N/A'}
+          </div>
           {index < pays.length - 1 && <hr style={{ margin: '10px 0' }} />}
         </div>
       );
