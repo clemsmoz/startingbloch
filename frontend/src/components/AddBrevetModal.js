@@ -167,122 +167,128 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     onChange={handleChange}
                     required
                   />
-                  <Box display="flex" justifyContent="space-between">
-                    <TextField
-                      type="date"
-                      label="Date Dépôt"
-                      name="date_depot"
-                      value={formData.date_depot}
-                      onChange={handleChange}
-                      InputLabelProps={{ shrink: true }}
-                      sx={{ flex: 1, mr: 2 }}
-                      required
-                    />
-                    <TextField
-                      fullWidth
-                      label="Numéro Délivrance"
-                      name="numero_delivrance"
-                      value={formData.numero_delivrance}
-                      onChange={handleChange}
-                      sx={{ flex: 1, mr: 2 }}
-                    />
-                    <TextField
-                      type="date"
-                      label="Date Délivrance"
-                      name="date_delivrance"
-                      value={formData.date_delivrance}
-                      onChange={handleChange}
-                      InputLabelProps={{ shrink: true }}
-                      sx={{ flex: 1 }}
-                    />
-                  </Box>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.licence}
-                        onChange={handleChange}
-                        name="licence"
-                      />
-                    }
-                    label="Licence"
-                  />
                 </Stack>
               </Card>
 
-              {/* Pays, Numéro de Dépôt et Numéro de Publication + Statut */}
-              <Card sx={{ mb: 3, p: 2 }}>
-                <Typography variant="h5">
-                  Pays, Numéro de Dépôt, Numéro de Publication et Statut
-                </Typography>
-                {formData.pays.map((item, index) => (
-                  <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Pays</InputLabel>
-                      <Select
-                        value={item.id_pays}
-                        onChange={(e) => handleDynamicChange(e, index, 'pays')}
-                        name="id_pays"
-                        required
-                      >
-                        <MenuItem value="">Sélectionner un pays</MenuItem>
-                        {paysList.map((paysItem) => (
-                          <MenuItem key={paysItem.id_pays} value={paysItem.id_pays}>
-                            {paysItem.nom_fr_fr}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      fullWidth
-                      label="Numéro de dépôt"
-                      name="numero_depot"
-                      value={item.numero_depot}
-                      onChange={(e) => handleDynamicChange(e, index, 'pays')}
-                      required
-                    />
-                    <TextField
-                      fullWidth
-                      label="Numéro de publication"
-                      name="numero_publication"
-                      value={item.numero_publication}
-                      onChange={(e) => handleDynamicChange(e, index, 'pays')}
-                    />
-                   <FormControl fullWidth>
-  <InputLabel>Statut</InputLabel>
-  <Select
-    value={item.id_statuts} // Utilisation correcte de la propriété `item.id_statuts`
-    onChange={(e) => handleDynamicChange(e, index, 'pays')}
-    name="id_statuts"
-    required
-  >
-    <MenuItem value="">Sélectionner un statut</MenuItem>
-    {statuts.map((statut) => (
-      <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
-        {statut.valeur}
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
+           {/* Pays, Numéro de Dépôt et Numéro de Publication + Statut */}
+<Card sx={{ mb: 3, p: 2 }}>
+  <Typography variant="h5">
+    Pays, Numéro de Dépôt, Numéro de Publication et Statut
+  </Typography>
+  {formData.pays.map((item, index) => (
+    <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
+      <FormControl fullWidth>
+        <InputLabel>Pays</InputLabel>
+        <Select
+          value={item.id_pays}
+          onChange={(e) => handleDynamicChange(e, index, 'pays')}
+          name="id_pays"
+          required
+        >
+          <MenuItem value="">Sélectionner un pays</MenuItem>
+          {paysList.map((paysItem) => (
+            <MenuItem key={paysItem.id_pays} value={paysItem.id_pays}>
+              {paysItem.nom_fr_fr}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => handleRemoveField(index, 'pays')}
-                      sx={{ height: '56px' }}
-                    >
-                      <FaMinus />
-                    </Button>
-                  </Stack>
-                ))}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddField('pays')}
-                  sx={{ mt: 2 }}
-                >
-                  <FaPlus /> Ajouter un pays
-                </Button>
-              </Card>
+      <TextField
+        fullWidth
+        label="Numéro de dépôt"
+        name="numero_depot"
+        value={item.numero_depot}  // Utilisation correcte de `item.numero_depot`
+        onChange={(e) => handleDynamicChange(e, index, 'pays')}
+        required
+      />
+      <TextField
+        fullWidth
+        label="Numéro de publication"
+        name="numero_publication"
+        value={item.numero_publication}  // Utilisation correcte de `item.numero_publication`
+        onChange={(e) => handleDynamicChange(e, index, 'pays')}
+      />
+
+      <FormControl fullWidth>
+        <InputLabel>Statut</InputLabel>
+        <Select
+          value={item.id_statuts}  // Utilisation correcte de `item.id_statuts`
+          onChange={(e) => handleDynamicChange(e, index, 'pays')}
+          name="id_statuts"
+          required
+        >
+          <MenuItem value="">Sélectionner un statut</MenuItem>
+          {statuts.map((statut) => (
+            <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
+              {statut.valeur}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <Box display="flex" justifyContent="space-between">
+        <TextField
+          type="date"
+          label="Date Dépôt"
+          name="date_depot"
+          value={item.date_depot}  // Utilisation correcte de `item.date_depot`
+          onChange={(e) => handleDynamicChange(e, index, 'pays')}
+          InputLabelProps={{ shrink: true }}
+          sx={{ flex: 1, mr: 2 }}
+          required
+        />
+        <TextField
+          fullWidth
+          label="Numéro Délivrance"
+          name="numero_delivrance"
+          value={item.numero_delivrance}  // Utilisation correcte de `item.numero_delivrance`
+          onChange={(e) => handleDynamicChange(e, index, 'pays')}
+          sx={{ flex: 1, mr: 2 }}
+        />
+        <TextField
+          type="date"
+          label="Date Délivrance"
+          name="date_delivrance"
+          value={item.date_delivrance}  // Utilisation correcte de `item.date_delivrance`
+          onChange={(e) => handleDynamicChange(e, index, 'pays')}
+          InputLabelProps={{ shrink: true }}
+          sx={{ flex: 1 }}
+        />
+      </Box>
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={item.licence}  // Utilisation correcte de `item.licence`
+            onChange={(e) => handleDynamicChange(e, index, 'pays')}
+            name="licence"
+          />
+        }
+        label="Licence"
+      />
+
+      <Button
+        variant="contained"
+        color="error"
+        onClick={() => handleRemoveField(index, 'pays')}
+        sx={{ height: '56px' }}
+      >
+        <FaMinus />
+      </Button>
+    </Stack>
+  ))}
+
+  <Button
+    variant="contained"
+    color="primary"
+    onClick={() => handleAddField('pays')}
+    sx={{ mt: 2 }}
+  >
+    <FaPlus /> Ajouter un pays
+  </Button>
+</Card>
+
 
               {/* Inventeurs */}
               <Card sx={{ mb: 3, p: 2 }}>

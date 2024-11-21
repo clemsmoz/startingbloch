@@ -9,7 +9,7 @@ const useAddBrevet = (handleClose) => {
     numero_delivrance: '',
     date_delivrance: '',
     licence: false,
-    pays: [{ id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '' }],
+    pays: [{ id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '',date_depot: '', numero_delivrance: '', date_delivrance: '', licence: false, }],
     inventeurs: [{ nom: '', prenom: '', email: '', telephone: '' }],
     titulaires: [{ nom: '', prenom: '', email: '', telephone: '', part_pi: '', executant: false, client_correspondant: false }],
     deposants: [{ nom: '', prenom: '', email: '', telephone: '' }],
@@ -105,7 +105,7 @@ const useAddBrevet = (handleClose) => {
 
   const handleAddField = (field) => {
     const emptyField = {
-      pays: { id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '' },
+      pays: { id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '',date_depot: '', numero_delivrance: '',date_delivrance: '', licence: false, },
       inventeurs: { nom: '', prenom: '', email: '', telephone: '' },
       titulaires: { nom: '', prenom: '', email: '', telephone: '', part_pi: '', executant: false, client_correspondant: false },
       deposants: { nom: '', prenom: '', email: '', telephone: '' },
@@ -132,27 +132,37 @@ const useAddBrevet = (handleClose) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+  
     const dataToSubmit = new FormData();
-
+  
     dataToSubmit.append('reference_famille', formData.reference_famille);
     dataToSubmit.append('titre', formData.titre);
-    dataToSubmit.append('date_depot', formData.date_depot);
-    dataToSubmit.append('numero_delivrance', formData.numero_delivrance);
-    dataToSubmit.append('date_delivrance', formData.date_delivrance);
-    dataToSubmit.append('licence', formData.licence);
     dataToSubmit.append('commentaire', formData.commentaire);
-
-    console.log('FormData avant l\'envoi :', formData); // Log pour vérifier formData
-
+  
+    // Formatage des dates avant d'ajouter
+    if (formData.date_depot) {
+      dataToSubmit.append('date_depot', new Date(formData.date_depot).toISOString().split('T')[0]);
+    }
+    if (formData.date_delivrance) {
+      dataToSubmit.append('date_delivrance', new Date(formData.date_delivrance).toISOString().split('T')[0]);
+    }
+  
     // Vérification des pays pour id_statuts
     formData.pays.forEach((pays, index) => {
       console.log(`Pays ${index}:`, pays);
       if (!pays.id_statuts) {
         console.warn(`id_statuts pour le pays ${index} est null ou vide.`);
       }
+  
+      // Formatage des dates pour chaque pays
+      if (pays.date_depot) {
+        pays.date_depot = new Date(pays.date_depot).toISOString().split('T')[0];
+      }
+      if (pays.date_delivrance) {
+        pays.date_delivrance = new Date(pays.date_delivrance).toISOString().split('T')[0];
+      }
     });
-
+  
     dataToSubmit.append('pays', JSON.stringify(formData.pays));
     dataToSubmit.append('inventeurs', JSON.stringify(formData.inventeurs));
     dataToSubmit.append('titulaires', JSON.stringify(formData.titulaires));
@@ -160,7 +170,7 @@ const useAddBrevet = (handleClose) => {
     dataToSubmit.append('cabinets_procedure', JSON.stringify(formData.cabinets_procedure));
     dataToSubmit.append('cabinets_annuite', JSON.stringify(formData.cabinets_annuite));
     dataToSubmit.append('clients', JSON.stringify(formData.clients));
-
+  
     if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
       formData.pieces_jointes.forEach((file, index) => {
         dataToSubmit.append(`pieces_jointes[${index}][nom_fichier]`, file.name);
@@ -168,7 +178,7 @@ const useAddBrevet = (handleClose) => {
         dataToSubmit.append(`pieces_jointes[${index}][donnees]`, file);
       });
     }
-
+  
     try {
       await axios.post('http://localhost:3100/brevets', dataToSubmit, {
         headers: {
@@ -186,6 +196,7 @@ const useAddBrevet = (handleClose) => {
       setConfirmationModal(true);
     }
   };
+  
 
   const handleCloseConfirmationModal = () => {
     setConfirmationModal(false);

@@ -8,17 +8,12 @@ class Brevet {
     // 1. Insertion dans la table `brevet` sans les champs de pièces jointes
     const brevetSql = `
       INSERT INTO brevet (
-        reference_famille, titre, date_depot, numero_delivrance,
-        date_delivrance, licence, commentaire
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        reference_famille, titre, commentaire
+      ) VALUES (?, ?, ?)
     `;
     const brevetValues = [
       brevetData.reference_famille || null,
       brevetData.titre || null,
-      brevetData.date_depot || null,
-      brevetData.numero_delivrance || null,
-      brevetData.date_delivrance || null,
-      brevetData.licence ? 1 : 0,
       brevetData.commentaire || null
     ];
     console.log('Executing brevet SQL:', brevetSql);
@@ -94,13 +89,12 @@ class Brevet {
         (cb) => {
           if (brevetData.titulaires && brevetData.titulaires.length > 0) {
             async.each(brevetData.titulaires, (titulaire, callback) => {
-              const titulaireSql = 'INSERT INTO titulaire (nom, prenom, email, telephone, part_pi, client_correspondant, executant) VALUES (?, ?, ?, ?, ?, ?, ?)';
+              const titulaireSql = 'INSERT INTO titulaire (nom, prenom, email, telephone,client_correspondant, executant) VALUES (?, ?, ?, ?, ?, ?)';
               const titulaireValues = [
                 titulaire.nom_titulaire || null,
                 titulaire.prenom_titulaire || null,
                 titulaire.email_titulaire || null,
                 titulaire.telephone_titulaire || null,
-                titulaire.part_pi || null,
                 titulaire.client_correspondant ? 1 : 0,
                 titulaire.executant ? 1 : 0
               ];
@@ -130,8 +124,8 @@ class Brevet {
         console.log('id_statuts avant insertion:', paysData.id_statuts); // Log pour vérifier id_statuts
 
         const insertNumeroPaysSql = `
-          INSERT INTO numero_pays (id_brevet, id_pays, numero_depot, numero_publication, nom_fr_fr, id_statuts, alpha2)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO numero_pays (id_brevet, id_pays, numero_depot, numero_publication, nom_fr_fr, id_statuts, alpha2, date_depot, numero_delivrance, date_delivrance, licence)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const insertNumeroPaysValues = [
           brevetId,
@@ -140,7 +134,11 @@ class Brevet {
           paysData.numero_publication || null,
           nom_fr_fr || null,
           paysData.id_statuts ? parseInt(paysData.id_statuts) : null,
-          alpha2 || null
+          alpha2 || null,
+          paysData.date_depot || null,
+          paysData.numero_delivrance || null,
+          paysData.date_delivrance || null,
+          paysData.licence ? 1 : 0,
         ];
         console.log('Insert values for numero_pays:', insertNumeroPaysValues); // Log pour vérifier les valeurs à insérer
 

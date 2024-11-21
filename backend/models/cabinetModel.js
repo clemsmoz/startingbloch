@@ -131,28 +131,28 @@ class Cabinet {
 
 
 
- 
-  static getByBrevetId(brevetId, callback) {
-    const sql = 'SELECT * FROM brevet_cabinet WHERE id_brevet = ?';
-    db.query(sql, [brevetId], (err, results) => {
-        if (err) {
-            return callback(err);
-        }
-        callback(null, results);
+  
+    static getByBrevetId(brevetId, callback) {
+      const sql = 'SELECT * FROM brevet_cabinet WHERE id_brevet = ?';
+      db.query(sql, [brevetId], (err, results) => {
+          if (err) {
+              return callback(err);
+          }
+          callback(null, results);
+      });
+  }
+
+  // Récupérer toutes les références et les ID des brevets dans la table `brevet_cabinet`
+  static getAllReferences(callback) {
+    const sql = `SELECT id_brevet, reference FROM brevet_cabinet`; // Sélectionner les deux champs
+
+    db.query(sql, (err, results) => {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, results); // Retourner les résultats (id_brevet et reference)
     });
-}
-
-// Récupérer toutes les références et les ID des brevets dans la table `brevet_cabinet`
-static getAllReferences(callback) {
-  const sql = `SELECT id_brevet, reference FROM brevet_cabinet`; // Sélectionner les deux champs
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      return callback(err);
-    }
-    callback(null, results); // Retourner les résultats (id_brevet et reference)
-  });
-}
+  }
 
 
 
