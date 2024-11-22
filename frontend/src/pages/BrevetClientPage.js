@@ -204,12 +204,6 @@ const BrevetClientPage = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Typography variant="body2" sx={{ mb: 2 }}>
-                  <strong>Numéro Publication:</strong> {brevet.numero_publication}<br />
-                  <strong>Date Dépôt:</strong> {new Date(brevet.date_depot).toLocaleDateString()}<br />
-                  <strong>Numéro Délivrance:</strong> {brevet.numero_delivrance}<br />
-                  <strong>Date Délivrance:</strong> {new Date(brevet.date_delivrance).toLocaleDateString()}<br />
-                </Typography>
                 <Box display="flex" justifyContent="space-between">
                   <IconButton color="info" onClick={(event) => handleShowDetailModal(brevet.id_brevet, event)}>
                     <FaInfoCircle size={24} />

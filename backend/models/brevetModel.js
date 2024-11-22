@@ -5,7 +5,7 @@ class Brevet {
 
   // Création d'un nouveau brevet avec les relations
   static create(brevetData, callback) {
-    // 1. Insertion dans la table `brevet` sans les champs de pièces jointes
+    // 1. Insertion dans la table `brevet` 
     const brevetSql = `
       INSERT INTO brevet (
         reference_famille, titre, commentaire
@@ -278,10 +278,6 @@ class Brevet {
         id_brevet,
         reference_famille,
         titre,
-        date_depot,
-        numero_delivrance,
-        date_delivrance,
-        licence,
         commentaire
       FROM brevet WHERE id_brevet = ?
     `;
@@ -374,7 +370,7 @@ class Brevet {
         // Récupération des numéros de pays associés avec id_statuts
 numero_pays: (cb) => {
   db.query(
-    'SELECT id_pays, numero_depot, numero_publication, id_statuts, alpha2 FROM numero_pays WHERE id_brevet = ?',
+    'SELECT id_pays, numero_depot, numero_publication, id_statuts, alpha2, date_depot, date_delivrance, numero_delivrance, licence , nom_fr_fr FROM numero_pays WHERE id_brevet = ?',
     [id],
     (err, results) => {
       if (err) {
@@ -386,8 +382,12 @@ numero_pays: (cb) => {
         numero_depot: r.numero_depot,
         numero_publication: r.numero_publication,
         id_statuts: r.id_statuts,
-        alpha2: r.alpha2 // Ajout du code alpha2 à l'objet retourné
+        alpha2: r.alpha2, // Ajout du code alpha2 à l'objet retourné
+        date_depot: r.date_depot,
+        numero_delivrance: r.numero_delivrance,
+        licence: r.licence
       })));
+    
     }
   );
 },

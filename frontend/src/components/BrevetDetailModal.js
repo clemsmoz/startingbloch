@@ -154,20 +154,6 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
                     <div>
                       <strong>Titre:</strong> {brevet.titre || 'N/A'}
                     </div>
-                    <div>
-                      <strong>Date Dépôt:</strong>{' '}
-                      {brevet.date_depot ? new Date(brevet.date_depot).toLocaleDateString() : 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Date Délivrance:</strong>{' '}
-                      {brevet.date_delivrance ? new Date(brevet.date_delivrance).toLocaleDateString() : 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Numéro Délivrance:</strong> {brevet.numero_delivrance || 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Licence:</strong> {brevet.licence ? 'Oui' : 'Non'}
-                    </div>
                   </td>
 
                   {/* Clients */}
@@ -334,24 +320,33 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
                     )}
                   </td>
 
-                  {/* Pays et Statut */}
-                  <td>
+                 {/* Pays et Statut */}
+<td>
   {pays && pays.length > 0 ? (
     pays.map((p, index) => {
-      // Trouvez le statut correspondant pour chaque pays
-      const matchingStatut = statutsList.find(st => st.id_statuts === p.id_statuts);
+      const matchingStatut = statutsList.find((st) => st.id_statuts === p.id_statuts);
       return (
         <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
           {/* Affichage du drapeau */}
           <Flag code={p.alpha2} width="32" style={{ marginRight: '8px' }} />
           <div>
-            <strong>Pays:</strong> {p.nom_fr_fr}
+            <strong>Pays:</strong> {p.nom_fr_fr || 'N/A'}
             <br />
-            <strong>Numéro de Dépôt:</strong> {p.numero_depot}
+            <strong>Numéro de Dépôt:</strong> {p.numero_depot || 'N/A'}
             <br />
-            <strong>Numéro de Publication:</strong> {p.numero_publication}
+            <strong>Numéro de Publication:</strong> {p.numero_publication || 'N/A'}
             <br />
             <strong>Statut:</strong> {matchingStatut ? matchingStatut.valeur : 'N/A'}
+            <br />
+            <strong>Date Dépôt:</strong>{' '}
+            {p.date_depot ? new Date(p.date_depot).toLocaleDateString() : 'N/A'}
+            <br />
+            <strong>Date Délivrance:</strong>{' '}
+            {p.date_delivrance ? new Date(p.date_delivrance).toLocaleDateString() : 'N/A'}
+            <br />
+            <strong>Numéro Délivrance:</strong> {p.numero_delivrance || 'N/A'}
+            <br />
+            <strong>Licence:</strong> {p.licence ? 'Oui' : 'Non'}
           </div>
           {index < pays.length - 1 && <hr style={{ margin: '10px 0' }} />}
         </div>
@@ -361,6 +356,7 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
     <p>Aucun pays trouvé</p>
   )}
 </td>
+
 
 
 

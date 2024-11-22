@@ -205,10 +205,7 @@ const generatePDF = () => {
       doc.text(`Référence Famille: ${brevet.reference_famille}`, 30, yOffset);
       yOffset += 5;
       doc.text(`Titre: ${brevet.titre}`, 30, yOffset);
-      yOffset += 5;
-      doc.text(`Date de Dépôt: ${new Date(brevet.date_depot).toLocaleDateString()}`, 30, yOffset);
-      yOffset += 5;
-      doc.text(`Numéro de Délivrance: ${brevet.numero_delivrance || 'N/A'}`, 30, yOffset);
+      
       yOffset += 10;
       checkPageOverflow(15);
     }
@@ -337,6 +334,10 @@ const generatePDF = () => {
           doc.text(`Numéro de Dépôt: ${paysItem.numero_depot}`, 30, yOffset);
           yOffset += 5;
         }
+        doc.text(`Date de Dépôt: ${new Date(paysItem.date_depot).toLocaleDateString()}`, 30, yOffset);
+      yOffset += 5;
+      doc.text(`Numéro de Délivrance: ${paysItem.numero_delivrance || 'N/A'}`, 30, yOffset);
+      
         const matchingStatut = statutsList.find(st => st.id_statuts === paysItem.id_statuts);
         doc.text(`Statut: ${matchingStatut ? matchingStatut.valeur : 'N/A'}`, 30, yOffset);
         yOffset += 10;
