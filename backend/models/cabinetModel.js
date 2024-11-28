@@ -6,29 +6,100 @@ class Cabinet {
   // Création d'un nouveau cabinet avec ses contacts
   static create(cabinetData, callback) {
     const cabinetSql = `
-      INSERT INTO cabinet (nom_cabinet, reference, type) VALUES (?, ?, ?)
+      INSERT INTO cabinet (nom_cabinet, email_cabinet, telephone_cabinet, reference_cabinet, type) VALUES (?, ?, ?, ?, ?)
     `;
-    const cabinetValues = [cabinetData.nom, cabinetData.reference, cabinetData.type];
-
+    const cabinetValues = [
+      cabinetData.nom,
+      cabinetData.email,
+      cabinetData.telephone,
+      cabinetData.reference,
+      cabinetData.type,
+      cabinetData.pays
+    ];
+  
     db.query(cabinetSql, cabinetValues, (err, result) => {
       if (err) {
         return callback(err);
       }
-
+  
       const cabinetId = result.insertId;
-
+  
+      // Insertion dans la table `contact_cabinet` (si des contacts sont spécifiés)
       if (cabinetData.contacts && cabinetData.contacts.length > 0) {
         const contactValues = cabinetData.contacts.map(contact => [
           cabinetId, contact.nom, contact.prenom, contact.fonction, contact.email, contact.telephone
         ]);
-        db.query('INSERT INTO contact_cabinet (id_cabinet, nom, prenom, fonction, email, telephone) VALUES ?', [contactValues], callback);
-      } else {
-        callback(null, cabinetId);
+  
+        db.query(
+          'INSERT INTO contact_cabinet (id_cabinet, nom, prenom, fonction, email, telephone) VALUES ?',
+          [contactValues],
+          (err) => {
+            if (err) return callback(err);
+          }
+        );
       }
+  
+      // Insertion dans la table relationnelle `cabinet_pays`
+      if (cabinetData.pays && cabinetData.pays.length > 0) {
+        const paysValues = cabinetData.pays.map(paysId => [cabinetId, paysId]);
+      
+        db.query(
+          'INSERT INTO cabinet_pays (id_cabinet, id_pays) VALUES ?',
+          [paysValues],
+          (err) => {
+            if (err) return callback(err);
+          }
+        );
+      }
+      
+  
+      // Retourner l'ID du cabinet créé
+      callback(null, cabinetId);
     });
   }
+  
 
-  // Suppression d'un cabinet et de ses contacts par ID
+  
+  // Récupération de tous les cabinets
+  static getAll(callback) {
+    const sql = `
+      SELECT 
+        c.id_cabinet,
+        c.nom_cabinet,
+        c.email_cabinet,
+        c.telephone_cabinet,
+        c.reference_cabinet,
+        c.type,
+        GROUP_CONCAT(p.nom_fr_fr) AS pays
+      FROM 
+        cabinet c
+      LEFT JOIN 
+        cabinet_pays cp ON c.id_cabinet = cp.id_cabinet
+      LEFT JOIN 
+        pays p ON cp.id_pays = p.id_pays
+      GROUP BY 
+        c.id_cabinet
+    `;
+    
+    db.query(sql, (err, results) => {
+      if (err) {
+        return callback(err);
+      }
+  
+      // Transformer la liste des pays en tableau (si nécessaire)
+      const formattedResults = results.map(cabinet => ({
+        ...cabinet,
+        pays: cabinet.pays ? cabinet.pays.split(',') : []
+      }));
+  
+      callback(null, formattedResults);
+    });
+  }
+  
+
+
+    // Suppression d'un cabinet et de ses contacts par ID
+
   static delete(id, callback) {
     async.parallel([
       (cb) => db.query('DELETE FROM contact_cabinet WHERE id_cabinet = ?', [id], cb),
@@ -36,17 +107,6 @@ class Cabinet {
     ], callback);
   }
 
-  // Récupération de tous les cabinets
-  static getAll(callback) {
-    const sql = 'SELECT * FROM cabinet';
-    
-    db.query(sql, (err, results) => {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, results);
-    });
-  }
 
   // Récupération d'un cabinet par ID avec ses contacts
   static getById(id, callback) {
@@ -127,11 +187,7 @@ class Cabinet {
       });
     });
   }
-  
-
-
-
-  
+    
     static getByBrevetId(brevetId, callback) {
       const sql = 'SELECT * FROM brevet_cabinet WHERE id_brevet = ?';
       db.query(sql, [brevetId], (err, results) => {

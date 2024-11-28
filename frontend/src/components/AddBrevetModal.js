@@ -170,124 +170,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 </Stack>
               </Card>
 
-           {/* Pays, Numéro de Dépôt et Numéro de Publication + Statut */}
-<Card sx={{ mb: 3, p: 2 }}>
-  <Typography variant="h5">
-    Pays, Numéro de Dépôt, Numéro de Publication et Statut
-  </Typography>
-  {formData.pays.map((item, index) => (
-    <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
-      <FormControl fullWidth>
-        <InputLabel>Pays</InputLabel>
-        <Select
-          value={item.id_pays}
-          onChange={(e) => handleDynamicChange(e, index, 'pays')}
-          name="id_pays"
-          required
-        >
-          <MenuItem value="">Sélectionner un pays</MenuItem>
-          {paysList.map((paysItem) => (
-            <MenuItem key={paysItem.id_pays} value={paysItem.id_pays}>
-              {paysItem.nom_fr_fr}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
 
-      <TextField
-        fullWidth
-        label="Numéro de dépôt"
-        name="numero_depot"
-        value={item.numero_depot}  // Utilisation correcte de `item.numero_depot`
-        onChange={(e) => handleDynamicChange(e, index, 'pays')}
-        required
-      />
-      <TextField
-        fullWidth
-        label="Numéro de publication"
-        name="numero_publication"
-        value={item.numero_publication}  // Utilisation correcte de `item.numero_publication`
-        onChange={(e) => handleDynamicChange(e, index, 'pays')}
-      />
-
-      <FormControl fullWidth>
-        <InputLabel>Statut</InputLabel>
-        <Select
-          value={item.id_statuts}  // Utilisation correcte de `item.id_statuts`
-          onChange={(e) => handleDynamicChange(e, index, 'pays')}
-          name="id_statuts"
-          required
-        >
-          <MenuItem value="">Sélectionner un statut</MenuItem>
-          {statuts.map((statut) => (
-            <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
-              {statut.valeur}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <Box display="flex" justifyContent="space-between">
-        <TextField
-          type="date"
-          label="Date Dépôt"
-          name="date_depot"
-          value={item.date_depot}  // Utilisation correcte de `item.date_depot`
-          onChange={(e) => handleDynamicChange(e, index, 'pays')}
-          InputLabelProps={{ shrink: true }}
-          sx={{ flex: 1, mr: 2 }}
-          required
-        />
-        <TextField
-          fullWidth
-          label="Numéro Délivrance"
-          name="numero_delivrance"
-          value={item.numero_delivrance}  // Utilisation correcte de `item.numero_delivrance`
-          onChange={(e) => handleDynamicChange(e, index, 'pays')}
-          sx={{ flex: 1, mr: 2 }}
-        />
-        <TextField
-          type="date"
-          label="Date Délivrance"
-          name="date_delivrance"
-          value={item.date_delivrance}  // Utilisation correcte de `item.date_delivrance`
-          onChange={(e) => handleDynamicChange(e, index, 'pays')}
-          InputLabelProps={{ shrink: true }}
-          sx={{ flex: 1 }}
-        />
-      </Box>
-
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={item.licence}  // Utilisation correcte de `item.licence`
-            onChange={(e) => handleDynamicChange(e, index, 'pays')}
-            name="licence"
-          />
-        }
-        label="Licence"
-      />
-
-      <Button
-        variant="contained"
-        color="error"
-        onClick={() => handleRemoveField(index, 'pays')}
-        sx={{ height: '56px' }}
-      >
-        <FaMinus />
-      </Button>
-    </Stack>
-  ))}
-
-  <Button
-    variant="contained"
-    color="primary"
-    onClick={() => handleAddField('pays')}
-    sx={{ mt: 2 }}
-  >
-    <FaPlus /> Ajouter un pays
-  </Button>
-</Card>
 
 
               {/* Inventeurs */}
@@ -477,160 +360,347 @@ const AddBrevetModal = ({ show, handleClose }) => {
                   <FaPlus /> Ajouter un titulaire
                 </Button>
               </Card>
-
+{/* 
               {/* Cabinets de Procédure et Contacts */}
               <Card sx={{ mb: 3, p: 2 }}>
-                <Typography variant="h5">Cabinets de Procédure et Contacts</Typography>
-                {formData.cabinets_procedure.map((item, index) => (
-                  <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Cabinet</InputLabel>
-                      <Select
-                        value={item.id_cabinet_procedure}
-                        onChange={(e) => {
-                          handleDynamicChange(e, index, 'cabinets_procedure');
-                          fetchContacts(e.target.value, 'procedure');
-                        }}
-                        name="id_cabinet_procedure"
-                        required
-                      >
-                        <MenuItem value="">Sélectionner un cabinet</MenuItem>
-                        {cabinets.procedure.map((cabinet) => (
-                          <MenuItem key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
-                            {cabinet.nom_cabinet}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      fullWidth
-                      label="Référence"
-                      name="reference"
-                      value={item.reference}
-                      onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                      required
-                    />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={item.dernier_intervenant}
-                          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                          name="dernier_intervenant"
-                        />
-                      }
-                      label="Dernier Intervenant"
-                    />
-                    <FormControl fullWidth>
-                      <InputLabel>Contact</InputLabel>
-                      <Select
-                        value={item.id_contact_procedure}
-                        onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                        name="id_contact_procedure"
-                      >
-                        <MenuItem value="">Sélectionner un contact</MenuItem>
-                        {contactsProcedure.map((contact) => (
-                          <MenuItem key={contact.id_contact} value={contact.id_contact}>
-                            {contact.nom} {contact.prenom}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => handleRemoveField(index, 'cabinets_procedure')}
-                      sx={{ height: '56px' }}
-                    >
-                      <FaMinus />
-                    </Button>
-                  </Stack>
-                ))}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddField('cabinets_procedure')}
-                  sx={{ mt: 2 }}
-                >
-                  <FaPlus /> Ajouter un cabinet de procédure
-                </Button>
-              </Card>
+  <Typography variant="h5">Cabinets de Procédure et Contacts</Typography>
+  {formData.cabinets_procedure.map((item, index) => (
+    <Stack direction="column" spacing={2} key={index} sx={{ mt: 2 }}>
 
-              {/* Cabinets d'Annuité et Contacts */}
-              <Card sx={{ mb: 3, p: 2 }}>
-                <Typography variant="h5">Cabinets d'Annuité et Contacts</Typography>
-                {formData.cabinets_annuite.map((item, index) => (
-                  <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Cabinet</InputLabel>
-                      <Select
-                        value={item.id_cabinet_annuite}
-                        onChange={(e) => {
-                          handleDynamicChange(e, index, 'cabinets_annuite');
-                          fetchContacts(e.target.value, 'annuite');
-                        }}
-                        name="id_cabinet_annuite"
-                        required
-                      >
-                        <MenuItem value="">Sélectionner un cabinet</MenuItem>
-                        {cabinets.annuite.map((cabinet) => (
-                          <MenuItem key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
-                            {cabinet.nom_cabinet}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      fullWidth
-                      label="Référence"
-                      name="reference"
-                      value={item.reference}
-                      onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                      required
-                    />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={item.dernier_intervenant}
-                          onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                          name="dernier_intervenant"
-                        />
-                      }
-                      label="Dernier Intervenant"
-                    />
-                    <FormControl fullWidth>
-                      <InputLabel>Contact</InputLabel>
-                      <Select
-                        value={item.id_contact_annuite}
-                        onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                        name="id_contact_annuite"
-                      >
-                        <MenuItem value="">Sélectionner un contact</MenuItem>
-                        {contactsAnnuite.map((contact) => (
-                          <MenuItem key={contact.id_contact} value={contact.id_contact}>
-                            {contact.nom} {contact.prenom}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => handleRemoveField(index, 'cabinets_annuite')}
-                      sx={{ height: '56px' }}
-                    >
-                      <FaMinus />
-                    </Button>
-                  </Stack>
-                ))}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleAddField('cabinets_annuite')}
-                  sx={{ mt: 2 }}
-                >
-                  <FaPlus /> Ajouter un cabinet d'annuité
-                </Button>
-              </Card>
+      {/* Cabinet et Référence */}
+      <Stack direction="row" spacing={2}>
+        <FormControl fullWidth>
+          <InputLabel>Cabinet</InputLabel>
+          <Select
+            value={item.id_cabinet_procedure}
+            onChange={(e) => {
+              handleDynamicChange(e, index, 'cabinets_procedure');
+              fetchContacts(e.target.value, 'procedure');
+            }}
+            name="id_cabinet_procedure"
+            required
+          >
+            <MenuItem value="">Sélectionner un cabinet</MenuItem>
+            {cabinets.procedure.map((cabinet) => (
+              <MenuItem key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
+                {cabinet.nom_cabinet}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          fullWidth
+          label="Référence"
+          name="reference"
+          value={item.reference}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+          required
+        />
+      </Stack>
+
+      {/* Dernier Intervenant et Contact */}
+      <Stack direction="row" spacing={2}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={item.dernier_intervenant}
+              onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+              name="dernier_intervenant"
+            />
+          }
+          label="Dernier Intervenant"
+        />
+
+        <FormControl fullWidth>
+          <InputLabel>Contact</InputLabel>
+          <Select
+            value={item.id_contact_procedure}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+            name="id_contact_procedure"
+          >
+            <MenuItem value="">Sélectionner un contact</MenuItem>
+            {contactsProcedure.map((contact) => (
+              <MenuItem key={contact.id_contact} value={contact.id_contact}>
+                {contact.nom} {contact.prenom}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {/* Champs supplémentaires */}
+      <Stack direction="row" spacing={2}>
+        {/* Pays et Numéro de Dépôt */}
+        <FormControl fullWidth>
+          <InputLabel>Pays</InputLabel>
+          <Select
+            value={item.id_pays}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+            name="id_pays"
+            required
+          >
+            <MenuItem value="">Sélectionner un pays</MenuItem>
+            {paysList.map((paysItem) => (
+              <MenuItem key={paysItem.id_pays} value={paysItem.id_pays}>
+                {paysItem.nom_fr_fr}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          fullWidth
+          label="Numéro de dépôt"
+          name="numero_depot"
+          value={item.numero_depot}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+          required
+        />
+      </Stack>
+
+      {/* Numéro de Publication, Statut */}
+      <Stack direction="row" spacing={2}>
+        <TextField
+          fullWidth
+          label="Numéro de publication"
+          name="numero_publication"
+          value={item.numero_publication}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+        />
+
+        <FormControl fullWidth>
+          <InputLabel>Statut</InputLabel>
+          <Select
+            value={item.id_statuts}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+            name="id_statuts"
+            required
+          >
+            <MenuItem value="">Sélectionner un statut</MenuItem>
+            {statuts.map((statut) => (
+              <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
+                {statut.valeur}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {/* Dates (Dépôt et Délivrance) */}
+      <Stack direction="row" spacing={2}>
+        <TextField
+          type="date"
+          label="Date Dépôt"
+          name="date_depot"
+          value={item.date_depot}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+          InputLabelProps={{ shrink: true }}
+          required
+        />
+
+        <TextField
+          type="date"
+          label="Date Délivrance"
+          name="date_delivrance"
+          value={item.date_delivrance}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Stack>
+
+      {/* Licence */}
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={item.licence}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+            name="licence"
+          />
+        }
+        label="Licence"
+      />
+
+      {/* Bouton Supprimer */}
+      <Button
+        variant="contained"
+        color="error"
+        onClick={() => handleRemoveField(index, 'cabinets_procedure')}
+        sx={{ height: '56px' }}
+      >
+        <FaMinus />
+      </Button>
+    </Stack>
+  ))}
+  
+  <Button
+    variant="contained"
+    color="primary"
+    onClick={() => handleAddField('cabinets_procedure')}
+    sx={{ mt: 2 }}
+  >
+    <FaPlus /> Ajouter un cabinet de procédure
+  </Button>
+</Card>
+
+<Card sx={{ mb: 3, p: 2 }}>
+  <Typography variant="h5">Cabinets d'Annuité et Contacts</Typography>
+  {formData.cabinets_annuite.map((item, index) => (
+    <Stack direction="column" spacing={2} key={index} sx={{ mt: 2 }}>
+
+      {/* Cabinet et Référence */}
+      <Stack direction="row" spacing={2}>
+        <FormControl fullWidth>
+          <InputLabel>Cabinet</InputLabel>
+          <Select
+            value={item.id_cabinet_annuite}
+            onChange={(e) => {
+              handleDynamicChange(e, index, 'cabinets_annuite');
+              fetchContacts(e.target.value, 'annuite');
+            }}
+            name="id_cabinet_annuite"
+            required
+          >
+            <MenuItem value="">Sélectionner un cabinet</MenuItem>
+            {cabinets.annuite.map((cabinet) => (
+              <MenuItem key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
+                {cabinet.nom_cabinet}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <TextField
+          fullWidth
+          label="Référence"
+          name="reference"
+          value={item.reference}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+          required
+        />
+      </Stack>
+
+      {/* Dernier Intervenant et Contact */}
+      <Stack direction="row" spacing={2}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={item.dernier_intervenant}
+              onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+              name="dernier_intervenant"
+            />
+          }
+          label="Dernier Intervenant"
+        />
+
+        <FormControl fullWidth>
+          <InputLabel>Contact</InputLabel>
+          <Select
+            value={item.id_contact_annuite}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+            name="id_contact_annuite"
+          >
+            <MenuItem value="">Sélectionner un contact</MenuItem>
+            {contactsAnnuite.map((contact) => (
+              <MenuItem key={contact.id_contact} value={contact.id_contact}>
+                {contact.nom} {contact.prenom}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {/* Champs supplémentaires */}
+      <Stack direction="row" spacing={2}>
+        <TextField
+          fullWidth
+          label="Numéro de dépôt"
+          name="numero_depot"
+          value={item.numero_depot}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+          required
+        />
+
+        <FormControl fullWidth>
+          <InputLabel>Pays</InputLabel>
+          <Select
+            value={item.id_pays}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+            name="id_pays"
+            required
+          >
+            <MenuItem value="">Sélectionner un pays</MenuItem>
+            {paysList.map((paysItem) => (
+              <MenuItem key={paysItem.id_pays} value={paysItem.id_pays}>
+                {paysItem.nom_fr_fr}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {/* Statut et Date */}
+      <Stack direction="row" spacing={2}>
+        <TextField
+          fullWidth
+          label="Numéro de publication"
+          name="numero_publication"
+          value={item.numero_publication}
+          onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+        />
+
+        <FormControl fullWidth>
+          <InputLabel>Statut</InputLabel>
+          <Select
+            value={item.id_statuts}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+            name="id_statuts"
+            required
+          >
+            <MenuItem value="">Sélectionner un statut</MenuItem>
+            {statuts.map((statut) => (
+              <MenuItem key={statut.id_statuts} value={statut.id_statuts}>
+                {statut.valeur}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {/* Licence */}
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={item.licence}
+            onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+            name="licence"
+          />
+        }
+        label="Licence"
+      />
+
+      {/* Bouton Supprimer */}
+      <Button
+        variant="contained"
+        color="error"
+        onClick={() => handleRemoveField(index, 'cabinets_annuite')}
+        sx={{ height: '56px' }}
+      >
+        <FaMinus />
+      </Button>
+    </Stack>
+  ))}
+  
+  <Button
+    variant="contained"
+    color="primary"
+    onClick={() => handleAddField('cabinets_annuite')}
+    sx={{ mt: 2 }}
+  >
+    <FaPlus /> Ajouter un cabinet d'annuité
+  </Button>
+</Card>
+
 
               {/* Commentaire et Pièces Jointes */}
               <Card sx={{ mb: 3, p: 2 }}>
@@ -724,3 +794,9 @@ const AddBrevetModal = ({ show, handleClose }) => {
 };
 
 export default AddBrevetModal;
+
+
+
+
+
+

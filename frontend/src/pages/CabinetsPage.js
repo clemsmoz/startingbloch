@@ -7,7 +7,6 @@ import { FaPlus } from 'react-icons/fa';
 import AddCabinetModal from '../components/AddCabinetModal';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
 
-
 const CabinetsPage = () => {
   const [annuiteCabinets, setAnnuiteCabinets] = useState([]);
   const [procedureCabinets, setProcedureCabinets] = useState([]);
@@ -44,16 +43,16 @@ const CabinetsPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex',  bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
-      <Container sx={{ padding: '20px',  }} maxWidth="xl">
+      <Container sx={{ padding: '20px' }} maxWidth="xl">
         {/* Logo de l'entreprise */}
         <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
         </Box>
-        
+
         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-        <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
+          <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
             Gestion des Cabinets
           </Typography>
           <Button variant="contained" color="primary" onClick={handleShowModal} startIcon={<FaPlus />}>
@@ -71,9 +70,10 @@ const CabinetsPage = () => {
             Cabinets Procédure
           </Button>
         </Box>
+
         {filter === 'all' || filter === 'annuite' ? (
           <Box sx={{ mb: 5 }}>
-            <Typography variant="h5" color="primary"fontWeight="bold" gutterBottom>
+            <Typography variant="h5" color="primary" fontWeight="bold" gutterBottom>
               Cabinets Annuité
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
@@ -100,8 +100,22 @@ const CabinetsPage = () => {
                         {cabinet.nom_cabinet}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence: {cabinet.reference}
+                        Référence: {cabinet.reference_cabinet}
                       </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Email: {cabinet.email_cabinet}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Téléphone: {cabinet.telephone_cabinet}
+                      </Typography>
+                      {/* Liste des pays */}
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: 0 }}>
+                  {(cabinet.pays || []).map((pays, index) => (
+                    <li key={index} style={{ fontSize: '0.9rem', color: '#555' }}>
+                      {pays}
+                    </li>
+                  ))}
+                </ul>
                     </Box>
                   </CardContent>
                 </Box>
@@ -109,6 +123,7 @@ const CabinetsPage = () => {
             </Box>
           </Box>
         ) : null}
+
         {filter === 'all' || filter === 'procedure' ? (
           <Box>
             <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
@@ -138,8 +153,22 @@ const CabinetsPage = () => {
                         {cabinet.nom_cabinet}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence: {cabinet.reference}
+                        Référence: {cabinet.reference_cabinet}
                       </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Email: {cabinet.email_cabinet}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Téléphone: {cabinet.telephone_cabinet}
+                      </Typography>
+                     {/* Liste des pays */}
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: 0 }}>
+                  {(cabinet.pays || []).map((pays, index) => (
+                    <li key={index} style={{ fontSize: '0.9rem', color: '#555' }}>
+                      {pays}
+                    </li>
+                  ))}
+                </ul>
                     </Box>
                   </CardContent>
                 </Box>
@@ -147,6 +176,7 @@ const CabinetsPage = () => {
             </Box>
           </Box>
         ) : null}
+
         <AddCabinetModal show={showModal} handleClose={handleCloseModal} refreshCabinets={refreshCabinets} />
       </Container>
     </Box>

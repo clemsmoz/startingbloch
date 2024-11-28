@@ -253,6 +253,7 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
                           }}
                         >
                           {cabinet.nom_cabinet}
+                          
                           <div>
                             <strong>Contacts:</strong>
                           </div>

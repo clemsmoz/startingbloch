@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Button,
@@ -9,6 +9,8 @@ import {
   MenuItem,
   Typography,
   Box,
+  Checkbox,
+  ListItemText,
 } from '@mui/material';
 import axios from 'axios';
 
@@ -17,8 +19,26 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
     type: 'annuite',
     nom: '',
     reference: '',
+    email: '',
+    telephone: '',
+    pays: [], // Nouveau champ pour stocker les pays sélectionnés
   });
   const [errorMessage, setErrorMessage] = useState('');
+  const [paysList, setPaysList] = useState([]); // Liste des pays récupérés
+
+  // Charger la liste des pays depuis l'API
+  useEffect(() => {
+    const fetchPays = async () => {
+      try {
+        const response = await axios.get('http://localhost:3100/pays');
+        setPaysList(response.data.data); // Assurez-vous que la structure des données correspond
+      } catch (error) {
+        console.error('Erreur lors de la récupération des pays:', error);
+      }
+    };
+
+    fetchPays();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,93 +48,161 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
     }));
   };
 
+  const handlePaysChange = (event) => {
+    const {
+      target: { value },
+    } = event;
+    setFormData((prevData) => ({
+      ...prevData,
+      pays: typeof value === 'string' ? value.split(',') : value, // Gestion multiple
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const url = 'http://localhost:3100/cabinet'; // URL générique pour la création d'un cabinet
-    axios.post(url, {
-      type: formData.type,
-      nom: formData.nom,
-      reference: formData.reference,
-    })
-    .then(() => {
-      refreshCabinets(); // Rafraîchir la liste des cabinets après ajout
-      handleClose(); // Fermer la modal
-    })
-    .catch((error) => {
-      console.error('There was an error adding the cabinet!', error);
-      setErrorMessage('Error: ' + error.response?.data?.error || 'Unknown error');
-    });
+    const url = 'http://localhost:3100/cabinet';
+    axios
+      .post(url, {
+        ...formData,
+      })
+      .then(() => {
+        refreshCabinets();
+        handleClose();
+      })
+      .catch((error) => {
+        console.error('There was an error adding the cabinet!', error);
+        setErrorMessage('Error: ' + error.response?.data?.error || 'Unknown error');
+      });
   };
 
   return (
     <Modal open={show} onClose={handleClose}>
-      <Box
-        sx={{
-          bgcolor: 'background.paper',
-          padding: 4,
-          borderRadius: 2,
-          boxShadow: 24,
-          maxWidth: 400,
-          mx: 'auto',
-          mt: '10%',
-        }}
-      >
-        <Typography variant="h6" color="primary" component="h2" gutterBottom>
-          Ajouter un nouveau Cabinet
-        </Typography>
-        {errorMessage && <Typography color="error">{errorMessage}</Typography>}
-        <form onSubmit={handleSubmit}>
-          <Box sx={{ mb: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Type</InputLabel>
-              <Select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                required
-              >
-                <MenuItem value="annuite">Annuité</MenuItem>
-                <MenuItem value="procedure">Procédure</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              label="Nom"
-              name="nom"
-              value={formData.nom}
-              onChange={handleChange}
-              required
-              fullWidth
-              variant="outlined"
-            />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              label="Référence"
-              name="reference"
-              value={formData.reference}
-              onChange={handleChange}
-              required
-              fullWidth
-              variant="outlined"
-            />
-          </Box>
-          <Button
-            variant="contained"
-            type="submit"
-            fullWidth
-            sx={{
-              mt: 2,
-              transition: '0.3s',
-              '&:hover': { boxShadow: 6 },
+  <Box
+    sx={{
+      bgcolor: 'background.paper',
+      padding: 4,
+      borderRadius: 2,
+      boxShadow: 24,
+      maxWidth: 600,
+      mx: 'auto',
+      mt: '10%',
+      maxHeight: '80vh', // Limite la hauteur maximale de la modal
+      overflowY: 'auto', // Permet le défilement vertical
+    }}
+  >
+    <Typography variant="h6" color="primary" component="h2" gutterBottom>
+      Ajouter un nouveau Cabinet
+    </Typography>
+    {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+    <form onSubmit={handleSubmit}>
+      <Box sx={{ mb: 2 }}>
+        <FormControl fullWidth>
+          <InputLabel>Type</InputLabel>
+          <Select name="type" value={formData.type} onChange={handleChange}>
+            <MenuItem value="annuite">Annuité</MenuItem>
+            <MenuItem value="procedure">Procédure</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          label="Nom"
+          name="nom"
+          value={formData.nom}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+        />
+      </Box>
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          label="Référence"
+          name="reference"
+          value={formData.reference}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+        />
+      </Box>
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+        />
+      </Box>
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          label="Téléphone"
+          name="telephone"
+          value={formData.telephone}
+          onChange={handleChange}
+          fullWidth
+          variant="outlined"
+        />
+      </Box>
+      <Box sx={{ mb: 2 }}>
+        <FormControl fullWidth>
+          <InputLabel>Pays</InputLabel>
+          <Select
+            name="pays"
+            multiple
+            value={formData.pays}
+            onChange={handlePaysChange}
+            renderValue={(selected) => {
+              const selectedPaysNames = paysList
+                .filter((pays) => selected.includes(pays.id_pays))
+                .map((pays) => pays.nom_fr_fr)
+                .join(', ');
+              return selectedPaysNames;
             }}
           >
-            Ajouter cabinet
-          </Button>
-        </form>
+            {paysList.map((pays) => (
+              <MenuItem key={pays.id_pays} value={pays.id_pays}>
+                <Checkbox checked={formData.pays.includes(pays.id_pays)} />
+                <ListItemText primary={pays.nom_fr_fr} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* Afficher les pays sélectionnés sous forme de liste */}
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="textSecondary">
+            <strong>Pays sélectionnés :</strong>
+          </Typography>
+          <Box sx={{ mt: 1 }}>
+            <ul>
+              {formData.pays.map((paysId) => {
+                const pays = paysList.find((p) => p.id_pays === paysId);
+                return pays ? (
+                  <li key={pays.id_pays}>{pays.nom_fr_fr}</li>
+                ) : null;
+              })}
+            </ul>
+          </Box>
+        </Box>
       </Box>
-    </Modal>
+      <Button
+        variant="contained"
+        type="submit"
+        fullWidth
+        sx={{
+          mt: 2,
+          transition: '0.3s',
+          '&:hover': { boxShadow: 6 },
+        }}
+      >
+        Ajouter cabinet
+      </Button>
+    </form>
+  </Box>
+</Modal>
+
   );
 };
 

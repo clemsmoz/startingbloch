@@ -109,40 +109,60 @@ class Brevet {
           }
         },
 
-      // Insertion des numéros de pays
+  
+
+
+     // Insertion des cabinets_procedure avec les données supplémentaires de pays
 (cb) => {
-  if (brevetData.pays && brevetData.pays.length > 0) {
-    async.each(brevetData.pays, (paysData, callback) => {
-      console.log('Processing paysData:', paysData); // Log pour vérifier les données du pays
+  if (brevetData.cabinets_procedure && brevetData.cabinets_procedure.length > 0) {
+    async.each(brevetData.cabinets_procedure, (cabinet, callback) => {
       const paysSql = 'SELECT nom_fr_fr, alpha2 FROM pays WHERE id_pays = ?';
-      db.query(paysSql, [paysData.id_pays], (err, result) => {
+      db.query(paysSql, [cabinet.id_pays], (err, result) => {
         if (err) return callback(err);
-        const { nom_fr_fr, alpha2 } = result[0];
+        
+        const { nom_fr_fr, alpha2 } = result[0] || {}; // Récupère les informations du pays
+        console.log('Pays details for cabinet procedure:', nom_fr_fr, alpha2);
 
-        console.log('Nom du pays:', nom_fr_fr); // Log pour vérifier le nom du pays
-        console.log('Code alpha2:', alpha2); // Log pour vérifier le code alpha2
-        console.log('id_statuts avant insertion:', paysData.id_statuts); // Log pour vérifier id_statuts
-
-        const insertNumeroPaysSql = `
-          INSERT INTO numero_pays (id_brevet, id_pays, numero_depot, numero_publication, nom_fr_fr, id_statuts, alpha2, date_depot, numero_delivrance, date_delivrance, licence)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const insertNumeroPaysValues = [
+        const cabinetProcedureValues = [
           brevetId,
-          paysData.id_pays || null,
-          paysData.numero_depot || null,
-          paysData.numero_publication || null,
+          cabinet.id_cabinet_procedure || null,
+          cabinet.reference || null,
+          cabinet.dernier_intervenant ? 1 : 0,
+          cabinet.id_pays || null,
+          cabinet.numero_depot || null,
+          cabinet.numero_publication || null,
           nom_fr_fr || null,
-          paysData.id_statuts ? parseInt(paysData.id_statuts) : null,
+          cabinet.id_statuts ? parseInt(cabinet.id_statuts) : null,
           alpha2 || null,
-          paysData.date_depot || null,
-          paysData.numero_delivrance || null,
-          paysData.date_delivrance || null,
-          paysData.licence ? 1 : 0,
+          cabinet.date_depot || null,
+          cabinet.numero_delivrance || null,
+          cabinet.date_delivrance || null,
+          cabinet.licence ? 1 : 0
         ];
-        console.log('Insert values for numero_pays:', insertNumeroPaysValues); // Log pour vérifier les valeurs à insérer
 
-        db.query(insertNumeroPaysSql, insertNumeroPaysValues, callback);
+        console.log('Inserting cabinets_procedure:', cabinetProcedureValues);
+
+        const insertCabinetProcedureSql = `
+          INSERT INTO brevet_cabinet (
+            id_brevet,
+            id_cabinet,
+            reference,
+            dernier_intervenant,
+            id_pays,
+            numero_depot,
+            numero_publication,
+            nom_fr_fr,
+            id_statuts,
+            alpha2,
+            date_depot,
+            numero_delivrance,
+            date_delivrance,
+            licence
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        db.query(insertCabinetProcedureSql, cabinetProcedureValues, callback);
       });
     }, cb);
   } else {
@@ -151,65 +171,64 @@ class Brevet {
 },
 
 
-        // Insertion des cabinets_procedure
-        (cb) => {
-          if (brevetData.cabinets_procedure && brevetData.cabinets_procedure.length > 0) {
-            const cabinetProcedureValues = brevetData.cabinets_procedure.map(cabinet => [
-              brevetId,
-              cabinet.id_cabinet_procedure || null,
-              cabinet.reference || null,
-              cabinet.dernier_intervenant ? 1 : 0
-            ]);
+// Insertion des cabinets_annuite avec les données supplémentaires de pays
+(cb) => {
+  if (brevetData.cabinets_annuite && brevetData.cabinets_annuite.length > 0) {
+    async.each(brevetData.cabinets_annuite, (cabinet, callback) => {
+      const paysSql = 'SELECT nom_fr_fr, alpha2 FROM pays WHERE id_pays = ?';
+      db.query(paysSql, [cabinet.id_pays], (err, result) => {
+        if (err) return callback(err);
 
-            console.log('Inserting cabinets_procedure:', cabinetProcedureValues);
+        const { nom_fr_fr, alpha2 } = result[0] || {}; // Récupère les informations du pays
+        console.log('Pays details for cabinet annuite:', nom_fr_fr, alpha2);
 
-            const insertCabinetProcedureSql = `
-              INSERT INTO brevet_cabinet (id_brevet, id_cabinet, reference, dernier_intervenant)
-              VALUES ?
-            `;
+        const cabinetAnnuiteValues = [
+          brevetId,
+          cabinet.id_cabinet_annuite || null,
+          cabinet.reference || null,
+          cabinet.dernier_intervenant ? 1 : 0,
+          cabinet.id_pays || null,
+          cabinet.numero_depot || null,
+          cabinet.numero_publication || null,
+          nom_fr_fr || null,
+          cabinet.id_statuts ? parseInt(cabinet.id_statuts) : null,
+          alpha2 || null,
+          cabinet.date_depot || null,
+          cabinet.numero_delivrance || null,
+          cabinet.date_delivrance || null,
+          cabinet.licence ? 1 : 0
+        ];
 
-            db.query(insertCabinetProcedureSql, [cabinetProcedureValues], (err, result) => {
-              if (err) {
-                console.error('Error during cabinet procedure insertion:', err);
-                return cb(err);
-              }
-              console.log('Cabinets_procedure inserted:', result);
-              cb(null);
-            });
-          } else {
-            cb(null);
-          }
-        },
+        console.log('Inserting cabinets_annuite:', cabinetAnnuiteValues);
 
-        // Insertion des cabinets_annuite
-        (cb) => {
-          if (brevetData.cabinets_annuite && brevetData.cabinets_annuite.length > 0) {
-            const cabinetAnnuiteValues = brevetData.cabinets_annuite.map(cabinet => [
-              brevetId,
-              cabinet.id_cabinet_annuite || null,
-              cabinet.reference || null,
-              cabinet.dernier_intervenant ? 1 : 0
-            ]);
+        const insertCabinetAnnuiteSql = `
+          INSERT INTO brevet_cabinet (
+            id_brevet,
+            id_cabinet,
+            reference,
+            dernier_intervenant,
+            id_pays,
+            numero_depot,
+            numero_publication,
+            nom_fr_fr,
+            id_statuts,
+            alpha2,
+            date_depot,
+            numero_delivrance,
+            date_delivrance,
+            licence
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
-            console.log('Inserting cabinets_annuite:', cabinetAnnuiteValues);
+        db.query(insertCabinetAnnuiteSql, cabinetAnnuiteValues, callback);
+      });
+    }, cb);
+  } else {
+    cb(null);
+  }
+},
 
-            const insertCabinetAnnuiteSql = `
-              INSERT INTO brevet_cabinet (id_brevet, id_cabinet, reference, dernier_intervenant)
-              VALUES ?
-            `;
-
-            db.query(insertCabinetAnnuiteSql, [cabinetAnnuiteValues], (err, result) => {
-              if (err) {
-                console.error('Error during cabinet annuite insertion:', err);
-                return cb(err);
-              }
-              console.log('Cabinets_annuite inserted:', result);
-              cb(null);
-            });
-          } else {
-            cb(null);
-          }
-        },
 
         // Insertion des pièces jointes dans la table relationnelle brevet_pieces_jointes
 (cb) => {
@@ -345,6 +364,7 @@ class Brevet {
                 id_deposant: r.id_deposant,
                 nom: r.nom
               })));
+              
             }
           );
         },
@@ -367,35 +387,11 @@ class Brevet {
           );
         },
 
-        // Récupération des numéros de pays associés avec id_statuts
-numero_pays: (cb) => {
-  db.query(
-    'SELECT id_pays, numero_depot, numero_publication, id_statuts, alpha2, date_depot, date_delivrance, numero_delivrance, licence , nom_fr_fr FROM numero_pays WHERE id_brevet = ?',
-    [id],
-    (err, results) => {
-      if (err) {
-        console.error('Error retrieving numero_pays:', err);
-        return cb(err);
-      }
-      cb(null, results.map(r => ({
-        id_pays: r.id_pays,
-        numero_depot: r.numero_depot,
-        numero_publication: r.numero_publication,
-        id_statuts: r.id_statuts,
-        alpha2: r.alpha2, // Ajout du code alpha2 à l'objet retourné
-        date_depot: r.date_depot,
-        numero_delivrance: r.numero_delivrance,
-        licence: r.licence
-      })));
-    
-    }
-  );
-},
 
         // Récupération des cabinets associés
         cabinets: (cb) => {
           db.query(
-            'SELECT id_cabinet, reference, dernier_intervenant FROM brevet_cabinet WHERE id_brevet = ?',
+            'SELECT id_cabinet, reference, dernier_intervenant, numero_depot, numero_publication, id_pays, alpha2, id_statuts, date_depot, date_delivrance, licence, nom_fr_fr FROM brevet_cabinet WHERE id_brevet = ?',
             [id],
             (err, results) => {
               if (err) {
@@ -405,7 +401,17 @@ numero_pays: (cb) => {
               cb(null, results.map(r => ({
                 id_cabinet: r.id_cabinet,
                 reference: r.reference,
-                dernier_intervenant: !!r.dernier_intervenant
+                dernier_intervenant: !!r.dernier_intervenant,
+                numero_depot: r.numero_depot,
+                numero_publication: r.numero_publication,
+                id_pays: r.id_pays,
+                alpha2: r.alpha2,
+                id_statuts: r.id_statuts,
+                date_depot: r.date_depot,
+                date_delivrance: r.date_delivrance,
+                licence: r.licence,
+                nom_fr_fr: r.nom_fr_fr
+
               })));
             }
           );
@@ -747,6 +753,22 @@ numero_pays: (cb) => {
       WHERE bc.id_brevet = ?
     `;
     db.query(query, [brevetId], callback);
+  }
+
+  static getByClientId(clientId, callback) {
+    const sql = `
+      SELECT b.*, c.nom_client 
+      FROM brevet_client bc 
+      JOIN brevet b ON bc.id_brevet = b.id_brevet
+      JOIN client c ON bc.id_client = c.id_client 
+      WHERE bc.id_client = ?
+    `;
+    db.query(sql, [clientId], (err, results) => {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, results);
+    });
   }
 }
 

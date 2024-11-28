@@ -105,14 +105,40 @@ const useAddBrevet = (handleClose) => {
 
   const handleAddField = (field) => {
     const emptyField = {
-      pays: { id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '',date_depot: '', numero_delivrance: '',date_delivrance: '', licence: false, },
+      pays: { id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '', date_depot: '', numero_delivrance: '', date_delivrance: '', licence: false },
       inventeurs: { nom: '', prenom: '', email: '', telephone: '' },
       titulaires: { nom: '', prenom: '', email: '', telephone: '', part_pi: '', executant: false, client_correspondant: false },
       deposants: { nom: '', prenom: '', email: '', telephone: '' },
-      cabinets_procedure: { id_cabinet: '', reference: '', dernier_intervenant: false },
-      cabinets_annuite: { id_cabinet: '', reference: '', dernier_intervenant: false },
+      cabinets_procedure: { 
+        id_cabinet: '', 
+        reference: '', 
+        dernier_intervenant: false,
+        // Nouveau champ ajouté
+        numero_depot: '',
+        numero_publication: '',
+        numero_delivrance:'',
+        id_statuts: '',
+        date_depot: '',
+        date_delivrance: '',
+        licence: false
+      },
+      cabinets_annuite: { 
+        id_cabinet: '', 
+        reference: '', 
+        dernier_intervenant: false,
+        // Nouveau champ ajouté
+        numero_depot: '',
+        numero_publication: '',
+        numero_delivrance:'',
+        id_statuts: '',
+        date_depot: '',
+        date_delivrance: '',
+        licence: false
+      },
       clients: { id_client: '' }
     }[field];
+    
+  
 
     setFormData(prevData => ({
       ...prevData,
