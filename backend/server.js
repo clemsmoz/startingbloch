@@ -51,30 +51,7 @@ app.post('/login', userController.authenticateUser); // Route pour la connexion
 
 
 
-
-// _____________________________________________________________ CABINET ANNUITE  ______________________________________________________________
-
-// app.get('/annuites', cabinetAnnuiteController.getAllCabinetsAnnuite); // Nouvelle route
-// app.post('/annuites', cabinetAnnuiteController.createCabinetAnnuite); // Nouvelle route pour créer un cabinet d'annuité
-
-
-
-
-
-// // _____________________________________________________________ CABINET PROCEDURE  ______________________________________________________________
-
-// app.get('/procedures', cabinetProcedureController.getAllCabinetsProcedure); // Nouvelle route
-// app.post('/procedures', cabinetProcedureController.createCabinetProcedure); // Nouvelle route pour créer un cabinet de procédure
-
-
-
-// // _____________________________________________________________ CONTACT ______________________________________________________________
-
-
-// app.post('/contacts', contactController.createContact);
-// app.get('/contacts', contactController.getAllContacts); // Mise à jour de la route pour accepter les paramètres
-// app.put('/contacts/:id', contactController.updateContact);
-// app.delete('/contacts/:id', contactController.deleteContact);
+//________________________________________________________ route cabinet + numero + pays ______________________________________________________________
 
 app.post('/cabinet', cabinetController.createCabinet);
 app.get('/cabinet', cabinetController.getAllCabinets);
@@ -96,6 +73,7 @@ app.put('/clients/:id', clientController.updateClient);
 app.delete('/clients/:id', clientController.deleteClient);
 app.get('/brevets/:brevetId/clients', clientController.getClientsByBrevetId);
 
+// __________________________________________________contact cabinet___________________________________________________________________________
  
 app.post('/contacts/cabinets', contactController.createContactForCabinet);
 app.get('/contacts/cabinets', contactController.getAllContactsFromCabinet);
@@ -103,7 +81,7 @@ app.get('/contacts/cabinets/:id', contactController.getContactsByCabinetId);
 app.put('/contacts/cabinets/:id', contactController.updateContactForCabinet);
 app.delete('/contacts/cabinets/:id', contactController.deleteContactFromCabinet);
 
-// Routes pour les contacts des clients
+//___________________________________________ Routes pour les contacts des clients____________________________________________
 app.post('/contacts/clients', contactController.createContactForClient);
 app.get('/contacts/clients', contactController.getAllContactsFromClient);
 app.get('/contacts/clients/:id_client', contactController.getContactsByClientId);
@@ -136,23 +114,6 @@ app.get('/statuts', statutsController.getAllStatuts);
 
 // _____________________________________________________________ TITULAIRE ______________________________________________________________
 
-
-// Routes pour les inventeurs
-app.get('/inventeur', inventeurController.getInventeurById);
-app.get('/inventeurs', inventeurController.getAllInventeurs);
-
-app.post('/inventeurs', inventeurController.createInventeur);
-app.put('/inventeurs/:id', inventeurController.updateInventeur);
-app.delete('/inventeurs/:id', inventeurController.deleteInventeur);
-
-// Routes pour les déposants
-app.get('/deposant', deposantController.getDeposantById);
-app.get('/deposants', deposantController.getAllDeposants);
-app.post('/deposants', deposantController.createDeposant);
-app.put('/deposants/:id', deposantController.updateDeposant);
-app.delete('/deposants/:id', deposantController.deleteDeposant);
-
-
 // Routes pour les titulaires
 app.get('/titulaire', titulaireController.getTitulaireById);
 app.get('/titulaires', titulaireController.getAllTitulaires);
@@ -160,33 +121,27 @@ app.post('/titulaires', titulaireController.createTitulaire);
 app.put('/titulaires/:id', titulaireController.updateTitulaire);
 app.delete('/titulaires/:id', titulaireController.deleteTitulaire);
 
+// ___________________________________________________Routes pour les inventeurs___________________________________________________________________
+app.get('/inventeur', inventeurController.getInventeurById);
+app.get('/inventeurs', inventeurController.getAllInventeurs);
 
-app.get('/numeros_pays', NumeroPaysController.getNumeroPaysByBrevetId);
+app.post('/inventeurs', inventeurController.createInventeur);
+app.put('/inventeurs/:id', inventeurController.updateInventeur);
+app.delete('/inventeurs/:id', inventeurController.deleteInventeur);
 
-
-// app.post('/titulaires', titulaireController.createTitulaire);
-// app.get('/titulaires', titulaireController.getAllTitulaires);
-// app.get('/titulaires/:id', titulaireController.getTitulaireById);
-// app.put('/titulaires/:id', titulaireController.updateTitulaire);
-// app.delete('/titulaires/:id', titulaireController.deleteTitulaire);
-
-// // _____________________________________________________________ DEPOSANT ______________________________________________________________
-
-// app.post('/deposants', deposantController.createDeposant);
-// app.get('/deposants', deposantController.getAllDeposants);
-// app.get('/deposants/:id', deposantController.getDeposantById);
-// app.put('/deposants/:id', deposantController.updateDeposant);
-// app.delete('/deposants/:id', deposantController.deleteDeposant);
+// ___________________________________________________________________Routes pour les déposants_____________________________________________________________________
+app.get('/deposant', deposantController.getDeposantById);
+app.get('/deposants', deposantController.getAllDeposants);
+app.post('/deposants', deposantController.createDeposant);
+app.put('/deposants/:id', deposantController.updateDeposant);
+app.delete('/deposants/:id', deposantController.deleteDeposant);
 
 
-// // _____________________________________________________________ INVENTEUR ______________________________________________________________
 
 
-// app.post('/inventeurs', inventeurController.createInventeur);
-// app.get('/inventeurs', inventeurController.getAllInventeurs);
-// app.get('/inventeurs/:id', inventeurController.getInventeurById);
-// app.put('/inventeurs/:id', inventeurController.updateInventeur);
-// app.delete('/inventeurs/:id', inventeurController.deleteInventeur);
+// app.get('/numeros_pays', NumeroPaysController.getNumeroPaysByBrevetId);
+
+
 
 
 
