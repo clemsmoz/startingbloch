@@ -1,15 +1,15 @@
 const Statut = require('../models/statutsModel');
 
 const statutsController = {
-getAllStatuts: (req, res) => {
-  Statut.getAllStatuts((err, result) => {
-    if (err) {
-      return res.status(500).send(err);
+  getAllStatuts: async (req, res) => {
+    try {
+      const results = await Statut.findAll();
+      res.status(200).json({ data: results });
+    } catch (error) {
+      console.error('Erreur récupération statuts:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des statuts' });
     }
-    res.send({ data: result });
-  });
-},
+  }
+};
 
-}
-
-module.exports =  statutsController;
+module.exports = statutsController;

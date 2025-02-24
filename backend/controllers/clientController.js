@@ -1,131 +1,73 @@
-// const Client = require('../models/clientModel');
-
-// const clientController = {
-//   createClient: (req, res) => {
-//     const clientData = req.body;
-//     Client.create(clientData, (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: err.message });
-//       }
-//       res.status(201).json({ message: 'Client created successfully', data: results });
-//     });
-//   },
-
-//   getAllClients: (req, res) => {
-//     Client.getAll((err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: err.message });
-//       }
-//       res.status(200).json({ data: results });
-//     });
-//   },
-
-//   getClientById: (req, res) => {
-//     const clientId = req.params.id;
-//     Client.getById(clientId, (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: err.message });
-//       }
-//       res.status(200).json({ data: results });
-//     });
-//   },
-
-//   updateClient: (req, res) => {
-//     const clientId = req.params.id;
-//     const clientData = req.body;
-//     Client.update(clientId, clientData, (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: err.message });
-//       }
-//       res.status(200).json({ message: 'Client updated successfully', data: results });
-//     });
-//   },
-
-//   deleteClient: (req, res) => {
-//     const clientId = req.params.id;
-//     Client.delete(clientId, (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: err.message });
-//       }
-//       res.status(200).json({ message: 'Client deleted successfully', data: results });
-//     });
-//   }
-// };
-
-// module.exports = clientController;
 const Client = require('../models/clientModel');
 
 const clientController = {
-  createClient: (req, res) => {
-    const clientData = req.body;
-    console.log("Received client data:", clientData);
-    Client.create(clientData, (err, results) => {
-      if (err) {
-        console.error("Error creating client:", err);
-        return res.status(500).json({ error: 'Error creating client' });
-      }
-      res.status(201).json({ message: 'Client created successfully', data: results });
-    });
+  createClient: async (req, res) => {
+    try {
+      console.log("Données client reçues:", req.body);
+      const result = await Client.create(req.body);
+      res.status(201).json({ message: 'Client créé avec succès', data: result });
+    } catch (error) {
+      console.error("Erreur création client:", error);
+      res.status(500).json({ error: 'Erreur lors de la création du client' });
+    }
   },
-
-  getAllClients: (req, res) => {
-    Client.getAll((err, results) => {
-      if (err) {
-        console.error("Error fetching clients:", err);
-        return res.status(500).json({ error: 'Error fetching clients' });
-      }
+  getAllClients: async (req, res) => {
+    try {
+      const results = await Client.findAll();
       res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error("Erreur récupération clients:", error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des clients' });
+    }
   },
-
-  getClientById: (req, res) => {
-    const id = req.params.id;
-    Client.getById(id, (err, results) => {
-      if (err) {
-        console.error("Error fetching client:", err);
-        return res.status(500).json({ error: 'Error fetching client' });
+  getClientById: async (req, res) => {
+    try {
+      const result = await Client.findByPk(req.params.id);
+      if (result) {
+        res.status(200).json({ data: result });
+      } else {
+        res.status(404).json({ error: 'Client non trouvé' });
       }
-      res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error("Erreur récupération client:", error);
+      res.status(500).json({ error: 'Erreur lors de la récupération du client' });
+    }
   },
-
-  updateClient: (req, res) => {
-    const id = req.params.id;
-    const clientData = req.body;
-    Client.update(id, clientData, (err, results) => {
-      if (err) {
-        console.error("Error updating client:", err);
-        return res.status(500).json({ error: 'Error updating client' });
+  updateClient: async (req, res) => {
+    try {
+      const [updated] = await Client.update(req.body, { where: { id: req.params.id } });
+      if (updated) {
+        const updatedClient = await Client.findByPk(req.params.id);
+        res.status(200).json({ message: 'Client mis à jour', data: updatedClient });
+      } else {
+        res.status(404).json({ error: 'Client non trouvé' });
       }
-      res.status(200).json({ message: 'Client updated successfully', data: results });
-    });
+    } catch (error) {
+      console.error("Erreur mise à jour client:", error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du client' });
+    }
   },
-
-    getClientsByBrevetId: (req, res) => {
-      const brevetId = req.params.brevetId;
-      
-      Client.getClientsByBrevetId(brevetId, (err, clients) => {
-        if (err) {
-          return res.status(500).json({ error: 'Erreur lors de la récupération des clients' });
-        }
-        res.status(200).json({ data: clients });
-      });
-    },
-
-
-
-
-
-
-  deleteClient: (req, res) => {
-    const id = req.params.id;
-    Client.delete(id, (err, results) => {
-      if (err) {
-        console.error("Error deleting client:", err);
-        return res.status(500).json({ error: 'Error deleting client' });
+  getClientsByBrevetId: async (req, res) => {
+    try {
+      const clients = await Client.findAll({ where: { brevetId: req.params.brevetId } });
+      res.status(200).json({ data: clients });
+    } catch (error) {
+      console.error("Erreur récupération clients par brevet ID:", error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des clients' });
+    }
+  },
+  deleteClient: async (req, res) => {
+    try {
+      const deleted = await Client.destroy({ where: { id: req.params.id } });
+      if (deleted) {
+        res.status(200).json({ message: 'Client supprimé' });
+      } else {
+        res.status(404).json({ error: 'Client non trouvé' });
       }
-      res.status(200).json({ message: 'Client deleted successfully', data: results });
-    });
+    } catch (error) {
+      console.error("Erreur suppression client:", error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du client' });
+    }
   }
 };
 

@@ -1,65 +1,66 @@
 const Deposant = require('../models/deposantModel');
 
 const deposantController = {
-createDeposant: (req, res) => {
-  const newDeposant = new Deposant(req.body);
-  Deposant.create(newDeposant, (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(201).send(result);
+  createDeposant: async (req, res) => {
+    try {
+      const result = await Deposant.create(req.body);
+      console.log('Deposant créé', result);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Erreur création déposant:', error);
+      res.status(500).json({ error: 'Erreur lors de la création du déposant' });
     }
-  });
-},
-
-getAllDeposants: (req, res) => {
-  Deposant.getAll((err, results) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(200).send(results);
+  },
+  getAllDeposants: async (req, res) => {
+    try {
+      const results = await Deposant.findAll();
+      res.status(200).json(results);
+    } catch (error) {
+      console.error('Erreur récupération déposants:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des déposants' });
     }
-  });
-},
-
-
-getDeposantById: (req, res) => {
-  const ids = req.query.id_deposants;
-
-  if (!ids) {
-    return res.status(400).send('Missing id_deposants query parameter');
+  },
+  getDeposantById: async (req, res) => {
+    try {
+      const ids = req.query.id_deposants;
+      if (!ids) {
+        return res.status(400).json({ error: 'id_deposants manquant' });
+      }
+      const deposantIds = Array.isArray(ids) ? ids : ids.split(',');
+      const results = await Deposant.findAll({ where: { id: deposantIds } });
+      res.status(200).json({ data: results });
+    } catch (error) {
+      console.error('Erreur récupération déposant par ID:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération du déposant' });
+    }
+  },
+  updateDeposant: async (req, res) => {
+    try {
+      const [updated] = await Deposant.update(req.body, { where: { id: req.params.id } });
+      if (updated) {
+        const updatedDeposant = await Deposant.findByPk(req.params.id);
+        res.status(200).json(updatedDeposant);
+      } else {
+        res.status(404).json({ error: 'Deposant non trouvé' });
+      }
+    } catch (error) {
+      console.error('Erreur mise à jour déposant:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du déposant' });
+    }
+  },
+  deleteDeposant: async (req, res) => {
+    try {
+      const deleted = await Deposant.destroy({ where: { id: req.params.id } });
+      if (deleted) {
+        res.status(200).json({ message: 'Deposant supprimé' });
+      } else {
+        res.status(404).json({ error: 'Deposant non trouvé' });
+      }
+    } catch (error) {
+      console.error('Erreur suppression déposant:', error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du déposant' });
+    }
   }
-
-  const deposantIds = Array.isArray(ids) ? ids : ids.split(',');
-  Deposant.getByIds(deposantIds, (err, results) => {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send({ data: results });
-  });
-},
-
-updateDeposant:(req, res) => {
-  const updatedDeposant = new Deposant(req.body);
-  Deposant.update(req.params.id, updatedDeposant, (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(200).send(result);
-    }
-  });
-},
-
-deleteDeposant: (req, res) => {
-  Deposant.delete(req.params.id, (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(200).send(result);
-    }
-  });
-},
-
-}
+};
 
 module.exports = deposantController;

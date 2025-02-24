@@ -74,6 +74,14 @@ class User {
       }
     });
   }
+
+  static findByEmail(email, callback) {
+    const query = 'SELECT * FROM users WHERE email_user = ?';
+    db.query(query, [email], (err, results) => {
+      if (err) return callback(err);
+      callback(null, results[0]);
+    });
+  }
 }
 
 module.exports = User;

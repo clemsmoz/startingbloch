@@ -1,133 +1,117 @@
 const Contact = require('../models/contactModel');
 
 const contactController = {
-  createContactForCabinet: (req, res) => {
-    const contactData = req.body;
-    console.log("Creating contact for cabinet with data:", contactData);
-    Contact.createForCabinet(contactData, (err, results) => {
-      if (err) {
-        console.error("Error creating contact:", err);
-        return res.status(500).json({ error: 'Error creating contact' });
-      }
-      console.log("Contact created successfully:", results);
-      res.status(201).json({ message: 'Contact created successfully', data: results });
-    });
+  createContactForCabinet: async (req, res) => {
+    try {
+      const result = await Contact.create({ ...req.body, type: 'cabinet' });
+      console.log('Contact pour cabinet créé', result);
+      res.status(201).json({ message: 'Contact créé avec succès', data: result });
+    } catch (error) {
+      console.error('Erreur création contact cabinet:', error);
+      res.status(500).json({ error: 'Erreur lors de la création du contact pour cabinet' });
+    }
   },
-
-  getAllContactsFromCabinet: (req, res) => {
-    Contact.getAllFromCabinet((err, results) => {
-      if (err) {
-        console.error("Error fetching contacts from cabinet:", err);
-        return res.status(500).json({ error: 'Error fetching contacts from cabinet' });
-      }
+  getAllContactsFromCabinet: async (req, res) => {
+    try {
+      const results = await Contact.findAll({ where: { type: 'cabinet' } });
       res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error('Erreur récupération contacts cabinet:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour cabinet' });
+    }
   },
-
-  getContactsByCabinetId: (req, res) => {
-    const idCabinet = req.params.id;
-    console.log("Fetching contacts for cabinet with ID:", idCabinet);
-
-    Contact.getByCabinetId(idCabinet, (err, results) => {
-      if (err) {
-        console.error("Error fetching contacts:", err);
-        return res.status(500).json({ error: 'Error fetching contacts' });
-      }
-      console.log("Contacts fetched successfully:", results);
+  getContactsByCabinetId: async (req, res) => {
+    try {
+      const idCabinet = req.params.id;
+      const results = await Contact.findAll({ where: { type: 'cabinet', cabinetId: idCabinet } });
       res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error('Erreur récupération contacts cabinet par ID:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour cabinet' });
+    }
   },
-
-  updateContactForCabinet: (req, res) => {
-    const id = req.params.id;
-    const contactData = req.body;
-    console.log("Updating contact with ID:", id, "with data:", contactData);
-    Contact.updateForCabinet(id, contactData, (err, results) => {
-      if (err) {
-        console.error("Error updating contact:", err);
-        return res.status(500).json({ error: 'Error updating contact' });
+  updateContactForCabinet: async (req, res) => {
+    try {
+      const [updated] = await Contact.update(req.body, { where: { id: req.params.id, type: 'cabinet' } });
+      if (updated) {
+        const updatedContact = await Contact.findByPk(req.params.id);
+        res.status(200).json({ message: 'Contact mis à jour', data: updatedContact });
+      } else {
+        res.status(404).json({ error: 'Contact non trouvé' });
       }
-      console.log("Contact updated successfully:", results);
-      res.status(200).json({ message: 'Contact updated successfully', data: results });
-    });
+    } catch (error) {
+      console.error('Erreur mise à jour contact cabinet:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du contact pour cabinet' });
+    }
   },
-
-  deleteContactFromCabinet: (req, res) => {
-    const id = req.params.id;
-    console.log("Deleting contact with ID:", id);
-    Contact.deleteFromCabinet(id, (err, results) => {
-      if (err) {
-        console.error("Error deleting contact:", err);
-        return res.status(500).json({ error: 'Error deleting contact' });
+  deleteContactFromCabinet: async (req, res) => {
+    try {
+      const deleted = await Contact.destroy({ where: { id: req.params.id, type: 'cabinet' } });
+      if (deleted) {
+        res.status(200).json({ message: 'Contact supprimé' });
+      } else {
+        res.status(404).json({ error: 'Contact non trouvé' });
       }
-      console.log("Contact deleted successfully:", results);
-      res.status(200).json({ message: 'Contact deleted successfully', data: results });
-    });
+    } catch (error) {
+      console.error('Erreur suppression contact cabinet:', error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du contact pour cabinet' });
+    }
   },
-
-  // Méthodes similaires pour les clients avec des logs ajoutés
-  createContactForClient: (req, res) => {
-    const contactData = req.body;
-    console.log("Creating contact for client with data:", contactData);
-    Contact.createForClient(contactData, (err, results) => {
-      if (err) {
-        console.error("Error creating contact:", err);
-        return res.status(500).json({ error: 'Error creating contact' });
-      }
-      console.log("Contact created successfully:", results);
-      res.status(201).json({ message: 'Contact created successfully', data: results });
-    });
+  createContactForClient: async (req, res) => {
+    try {
+      const result = await Contact.create({ ...req.body, type: 'client' });
+      console.log('Contact pour client créé', result);
+      res.status(201).json({ message: 'Contact créé avec succès', data: result });
+    } catch (error) {
+      console.error('Erreur création contact client:', error);
+      res.status(500).json({ error: 'Erreur lors de la création du contact pour client' });
+    }
   },
-  getAllContactsFromClient: (req, res) => {
-    Contact.getAllFromClient((err, results) => {
-      if (err) {
-        console.error("Error fetching contacts from client:", err);
-        return res.status(500).json({ error: 'Error fetching contacts from client' });
-      }
+  getAllContactsFromClient: async (req, res) => {
+    try {
+      const results = await Contact.findAll({ where: { type: 'client' } });
       res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error('Erreur récupération contacts client:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour client' });
+    }
   },
-  
-  getContactsByClientId: (req, res) => {
-    const idClient = req.params.id_client;
-    console.log("Fetching contacts for client with ID:", idClient);
-  
-    Contact.getByClientId(idClient, (err, results) => {
-      if (err) {
-        console.error("Error fetching contacts:", err);
-        return res.status(500).json({ error: 'Error fetching contacts' });
-      }
-      console.log("Contacts fetched successfully:", results);
+  getContactsByClientId: async (req, res) => {
+    try {
+      const idClient = req.params.id_client;
+      const results = await Contact.findAll({ where: { type: 'client', clientId: idClient } });
       res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error('Erreur récupération contacts client par ID:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour client' });
+    }
   },
-  
-
-  updateContactForClient: (req, res) => {
-    const id = req.params.id;
-    const contactData = req.body;
-    console.log("Updating contact for client with ID:", id, "with data:", contactData);
-    Contact.updateForClient(id, contactData, (err, results) => {
-      if (err) {
-        console.error("Error updating contact:", err);
-        return res.status(500).json({ error: 'Error updating contact' });
+  updateContactForClient: async (req, res) => {
+    try {
+      const [updated] = await Contact.update(req.body, { where: { id: req.params.id, type: 'client' } });
+      if (updated) {
+        const updatedContact = await Contact.findByPk(req.params.id);
+        res.status(200).json({ message: 'Contact mis à jour', data: updatedContact });
+      } else {
+        res.status(404).json({ error: 'Contact non trouvé' });
       }
-      console.log("Contact updated successfully:", results);
-      res.status(200).json({ message: 'Contact updated successfully', data: results });
-    });
+    } catch (error) {
+      console.error('Erreur mise à jour contact client:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du contact pour client' });
+    }
   },
-
-  deleteContactFromClient: (req, res) => {
-    const id = req.params.id;
-    console.log("Deleting contact from client with ID:", id);
-    Contact.deleteFromClient(id, (err, results) => {
-      if (err) {
-        console.error("Error deleting contact:", err);
-        return res.status(500).json({ error: 'Error deleting contact' });
+  deleteContactFromClient: async (req, res) => {
+    try {
+      const deleted = await Contact.destroy({ where: { id: req.params.id, type: 'client' } });
+      if (deleted) {
+        res.status(200).json({ message: 'Contact supprimé' });
+      } else {
+        res.status(404).json({ error: 'Contact non trouvé' });
       }
-      console.log("Contact deleted successfully:", results);
-      res.status(200).json({ message: 'Contact deleted successfully', data: results });
-    });
+    } catch (error) {
+      console.error('Erreur suppression contact client:', error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du contact pour client' });
+    }
   }
 };
 

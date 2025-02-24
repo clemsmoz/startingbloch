@@ -38,8 +38,8 @@ const userController = {
     const { email_user, password } = req.body;
     console.log('Authenticating user with email:', email_user);
 
-    // Utilise la méthode actuelle `authenticate` pour récupérer l'utilisateur par email
-    User.authenticate(email_user, (err, user) => {
+    // Utilise la méthode actuelle `findByEmail` pour récupérer l'utilisateur par email
+    User.findByEmail(email_user, (err, user) => {
       if (err) {
         console.error('Error fetching user:', err);
         return res.status(500).json({ error: 'Internal server error' });

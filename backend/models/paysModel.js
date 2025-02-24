@@ -1,16 +1,11 @@
-const db = require('../config/dbconfig');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/dbconfig');
 
-const Pays = {
-  getAll: (callback) => {
-    const sql = 'SELECT * FROM pays';
-    db.query(sql, (err, results) => {
-      if (err) {
-        console.error('Error fetching pays:', err);
-        return callback(err, null);
-      }
-      callback(null, results);
-    });
-  },
-};
+const Pays = sequelize.define('Pays', {
+  // Définir les colonnes de la table pays
+}, {
+  tableName: 'pays',
+  timestamps: false
+});
 
 module.exports = Pays;

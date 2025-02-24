@@ -1,110 +1,29 @@
-// const Brevet = require('../models/brevetModel');
-
-// const brevetController = { 
-//   createBrevet: (req, res) => {
-//     const brevetData = req.body;
-//     console.log("Received brevet data:", brevetData);
-//     Brevet.create(brevetData, (err, results) => {
-//       if (err) {
-//         console.error("Error creating brevet:", err);
-//         return res.status(500).json({ error: 'Error creating brevet' });
-//       }
-//       res.status(201).json({ message: 'Brevet created successfully', data: results });
-//     });
-//   },
-
-//   getAllBrevets: (req, res) => {
-//     Brevet.getAll((err, results) => {
-//       if (err) {
-//         console.error("Error fetching brevets:", err);
-//         return res.status(500).json({ error: 'Error fetching brevets' });
-//       }
-//       res.status(200).json({ data: results });
-//     });
-//   },
-
-//   getBrevetById: (req, res) => {
-//     const id = req.params.id;
-//     Brevet.getById(id, (err, results) => {
-//       if (err) {
-//         console.error("Error fetching brevet:", err);
-//         return res.status(500).json({ error: 'Error fetching brevet' });
-//       }
-//       res.status(200).json({ data: results });
-//     });
-//   },
-
-  
-//   getByClientId: (req, res) => {
-//     const clientId = req.params.id; // Utilisez req.params.id pour obtenir l'id du client depuis l'URL
-//     Brevet.getByClientId(clientId, (err, results) => {
-//       if (err) {
-//         console.error("Error fetching brevet:", err);
-//         return res.status(500).json({ error: 'Error fetching brevet' });
-//       }
-//       res.status(200).json(results);
-//     });
-// },
-
-
-
-//   updateBrevet: (req, res) => {
-//     const id = req.params.id;
-//     const brevetData = req.body;
-//     Brevet.update(id, brevetData, (err, results) => {
-//       if (err) {
-//         console.error("Error updating brevet:", err);
-//         return res.status(500).json({ error: 'Error updating brevet' });
-//       }
-//       res.status(200).json({ message: 'Brevet updated successfully', data: results });
-//     });
-//   },
-
-//   deleteBrevet: (req, res) => {
-//     const id = req.params.id;
-//     Brevet.delete(id, (err, results) => {
-//       if (err) {
-//         console.error("Error deleting brevet:", err);
-//         return res.status(500).json({ error: 'Error deleting brevet' });
-//       }
-//       res.status(200).json({ message: 'Brevet deleted successfully', data: results });
-//     });
-//   }
-// };
-
-// module.exports = brevetController;
 const Brevet = require('../models/brevetModel');
 
 const brevetController = {
-  createBrevet: (req, res) => {
-    const brevetData = req.body;
-    console.log("Received brevet data:", brevetData);
-
-    // Gestion des pièces jointes
-    if (req.files) {
-        brevetData.pieces_jointes = [];
-
-        // Parcourir toutes les clés de `req.files` pour extraire les fichiers
-        Object.keys(req.files).forEach((key) => {
-            const file = req.files[key];
-            brevetData.pieces_jointes.push({
-                nom_fichier: file.name,
-                type_fichier: file.mimetype,
-                donnees: file.data
-            });
-            console.log("Piece jointe received:", file.name);
-        });
-
-        if (brevetData.pieces_jointes.length === 0) {
-            console.log("No valid piece jointe found in the request");
-        }
-    } else {
-        brevetData.pieces_jointes = [];
-        console.log("No piece jointe received");
-    }
-
-    // Parsing des champs complexes
+  createBrevet: async (req, res) => {
     try {
+      const brevetData = { ...req.body };
+      
+      // Traitement des pièces jointes
+      if (req.files) {
+        brevetData.pieces_jointes = [];
+        Object.keys(req.files).forEach(key => {
+          const file = req.files[key];
+          brevetData.pieces_jointes.push({
+            nom_fichier: file.name,
+            type_fichier: file.mimetype,
+            donnees: file.data
+          });
+          console.log("Pièce jointe reçue :", file.name);
+        });
+      } else {
+        brevetData.pieces_jointes = [];
+        console.log("Aucune pièce jointe reçue");
+      }
+
+      // Parsing des champs complexes
+      try {
         brevetData.clients = JSON.parse(brevetData.clients || '[]');
         brevetData.inventeurs = JSON.parse(brevetData.inventeurs || '[]');
         brevetData.titulaires = JSON.parse(brevetData.titulaires || '[]');
@@ -112,120 +31,97 @@ const brevetController = {
         brevetData.pays = JSON.parse(brevetData.pays || '[]');
         brevetData.cabinets_procedure = JSON.parse(brevetData.cabinets_procedure || '[]');
         brevetData.cabinets_annuite = JSON.parse(brevetData.cabinets_annuite || '[]');
+      } catch (parseError) {
+        console.error("Erreur de parsing JSON:", parseError);
+        return res.status(400).json({ error: 'JSON invalide dans le corps de la requête' });
+      }
+
+      const result = await Brevet.create(brevetData);
+      console.log('Brevet créé avec succès', result);
+      res.status(201).json({ message: 'Brevet créé avec succès', data: result });
     } catch (error) {
-        console.error("Error parsing JSON fields:", error);
-        return res.status(400).json({ error: 'Invalid JSON in request body' });
+      console.error("Erreur création brevet:", error);
+      res.status(500).json({ error: 'Erreur lors de la création du brevet' });
     }
-
-    // Appeler la méthode create du modèle Brevet
-    Brevet.create(brevetData, (err, results) => {
-        if (err) {
-            console.error("Error creating brevet:", err);
-            return res.status(500).json({ error: 'Error creating brevet' });
-        }
-        res.status(201).json({ message: 'Brevet created successfully', data: results });
-    });
-},
-
-
-
-
-  getAllBrevets: (req, res) => {
-    Brevet.getAll((err, results) => {
-      if (err) {
-        console.error("Error fetching brevets:", err);
-        return res.status(500).json({ error: 'Error fetching brevets' });
-      }
-      res.status(200).json({ data: results });
-    });
   },
-
-  getBrevetById: (req, res) => {
-    const id = req.params.id;
-    Brevet.getById(id, (err, results) => {
-      if (err) {
-        console.error("Error fetching brevet:", err);
-        return res.status(500).json({ error: 'Error fetching brevet' });
-      }
+  getAllBrevets: async (req, res) => {
+    try {
+      const results = await Brevet.findAll();
       res.status(200).json({ data: results });
-    });
+    } catch (error) {
+      console.error('Erreur récupération brevets:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des brevets' });
+    }
   },
-
- // controllers/brevetController.js
- getPiecesJointesByBrevetId: (req, res) => {
-  const brevetId = req.params.id;
-
-  Brevet.getById(brevetId, (err, brevet) => {
-    if (err) {
-      console.error('Erreur lors de la récupération du brevet:', err);
-      return res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
-    }
-
-    if (!brevet) {
-      return res.status(404).json({ message: 'Brevet non trouvé' });
-    }
-
-    // Ici, vous accédez directement aux pièces jointes de l'objet brevet
-    const fichiers = brevet.pieces_jointes || [];
-
-    if (fichiers.length === 0) {
-      return res.status(404).json({ message: 'Aucune pièce jointe trouvée pour ce brevet' });
-    }
-
-    // Convertir les données des fichiers en base64
-    const fichiersBase64 = fichiers.map(result => ({
-      nom_fichier: result.nom_fichier,
-      type_fichier: result.type_fichier,
-      donnees: result.donnees ? result.donnees.toString('base64') : null // Assurez-vous que donnees est un Buffer
-    }));
-
-    res.status(200).json({ data: fichiersBase64 });
-  });
-},
-
-
-
-
-
-
-
-
-  getByClientId: (req, res) => {
-    const clientId = req.params.id; // Utilisez req.params.id pour obtenir l'id du client depuis l'URL
-    Brevet.getByClientId(clientId, (err, results) => {
-      if (err) {
-        console.error("Error fetching brevet:", err);
-        return res.status(500).json({ error: 'Error fetching brevet' });
+  getBrevetById: async (req, res) => {
+    try {
+      const result = await Brevet.findByPk(req.params.id);
+      if (result) {
+        res.status(200).json({ data: result });
+      } else {
+        res.status(404).json({ error: 'Brevet non trouvé' });
       }
+    } catch (error) {
+      console.error('Erreur récupération brevet:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
+    }
+  },
+  getPiecesJointesByBrevetId: async (req, res) => {
+    try {
+      const brevet = await Brevet.findByPk(req.params.id);
+      if (!brevet) {
+        return res.status(404).json({ message: 'Brevet non trouvé' });
+      }
+      const fichiers = brevet.pieces_jointes || [];
+      if (!fichiers.length) {
+        return res.status(404).json({ message: 'Aucune pièce jointe trouvée pour ce brevet' });
+      }
+      const fichiersBase64 = fichiers.map(result => ({
+        nom_fichier: result.nom_fichier,
+        type_fichier: result.type_fichier,
+        donnees: result.donnees ? result.donnees.toString('base64') : null
+      }));
+      res.status(200).json({ data: fichiersBase64 });
+    } catch (error) {
+      console.error('Erreur récupération pièces jointes:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des pièces jointes' });
+    }
+  },
+  getByClientId: async (req, res) => {
+    try {
+      const results = await Brevet.findAll({ where: { clientId: req.params.id } });
       res.status(200).json(results);
-    });
+    } catch (error) {
+      console.error('Erreur récupération brevets par client:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des brevets par client' });
+    }
   },
-
-  updateBrevet: (req, res) => {
-    const id = req.params.id;
-    const brevetData = req.body;
-    Brevet.update(id, brevetData, (err, results) => {
-      if (err) {
-        console.error("Error updating brevet:", err);
-        return res.status(500).json({ error: 'Error updating brevet' });
+  updateBrevet: async (req, res) => {
+    try {
+      const result = await Brevet.update(req.body, { where: { id: req.params.id } });
+      if (result[0] === 0) {
+        res.status(404).json({ error: 'Brevet non trouvé' });
+      } else {
+        res.status(200).json({ message: 'Brevet mis à jour avec succès' });
       }
-      res.status(200).json({ message: 'Brevet updated successfully', data: results });
-    });
+    } catch (error) {
+      console.error('Erreur mise à jour brevet:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour du brevet' });
+    }
   },
-
-  deleteBrevet: (req, res) => {
-    const id = req.params.id;
-    Brevet.delete(id, (err, results) => {
-      if (err) {
-        console.error("Error deleting brevet:", err);
-        return res.status(500).json({ error: 'Error deleting brevet' });
+  deleteBrevet: async (req, res) => {
+    try {
+      const result = await Brevet.destroy({ where: { id: req.params.id } });
+      if (result === 0) {
+        res.status(404).json({ error: 'Brevet non trouvé' });
+      } else {
+        res.status(200).json({ message: 'Brevet supprimé avec succès' });
       }
-      res.status(200).json({ message: 'Brevet deleted successfully', data: results });
-    });
-  },
-  
-
-  
+    } catch (error) {
+      console.error('Erreur suppression brevet:', error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du brevet' });
+    }
+  }
 };
 
 module.exports = brevetController;

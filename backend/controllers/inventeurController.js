@@ -1,81 +1,66 @@
 const Inventeur = require('../models/inventeurModel');
 
-const inventeurController = { 
-createInventeur: (req, res) => {
-  const newInventeur = new Inventeur(req.body);
-  Inventeur.create(newInventeur, (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(201).send(result);
+const inventeurController = {
+  createInventeur: async (req, res) => {
+    try {
+      const result = await Inventeur.create(req.body);
+      console.log('Inventeur créé', result);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Erreur création inventeur:', error);
+      res.status(500).json({ error: 'Erreur lors de la création de l\'inventeur' });
     }
-  });
-}, 
-
-getAllInventeurs: (req, res) => {
-  Inventeur.getAll((err, results) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(200).send(results);
+  },
+  getAllInventeurs: async (req, res) => {
+    try {
+      const results = await Inventeur.findAll();
+      res.status(200).json(results);
+    } catch (error) {
+      console.error('Erreur récupération inventeurs:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des inventeurs' });
     }
-  });
-},
-
-
-
-updateInventeur: (req, res) => {
-  const updatedInventeur = new Inventeur(req.body);
-  Inventeur.update(req.params.id, updatedInventeur, (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(200).send(result);
+  },
+  getInventeurById: async (req, res) => {
+    try {
+      let idInventeurs = req.query.id_inventeurs;
+      if (!idInventeurs || (Array.isArray(idInventeurs) && idInventeurs.length === 0)) {
+        return res.status(400).json({ error: 'Aucun ID d\'inventeur fourni' });
+      }
+      idInventeurs = Array.isArray(idInventeurs) ? idInventeurs.map(Number) : [parseInt(idInventeurs, 10)];
+      const results = await Inventeur.findAll({ where: { id: idInventeurs } });
+      res.status(200).json({ data: results });
+    } catch (error) {
+      console.error('Erreur récupération inventeur par ID:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des inventeurs' });
     }
-  });
-},
-
-deleteInventeur: (req, res) => {
-  Inventeur.delete(req.params.id, (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(200).send(result);
+  },
+  updateInventeur: async (req, res) => {
+    try {
+      const [updated] = await Inventeur.update(req.body, { where: { id: req.params.id } });
+      if (updated) {
+        const updatedInventeur = await Inventeur.findByPk(req.params.id);
+        res.status(200).json(updatedInventeur);
+      } else {
+        res.status(404).json({ error: 'Inventeur non trouvé' });
+      }
+    } catch (error) {
+      console.error('Erreur mise à jour inventeur:', error);
+      res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'inventeur' });
     }
-  });
-},
-
-getInventeurById: (req, res) => {
-  // Vérifier si `req.query.id_inventeurs` est un tableau
-  let idInventeurs = req.query.id_inventeurs;
-
-  if (!Array.isArray(idInventeurs)) {
-    // Si c'est un seul identifiant, le transformer en tableau
-    idInventeurs = [idInventeurs];
+  },
+  deleteInventeur: async (req, res) => {
+    try {
+      const deleted = await Inventeur.destroy({ where: { id: req.params.id } });
+      if (deleted) {
+        res.status(200).json({ message: 'Inventeur supprimé' });
+      } else {
+        res.status(404).json({ error: 'Inventeur non trouvé' });
+      }
+    } catch (error) {
+      console.error('Erreur suppression inventeur:', error);
+      res.status(500).json({ error: 'Erreur lors de la suppression de l\'inventeur' });
+    }
   }
-
-  // Vérifier si le tableau est non vide
-  if (!idInventeurs.length) {
-    return res.status(400).json({ error: 'No inventeurs IDs provided' });
-  }
-
-  // Convertir les identifiants en entiers
-  idInventeurs = idInventeurs.map(id => parseInt(id, 10));
-
-  // Récupérer les inventeurs en fonction des identifiants
-  Inventeur.getByIds(idInventeurs, (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error fetching inventeurs' });
-    }
-    return res.status(200).json({ data: results });
-  });
-},
-
-
-
-
-}
-
-
+};
 
 module.exports = inventeurController;

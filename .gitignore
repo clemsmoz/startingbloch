@@ -8,11 +8,15 @@ backend/node_modules/
 /.pnp
 .pnp.js
 
+
 # testing
 /coverage
 
 # production
-/build
+backend/build
+frontend/build
+# Ignorer le dossier dist dans le backend
+backend/dist/
 
 # misc
 .DS_Store

@@ -1,15 +1,11 @@
-const db = require('../config/dbconfig');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/dbconfig');
 
-const Statuts = {
-  getAllStatuts: (callback) => {
-    const sql = 'SELECT * FROM statuts';
-    db.query(sql, (err, results) => {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, results);
-    });
-  }
-};
+const Statuts = sequelize.define('Statuts', {
+  // Définir les colonnes de la table statuts
+}, {
+  tableName: 'statuts',
+  timestamps: false
+});
 
 module.exports = Statuts;
