@@ -1,4 +1,4 @@
-const Deposant = require('../models/Deposant');
+const { Deposant } = require('../models');
 
 const deposantController = {
   createDeposant: async (req, res) => {

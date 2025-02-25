@@ -1,4 +1,4 @@
-const Contact = require('../models/Contact');
+const { Contact } = require('../models');
 
 const contactController = {
   createContactForCabinet: async (req, res) => {

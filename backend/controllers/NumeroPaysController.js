@@ -1,5 +1,5 @@
 // controllers/NumeroPaysController.js
-const NumeroPays = require('../models/Numero');
+const { NumeroPays } = require('../models');
 
 exports.getNumeroPaysByBrevetId = async (req, res) => {
   try {

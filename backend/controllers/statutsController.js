@@ -1,4 +1,4 @@
-const Statut = require('../models/Statuts');
+const { Statut } = require('../models');
 
 const statutsController = {
   getAllStatuts: async (req, res) => {

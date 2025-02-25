@@ -1,4 +1,4 @@
-const Pays = require('../models/Pays');
+const { Pays } = require('../models');
 
 const paysController = {
   getAllPays: async (req, res) => {
@@ -13,4 +13,3 @@ const paysController = {
 };
 
 module.exports = paysController;
-

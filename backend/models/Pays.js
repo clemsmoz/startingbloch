@@ -7,7 +7,7 @@ const Pays = sequelize.define('Pays', {
     autoIncrement: true
   },
   code: {
-    type: DataTypes.INTEGER.UNSIGNED,
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
   alpha2: {
@@ -17,6 +17,7 @@ const Pays = sequelize.define('Pays', {
   alpha3: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true
   },
   nom_en_gb: {
     type: DataTypes.STRING,
