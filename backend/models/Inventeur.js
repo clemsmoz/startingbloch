@@ -1,26 +1,27 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/dbconfig');
+module.exports = (sequelize, DataTypes) => {
+
 
 const Inventeur = sequelize.define('Inventeur', {
   nom_inventeur: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true,
   },
   prenom_inventeur: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true,
   },
   email_inventeur: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true,
   },
   telephone_inventeur: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true,
   }
 }, {
   tableName: 'inventeurs',
   timestamps: false
 });
 
-module.exports = Inventeur;
+return Inventeur;
+};

@@ -24,6 +24,7 @@
     "portfinder": "^1.0.32",
     "promise": "^8.3.0",
     "qs": "^6.13.0",
+    "sequelize": "^6.37.5",
     "sqlite3": "^5.0.2"
   },
   "devDependencies": {
@@ -37,7 +38,7 @@
     "productName": "startingbloch",
     "files": [
       "server.js",
-      "config.js",
+      "db.js",
       "controllers/**/*",
       "models/**/*",
       "routes/**/*",

@@ -26,12 +26,6 @@ const App = () => {
         <Route path="/cabinets" element={<CabinetsPage />} /> {/* Nouvelle route */}
         <Route path="/clients" element={<ClientsPage />} /> {/* Nouvelle route */}
         <Route path="/brevets/client/:clientId" element={<BrevetClientPage />} />
-
-
-
-
-
-
       </Routes>
     </Router>
   );

@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/dbconfig');
+module.exports = (sequelize, DataTypes) => {
+
 
 const Titulaire = sequelize.define('Titulaire', {
   nom_titulaire: {
@@ -23,4 +23,6 @@ const Titulaire = sequelize.define('Titulaire', {
   timestamps: false
 });
 
-module.exports = Titulaire;
+return Titulaire;
+
+};

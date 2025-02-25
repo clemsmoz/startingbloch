@@ -1,5 +1,5 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/dbconfig');
+module.exports = (sequelize, DataTypes) => {
+
 
 const NumeroPays = sequelize.define('NumeroPays', {
   // Définir les colonnes de la table numero_pays
@@ -8,4 +8,5 @@ const NumeroPays = sequelize.define('NumeroPays', {
   timestamps: false
 });
 
-module.exports = NumeroPays;
+return NumeroPays;
+};
