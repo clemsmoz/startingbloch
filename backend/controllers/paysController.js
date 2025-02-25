@@ -1,4 +1,4 @@
-const Pays = require('../models/paysModel');
+const Pays = require('../models/Pays');
 
 const paysController = {
   getAllPays: async (req, res) => {

@@ -1,4 +1,4 @@
-const Inventeur = require('../models/inventeurModel');
+const Inventeur = require('../models/Inventeur');
 
 const inventeurController = {
   createInventeur: async (req, res) => {

@@ -1,4 +1,4 @@
-const Titulaire = require('../models/titulaireModel');
+const Titulaire = require('../models/Titulaire');
 
 const titulaireController = {
   createTitulaire: async (req, res) => {

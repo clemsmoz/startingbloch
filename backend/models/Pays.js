@@ -7,24 +7,23 @@ const Pays = sequelize.define('Pays', {
     autoIncrement: true
   },
   code: {
-    type: DataTypes.INTEGER(3),
+    type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
   },
   alpha2: {
-    type: DataTypes.STRING(2),
+    type: DataTypes.STRING,
     allowNull: false,
   },
   alpha3: {
-    type: DataTypes.STRING(3),
+    type: DataTypes.STRING,
     allowNull: false,
-    unique: true
   },
   nom_en_gb: {
-    type: DataTypes.STRING(45),
+    type: DataTypes.STRING,
     allowNull: false
   },
   nom_fr_fr: {
-    type: DataTypes.STRING(45),
+    type: DataTypes.STRING,
     allowNull: false
   }
 }, {

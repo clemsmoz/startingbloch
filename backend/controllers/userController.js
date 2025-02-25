@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const User = require('../models/userModel');
+const User = require('../models/User');
 
 const userController = {
   createUser: (req, res) => {

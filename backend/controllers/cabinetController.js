@@ -1,4 +1,4 @@
-const Cabinet = require('../models/cabinetModel');
+const Cabinet = require('../models/Cabinet');
 
 const cabinetController = {
   createCabinet: async (req, res) => {

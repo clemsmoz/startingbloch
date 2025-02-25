@@ -1,4 +1,4 @@
-const Brevet = require('../models/brevetModel');
+const Brevet = require('../models/Brevet');
 
 const brevetController = {
   createBrevet: async (req, res) => {
