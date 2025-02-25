@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 
 
 const Contact = sequelize.define('Contact', {
+  
   nom_contact: {
     type: DataTypes.STRING,
     allowNull: true,

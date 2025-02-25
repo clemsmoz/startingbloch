@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 
 
 const Inventeur = sequelize.define('Inventeur', {
+  
   nom_inventeur: {
     type: DataTypes.STRING,
     allowNull: true,

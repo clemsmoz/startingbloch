@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
 
 
 const Cabinet = sequelize.define('Cabinet', {
+  
   nom_cabinet: {
     type: DataTypes.STRING,
     allowNull: true,

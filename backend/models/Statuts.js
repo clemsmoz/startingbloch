@@ -1,8 +1,15 @@
 module.exports = (sequelize, DataTypes) => {
 
 const Statuts = sequelize.define('Statuts', {
-  // Définir les colonnes de la table statuts
-}, {
+  
+  statuts: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  description: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },}, {
   tableName: 'statuts',
   timestamps: false
 });
