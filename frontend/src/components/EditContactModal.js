@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const EditContactModal = ({ show, handleClose, refreshContacts, contact }) => {
   const [formData, setFormData] = useState({
@@ -14,7 +14,7 @@ const EditContactModal = ({ show, handleClose, refreshContacts, contact }) => {
     if (contact) {
       setFormData({
         nom_contact: contact.nom_contact || '',
-        prenom_contact: contact.prenom_contact || '',
+        prenom_contact: contact.nom_contact || '',
         telephone_contact: contact.telephone_contact || '',
         email_contact: contact.email_contact || ''
       });
@@ -31,8 +31,15 @@ const EditContactModal = ({ show, handleClose, refreshContacts, contact }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.put(`http://localhost:3100/contacts/${contact.id_contact}`, formData)
-      .then(() => {
+    fetch(`${API_BASE_URL}/contacts/${contact.id_contact}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+      .then(response => response.json())
+      .then(data => {
         refreshContacts();
         handleClose();
       })

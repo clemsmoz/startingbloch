@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import axios from 'axios';
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 import useAddBrevet from '../hooks/useAddBrevet';
 import useBrevetData from '../hooks/useBrevetData';
 
@@ -92,10 +92,9 @@ const useUpdateBrevet = (brevetId, handleClose) => {
     });
 
     try {
-      await axios.put(`http://localhost:3100/brevets/${brevetId}`, dataToSubmit, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      await fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+        method: 'PUT',
+        body: dataToSubmit,
       });
       setConfirmationMessage('Le brevet a été modifié avec succès.');
       setIsError(false);

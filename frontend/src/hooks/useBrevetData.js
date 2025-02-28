@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import qs from 'qs';
-import { jsPDF } from 'jspdf'; // Importation de jsPDF
+import { jsPDF } from 'jspdf';
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 import logo from '../assets/startigbloch_transparent_corrected.png';
 
 const useBrevetData = (brevetId) => {
@@ -25,94 +24,72 @@ const useBrevetData = (brevetId) => {
 
       const fetchBrevetData = async () => {
         try {
-          const brevetResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}`);
-          console.log('Brevet Response:', brevetResponse.data); // Log pour voir la réponse
-          const brevetData = brevetResponse.data.data;
-          setBrevet(brevetData);
+          const brevetResponse = await fetch(`${API_BASE_URL}/brevets/${brevetId}`);
+          const brevetData = await brevetResponse.json();
+          setBrevet(brevetData.data);
 
-          const clientsResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}/clients`);
-          console.log('Clients Response:', clientsResponse.data); // Log pour les clients
-          setClients(clientsResponse.data.data || []);
+          const clientsResponse = await fetch(`${API_BASE_URL}/brevets/${brevetId}/clients`);
+          const clientsData = await clientsResponse.json();
+          setClients(clientsData.data || []);
 
-          const statutsResponse = await axios.get(`http://localhost:3100/statuts`);
-          console.log('Statuts Response:', statutsResponse.data);
-          const allStatuts = statutsResponse.data.data;
+          const statutsResponse = await fetch(`${API_BASE_URL}/statuts`);
+          const statutsData = await statutsResponse.json();
+          const allStatuts = statutsData.data;
           setStatutsList(allStatuts);
-  
-          // Récupérer tous les pays et leurs statuts
-          if (brevetData.numero_pays && brevetData.numero_pays.length > 0) {
-          // Récupérer les pays et les statuts correspondants
-const paysResponse = await axios.get(`http://localhost:3100/numeros_pays`, {
-  params: { id_brevet: brevetId }
-});
-console.log('Pays Response:', paysResponse.data); // Log pour les pays
-const paysData = paysResponse.data.data;
 
-// Associer chaque pays avec son statut
-const paysWithStatut = paysData.map((paysItem) => {
-  const matchingStatut = allStatuts.find(st => st.id_statuts === paysItem.id_statuts);
-  console.log('Matching Statut for paysItem:', paysItem, '=>', matchingStatut); // Debugging line
-  return {
-      ...paysItem,
-      statut: matchingStatut ? matchingStatut.valeur : 'N/A',
-  };
-});
-
-setPays(paysWithStatut);
-
-        } else {
-            console.warn('Aucun numero_pays trouvé dans brevetData');
-        }
-        
-
-          if (brevetData.inventeurs && brevetData.inventeurs.length > 0) {
-            const inventeurIds = brevetData.inventeurs.map(inv => inv.id_inventeur);
-            console.log('Inventeur IDs:', inventeurIds); // Ajoutez un log ici pour vérifier les IDs
-            const inventeursResponse = await axios.get(`http://localhost:3100/inventeur`, {
-              params: { id_inventeurs: inventeurIds },
-              paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
+          if (brevetData.data.numero_pays && brevetData.data.numero_pays.length > 0) {
+            const paysResponse = await fetch(`${API_BASE_URL}/numeros_pays?id_brevet=${brevetId}`);
+            const paysData = await paysResponse.json();
+            const paysWithStatut = paysData.data.map((paysItem) => {
+              const matchingStatut = allStatuts.find(st => st.id_statuts === paysItem.id_statuts);
+              return {
+                ...paysItem,
+                statut: matchingStatut ? matchingStatut.valeur : 'N/A',
+              };
             });
-            setInventeurs(inventeursResponse.data.data || []);
+            setPays(paysWithStatut);
+          } else {
+            console.warn('Aucun numero_pays trouvé dans brevetData');
+          }
+
+          if (brevetData.data.inventeurs && brevetData.data.inventeurs.length > 0) {
+            const inventeurIds = brevetData.data.inventeurs.map(inv => inv.id_inventeur);
+            const inventeursResponse = await fetch(`${API_BASE_URL}/inventeur?id_inventeurs=${inventeurIds.join('&id_inventeurs=')}`);
+            const inventeursData = await inventeursResponse.json();
+            setInventeurs(inventeursData.data || []);
           } else {
             setInventeurs([]);
           }
 
-          if (brevetData.deposants && brevetData.deposants.length > 0) {
-            const deposantIds = brevetData.deposants.map(dep => dep.id_deposant);
-            console.log('Déposant IDs:', deposantIds); // Log pour les IDs des déposants
-            const deposantsResponse = await axios.get(`http://localhost:3100/deposant`, {
-              params: { id_deposants: deposantIds }
-            });
-            setDeposants(deposantsResponse.data.data || []);
+          if (brevetData.data.deposants && brevetData.data.deposants.length > 0) {
+            const deposantIds = brevetData.data.deposants.map(dep => dep.id_deposant);
+            const deposantsResponse = await fetch(`${API_BASE_URL}/deposant?id_deposants=${deposantIds.join('&id_deposants=')}`);
+            const deposantsData = await deposantsResponse.json();
+            setDeposants(deposantsData.data || []);
           } else {
             setDeposants([]);
           }
 
-          if (brevetData.titulaires && brevetData.titulaires.length > 0) {
-            const titulaireIds = brevetData.titulaires.map(tit => tit.id_titulaire);
-            console.log('Titulaire IDs:', titulaireIds); // Log pour les IDs des titulaires
-            const titulairesResponse = await axios.get(`http://localhost:3100/titulaire`, {
-              params: { id_titulaires: titulaireIds }
-            });
-            setTitulaires(titulairesResponse.data.data || []);
+          if (brevetData.data.titulaires && brevetData.data.titulaires.length > 0) {
+            const titulaireIds = brevetData.data.titulaires.map(tit => tit.id_titulaire);
+            const titulairesResponse = await fetch(`${API_BASE_URL}/titulaire?id_titulaires=${titulaireIds.join('&id_titulaires=')}`);
+            const titulairesData = await titulairesResponse.json();
+            setTitulaires(titulairesData.data || []);
           } else {
             setTitulaires([]);
           }
 
-          const paysResponse = await axios.get(`http://localhost:3100/numeros_pays`, {
-            params: { id_brevet: brevetId }
-          });
-          console.log('Pays Response:', paysResponse.data); // Log pour les pays
-          setPays(paysResponse.data.data || []);
+          const paysResponse = await fetch(`${API_BASE_URL}/numeros_pays?id_brevet=${brevetId}`);
+          const paysData = await paysResponse.json();
+          setPays(paysData.data || []);
 
-          const cabinetsResponse = await axios.get(`http://localhost:3100/cabinets`, {
-            params: { id_brevet: brevetId }
-          });
-          const cabinetDetailsPromises = cabinetsResponse.data.data.map(cabinet =>
-            axios.get(`http://localhost:3100/cabinet/${cabinet.id_cabinet}`)
+          const cabinetsResponse = await fetch(`${API_BASE_URL}/cabinets?id_brevet=${brevetId}`);
+          const cabinetsData = await cabinetsResponse.json();
+          const cabinetDetailsPromises = cabinetsData.data.map(cabinet =>
+            fetch(`${API_BASE_URL}/cabinet/${cabinet.id_cabinet}`).then(res => res.json())
           );
           const cabinetsDetails = await Promise.all(cabinetDetailsPromises);
-          const completeCabinetsData = cabinetsDetails.map(res => res.data.data);
+          const completeCabinetsData = cabinetsDetails.map(res => res.data);
 
           const procedureCabinetsData = completeCabinetsData.filter(cabinet => cabinet.type === 'procedure');
           const annuiteCabinetsData = completeCabinetsData.filter(cabinet => cabinet.type === 'annuite');
@@ -121,22 +98,21 @@ setPays(paysWithStatut);
           setAnnuiteCabinets(annuiteCabinetsData);
 
           const contactsProcedurePromises = procedureCabinetsData.map(cabinet =>
-            axios.get(`http://localhost:3100/contacts/cabinets/${cabinet.id_cabinet}`)
+            fetch(`${API_BASE_URL}/contacts/cabinets/${cabinet.id_cabinet}`).then(res => res.json())
           );
           const contactsProcedureResults = await Promise.all(contactsProcedurePromises);
-          setContactsProcedure(contactsProcedureResults.flatMap(result => result.data.data || []));
+          setContactsProcedure(contactsProcedureResults.flatMap(result => result.data || []));
 
           const contactsAnnuitePromises = annuiteCabinetsData.map(cabinet =>
-            axios.get(`http://localhost:3100/contacts/cabinets/${cabinet.id_cabinet}`)
+            fetch(`${API_BASE_URL}/contacts/cabinets/${cabinet.id_cabinet}`).then(res => res.json())
           );
           const contactsAnnuiteResults = await Promise.all(contactsAnnuitePromises);
-          setContactsAnnuite(contactsAnnuiteResults.flatMap(result => result.data.data || []));
+          setContactsAnnuite(contactsAnnuiteResults.flatMap(result => result.data || []));
           
           
-          const piecesJointesResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}/piece-jointe`);
-          const piecesData = piecesJointesResponse.data.data; // Assurez-vous de bien récupérer les pièces jointes
-          setPiecesJointes(piecesData);
-          console.log('Pièces jointes:', piecesData); // Ajoutez ce log pour voir le contenu des pièces jointes
+          const piecesJointesResponse = await fetch(`${API_BASE_URL}/brevets/${brevetId}/piece-jointe`);
+          const piecesData = await piecesJointesResponse.json();
+          setPiecesJointes(piecesData.data);
           
           
         } catch (error) {

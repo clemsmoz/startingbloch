@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Container, Typography, Box, IconButton, Modal, Paper } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -15,12 +15,19 @@ const LoginPage = () => {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:3100/login', {
-      email_user: email,
-      password: password
+    fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email_user: email,
+        password: password,
+      }),
     })
-    .then(response => {
-      console.log('User authenticated:', response.data);
+    .then(response => response.json())
+    .then(data => {
+      console.log('User authenticated:', data);
       setModalMessage("Authentification réussie, vous allez être redirigé vers la page d'accueil");
       setShowModal(true);
       setTimeout(() => {
@@ -53,10 +60,9 @@ const LoginPage = () => {
         <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
       </Box>
 
-      
       <Paper elevation={6} sx={{ padding: 4, borderRadius: 3, width: '100%', maxWidth: 500 }}>
         <Box display="flex" flexDirection="column" alignItems="center">
-        <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
+          <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
             Connexion
           </Typography>
           <Box component="form" onSubmit={handleLogin} sx={{ width: '100%', mt: 2 }}>

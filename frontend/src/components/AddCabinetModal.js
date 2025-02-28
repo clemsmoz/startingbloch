@@ -15,13 +15,14 @@ import {
 import { API_BASE_URL } from '../config';
 
 const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
+  // Modifiez ici les clés pour qu'elles correspondent au modèle
   const [formData, setFormData] = useState({
     type: 'annuite',
-    nom: '',
-    reference: '',
-    email: '',
-    telephone: '',
-    pays: [], // Nouveau champ pour stocker les pays sélectionnés
+    nom_cabinet: '',
+    reference_cabinet: '',
+    email_cabinet: '',
+    telephone_cabinet: '',
+    pays: [], // Champ pour stocker les IDs des pays sélectionnés
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [paysList, setPaysList] = useState([]); // Liste des pays récupérés
@@ -92,8 +93,8 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           maxWidth: 600,
           mx: 'auto',
           mt: '10%',
-          maxHeight: '80vh', // Limite la hauteur maximale de la modal
-          overflowY: 'auto', // Permet le défilement vertical
+          maxHeight: '80vh',
+          overflowY: 'auto',
         }}
       >
         <Typography variant="h6" color="primary" component="h2" gutterBottom>
@@ -113,8 +114,8 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Nom"
-              name="nom"
-              value={formData.nom}
+              name="nom_cabinet"  // Modifié ici
+              value={formData.nom_cabinet}  // Modifié ici
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -123,8 +124,8 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Référence"
-              name="reference"
-              value={formData.reference}
+              name="reference_cabinet"  // Modifié ici
+              value={formData.reference_cabinet}  // Modifié ici
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -133,9 +134,9 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Email"
-              name="email"
+              name="email_cabinet"  // Modifié ici
               type="email"
-              value={formData.email}
+              value={formData.email_cabinet}  // Modifié ici
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -144,8 +145,8 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Téléphone"
-              name="telephone"
-              value={formData.telephone}
+              name="telephone_cabinet"  // Modifié ici
+              value={formData.telephone_cabinet}  // Modifié ici
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -175,8 +176,6 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
                 ))}
               </Select>
             </FormControl>
-
-            {/* Afficher les pays sélectionnés sous forme de liste */}
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="textSecondary">
                 <strong>Pays sélectionnés :</strong>

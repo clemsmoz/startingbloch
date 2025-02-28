@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 import { CardContent, Typography, Container, Button, IconButton, Avatar, Box, Paper } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import { FaEdit, FaTrash } from 'react-icons/fa';
@@ -8,6 +7,7 @@ import AddContactModal from '../components/AddContactModal';
 import DeleteContactModal from '../components/DeleteContactModal';
 import EditContactModal from '../components/EditContactModal';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
+import { API_BASE_URL } from '../config';
 
 const ContactsPage = () => {
   const [contacts, setContacts] = useState([]);
@@ -32,12 +32,13 @@ const ContactsPage = () => {
 
   const refreshContacts = (type, id) => {
     const url = type === 'cabinet'
-      ? `http://localhost:3100/contacts/cabinets/${id}`
-      : `http://localhost:3100/contacts/clients/${id}`;
+      ? `${API_BASE_URL}/contacts/cabinets/${id}`
+      : `${API_BASE_URL}/contacts/clients/${id}`;
 
-    axios.get(url)
-      .then(response => {
-        setContacts(response.data.data);
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        setContacts(data.data);
       })
       .catch(error => {
         console.error('There was an error fetching the contacts!', error);

@@ -1,4 +1,5 @@
-const { Brevet } = require('../models');
+const { Brevet, Client, Titulaire, Deposant, Inventeur, Cabinet, NumeroPays, Pays, Statuts, sequelize } = require('../models');
+const Op = sequelize.Sequelize.Op;
 
 const brevetController = {
   createBrevet: async (req, res) => {
@@ -120,6 +121,124 @@ const brevetController = {
     } catch (error) {
       console.error('Erreur suppression brevet:', error);
       res.status(500).json({ error: 'Erreur lors de la suppression du brevet' });
+    }
+  },
+
+  // Version améliorée de getAllBrevets avec relations
+  getAllBrevetsWithRelations: async (req, res) => {
+    try {
+      const titre = req.query.titre;
+      const condition = titre ? { titre: { [Op.like]: `%${titre}%` } } : null;
+
+      const results = await Brevet.findAll({ 
+        where: condition,
+        include: [{
+          model: Client
+        }, {
+          model: Titulaire
+        }, {
+          model: Deposant
+        }, {
+          model: Inventeur
+        }, {
+          model: Cabinet
+        }, {
+          model: NumeroPays
+        }]
+      });
+      res.status(200).json({ data: results });
+    } catch (error) {
+      console.error('Erreur récupération brevets avec relations:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération des brevets' });
+    }
+  },
+
+  // Version améliorée de getBrevetById avec relations
+  getBrevetByIdWithRelations: async (req, res) => {
+    try {
+      const result = await Brevet.findByPk(req.params.id, {
+        include: [{
+          model: Client
+        }, {
+          model: Titulaire
+        }, {
+          model: Deposant
+        }, {
+          model: Inventeur
+        }, {
+          model: Cabinet
+        }, {
+          model: NumeroPays,
+          include: [{
+            model: Pays
+          }, {
+            model: Statuts
+          }]
+        }]
+      });
+      
+      if (result) {
+        res.status(200).json({ data: result });
+      } else {
+        res.status(404).json({ error: 'Brevet non trouvé' });
+      }
+    } catch (error) {
+      console.error('Erreur récupération brevet avec relations:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
+    }
+  },
+
+  // Ajouter un titulaire à un brevet
+  addTitulaire: async (req, res) => {
+    try {
+      const brevetId = req.params.brevetId;
+      const titulaireId = req.body.titulaireId;
+      
+      await sequelize.models.BrevetTitulaires.create({
+        BrevetId: brevetId,
+        TitulaireId: titulaireId
+      });
+      
+      res.status(200).json({ message: "Titulaire ajouté au brevet avec succès!" });
+    } catch (error) {
+      console.error('Erreur ajout titulaire:', error);
+      res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout du titulaire au brevet' });
+    }
+  },
+
+  // Ajouter un inventeur à un brevet
+  addInventeur: async (req, res) => {
+    try {
+      const brevetId = req.params.brevetId;
+      const inventeurId = req.body.inventeurId;
+      
+      await sequelize.models.BrevetInventeurs.create({
+        BrevetId: brevetId,
+        InventeurId: inventeurId
+      });
+      
+      res.status(200).json({ message: "Inventeur ajouté au brevet avec succès!" });
+    } catch (error) {
+      console.error('Erreur ajout inventeur:', error);
+      res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout de l\'inventeur au brevet' });
+    }
+  },
+
+  // Ajouter un déposant à un brevet
+  addDeposant: async (req, res) => {
+    try {
+      const brevetId = req.params.brevetId;
+      const deposantId = req.body.deposantId;
+      
+      await sequelize.models.BrevetDeposants.create({
+        BrevetId: brevetId,
+        DeposantId: deposantId
+      });
+      
+      res.status(200).json({ message: "Déposant ajouté au brevet avec succès!" });
+    } catch (error) {
+      console.error('Erreur ajout déposant:', error);
+      res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout du déposant au brevet' });
     }
   }
 };

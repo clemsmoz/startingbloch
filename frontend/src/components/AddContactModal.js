@@ -6,7 +6,7 @@ import {
   Typography,
   Box,
 } from '@mui/material';
-import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, clientId }) => {
   const [formData, setFormData] = useState({
@@ -28,15 +28,22 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
     let dataToSend = {};
 
     if (cabinetId) {
-      url = 'http://localhost:3100/contacts/cabinets';
+      url = `${API_BASE_URL}/contacts/cabinets`;
       dataToSend = { ...formData, id_cabinet: cabinetId };
     } else if (clientId) {
-      url = 'http://localhost:3100/contacts/clients';
+      url = `${API_BASE_URL}/contacts/clients`;
       dataToSend = { ...formData, id_client: clientId };
     }
 
-    axios.post(url, dataToSend)
-      .then(response => {
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(dataToSend),
+    })
+      .then(response => response.json())
+      .then(data => {
         refreshContacts();
         handleClose();
       })

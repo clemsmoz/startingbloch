@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Sidebar from '../components/Sidebar';
 import AddBrevetModal from '../components/AddBrevetModal';
 import BrevetDetailModal from '../components/BrevetDetailModal';
@@ -25,8 +25,10 @@ import {
 } from 'react-icons/fa';
 import usePortefeuilleBrevet from '../hooks/usePortefeuilleBrevet';
 import logo from '../assets/startigbloch_transparent_corrected.png';
+import { API_BASE_URL } from '../config';
 
 const PortefeuilleBrevetPage = () => {
+  // On récupère les données et fonctions depuis le hook personnalisé
   const {
     brevets,
     selectedBrevetId,
@@ -45,10 +47,10 @@ const PortefeuilleBrevetPage = () => {
   } = usePortefeuilleBrevet();
 
   // États pour la recherche et la pagination
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchFilter, setSearchFilter] = useState('titre');
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(8);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [searchFilter, setSearchFilter] = React.useState('titre');
+  const [page, setPage] = React.useState(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState(8);
 
   const normalizeString = (str) => str.trim().toLowerCase();
   const normalizedSearchTerm = normalizeString(searchTerm);
@@ -59,9 +61,7 @@ const PortefeuilleBrevetPage = () => {
     } else if (searchFilter === 'reference_famille') {
       return normalizeString(brevet.reference_famille)?.includes(normalizedSearchTerm);
     } else if (searchFilter === 'reference_cabinet') {
-      return brevets.some(
-        (ref) => normalizeString(ref.reference_cabinet)?.includes(normalizedSearchTerm)
-      );
+      return brevets.some((ref) => normalizeString(ref.reference_cabinet)?.includes(normalizedSearchTerm));
     } else if (searchFilter === 'client') {
       return (
         brevet.clients &&
@@ -116,6 +116,7 @@ const PortefeuilleBrevetPage = () => {
             <MenuItem value="reference_cabinet">Rechercher par Référence Cabinet</MenuItem>
           </Select>
         </Box>
+
         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 4 }}>
           <Pagination count={Math.ceil(filteredBrevets.length / rowsPerPage)} page={page} onChange={handleChangePage} color="primary" />
           <FormControl sx={{ width: '150px' }}>

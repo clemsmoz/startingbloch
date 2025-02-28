@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
 import { TextField, Button, Container, Typography, Box, Modal, Paper } from '@mui/material';
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 
 const RegisterPage = () => {
   const [nom, setNom] = useState('');
@@ -15,14 +15,21 @@ const RegisterPage = () => {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:3100/users', {
-      nom_user: nom,
-      prenom_user: prenom,
-      email_user: email,
-      password: password
+    fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nom_user: nom,
+        prenom_user: prenom,
+        email_user: email,
+        password: password,
+      }),
     })
-    .then(response => {
-      console.log('User created:', response.data);
+    .then(response => response.json())
+    .then(data => {
+      console.log('User created:', data);
       setModalMessage('Création réussie, vous allez être redirigé sur la page de connexion !');
       setShowModal(true);
       setTimeout(() => {
@@ -42,8 +49,8 @@ const RegisterPage = () => {
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-       {/* Logo de l'entreprise */}
-       <Box sx={{ mb: 20, textAlign: 'center' }}>
+      {/* Logo de l'entreprise */}
+      <Box sx={{ mb: 20, textAlign: 'center' }}>
         <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
       </Box>
       <Paper elevation={6} sx={{ padding: 4, borderRadius: 3, width: '100%', maxWidth: 500 }}>
@@ -103,14 +110,14 @@ const RegisterPage = () => {
             </Button>
 
             <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={() => navigate(-1)} 
-            fullWidth
+              variant="contained" 
+              color="primary" 
+              onClick={() => navigate(-1)} 
+              fullWidth
               sx={{ mt: 3, py: 1.5, fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase' }}
-          >
-            Retour
-          </Button>
+            >
+              Retour
+            </Button>
           </Box>
         </Box>
       </Paper>

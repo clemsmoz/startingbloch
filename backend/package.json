@@ -39,6 +39,7 @@
     "files": [
       "server.js",
       "db.js",
+      "initDb.js",
       "controllers/**/*",
       "models/**/*",
       "routes/**/*",

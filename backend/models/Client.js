@@ -34,5 +34,11 @@ const Client = sequelize.define('Client', {
   tableName: 'client',
   timestamps: false
 });
+
+Client.associate = (models) => {
+  Client.belongsToMany(models.Brevet, { through: 'BrevetClients' });
+  Client.hasMany(models.Contact, { foreignKey: 'client_id' });
+};
+
 return Client;
 };

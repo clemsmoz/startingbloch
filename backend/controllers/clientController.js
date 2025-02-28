@@ -1,10 +1,20 @@
-const { Client } = require('../models');
+const { Client, Contact, Brevet, sequelize } = require('../models');
+const Op = sequelize.Sequelize.Op;
 
 const clientController = {
   createClient: async (req, res) => {
     try {
       console.log("Données client reçues:", req.body);
-      const result = await Client.create(req.body);
+      const client = {
+        nom_client: req.body.nom_client,
+        reference_client: req.body.reference_client,
+        adresse_client: req.body.adresse_client,
+        code_postal: req.body.code_postal,
+        pays_client: req.body.pays_client,
+        email_client: req.body.email_client,
+        telephone_client: req.body.telephone_client
+      };
+      const result = await Client.create(client);
       res.status(201).json({ message: 'Client créé avec succès', data: result });
     } catch (error) {
       console.error("Erreur création client:", error);
@@ -13,7 +23,16 @@ const clientController = {
   },
   getAllClients: async (req, res) => {
     try {
-      const results = await Client.findAll();
+      const nom = req.query.nom;
+      const condition = nom ? { nom_client: { [Op.like]: `%${nom}%` } } : null;
+      
+      const results = await Client.findAll({
+        where: condition,
+        include: [
+          { model: Contact },
+          { model: Brevet }
+        ]
+      });
       res.status(200).json({ data: results });
     } catch (error) {
       console.error("Erreur récupération clients:", error);
@@ -22,7 +41,12 @@ const clientController = {
   },
   getClientById: async (req, res) => {
     try {
-      const result = await Client.findByPk(req.params.id);
+      const result = await Client.findByPk(req.params.id, {
+        include: [
+          { model: Contact },
+          { model: Brevet }
+        ]
+      });
       if (result) {
         res.status(200).json({ data: result });
       } else {
@@ -67,6 +91,44 @@ const clientController = {
     } catch (error) {
       console.error("Erreur suppression client:", error);
       res.status(500).json({ error: 'Erreur lors de la suppression du client' });
+    }
+  },
+  addBrevet: async (req, res) => {
+    try {
+      const clientId = req.params.clientId;
+      const brevetId = req.body.brevetId;
+      
+      await sequelize.models.BrevetClients.create({
+        BrevetId: brevetId,
+        ClientId: clientId
+      });
+      
+      res.status(200).json({ message: 'Brevet ajouté au client avec succès!' });
+    } catch (error) {
+      console.error("Erreur ajout brevet au client:", error);
+      res.status(500).json({ error: 'Erreur lors de l\'ajout du brevet au client' });
+    }
+  },
+  removeBrevet: async (req, res) => {
+    try {
+      const clientId = req.params.clientId;
+      const brevetId = req.params.brevetId;
+      
+      const deleted = await sequelize.models.BrevetClients.destroy({
+        where: {
+          BrevetId: brevetId,
+          ClientId: clientId
+        }
+      });
+      
+      if (deleted) {
+        res.status(200).json({ message: 'Brevet retiré du client avec succès!' });
+      } else {
+        res.status(404).json({ error: 'Relation brevet-client non trouvée' });
+      }
+    } catch (error) {
+      console.error("Erreur suppression brevet du client:", error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du brevet du client' });
     }
   }
 };

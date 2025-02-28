@@ -64,5 +64,11 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
+  NumeroPays.associate = (models) => {
+    NumeroPays.belongsTo(models.Brevet, { foreignKey: 'id_brevet' });
+    NumeroPays.belongsTo(models.Pays, { foreignKey: 'id_pays' });
+    NumeroPays.belongsTo(models.Statuts, { foreignKey: 'id_statuts' });
+  };
+
   return NumeroPays;
 };

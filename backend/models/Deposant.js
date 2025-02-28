@@ -24,5 +24,10 @@ const Deposant = sequelize.define('Deposant', {
   timestamps: false
 });
 
+Deposant.associate = (models) => {
+  Deposant.belongsToMany(models.Brevet, { through: 'BrevetDeposants' });
+  Deposant.belongsToMany(models.Pays, { through: 'DeposantPays' });
+};
+
 return Deposant;
 };

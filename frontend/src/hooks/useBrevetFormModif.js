@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 
 const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
   const [formData, setFormData] = useState({
@@ -25,13 +25,13 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
   const [statuts, setStatuts] = useState([]);
   const [paysList, setPaysList] = useState([]);
   const [cabinets, setCabinets] = useState({ procedure: [], annuite: [] });
- 
 
   useEffect(() => {
     if (brevetId) {
-      axios.get(`http://localhost:3100/brevets/${brevetId}`)
-        .then(response => {
-          const brevetData = response.data.data;
+      fetch(`${API_BASE_URL}/brevets/${brevetId}`)
+        .then(response => response.json())
+        .then(data => {
+          const brevetData = data.data;
           setFormData({
             reference_famille: brevetData.reference_famille || '',
             titre: brevetData.titre || '',
@@ -54,23 +54,27 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
         .catch(error => console.error('Erreur lors du chargement des données du brevet:', error));
     }
 
-    axios.get('http://localhost:3100/clients')
-      .then(response => setClients(response.data.data || []))
+    fetch(`${API_BASE_URL}/clients`)
+      .then(response => response.json())
+      .then(data => setClients(data.data || []))
       .catch(error => console.error('Erreur lors de la récupération des clients:', error));
 
-    axios.get('http://localhost:3100/statuts')
-      .then(response => setStatuts(response.data.data || []))
+    fetch(`${API_BASE_URL}/statuts`)
+      .then(response => response.json())
+      .then(data => setStatuts(data.data || []))
       .catch(error => console.error('Erreur lors de la récupération des statuts:', error));
 
-    axios.get('http://localhost:3100/pays')
-      .then(response => setPaysList(response.data.data || []))
+    fetch(`${API_BASE_URL}/pays`)
+      .then(response => response.json())
+      .then(data => setPaysList(data.data || []))
       .catch(error => console.error('Erreur lors de la récupération des pays:', error));
 
-    axios.get('http://localhost:3100/cabinets')
-      .then(response => {
+    fetch(`${API_BASE_URL}/cabinets`)
+      .then(response => response.json())
+      .then(data => {
         setCabinets({
-          procedure: response.data.procedure || [],
-          annuite: response.data.annuite || []
+          procedure: data.procedure || [],
+          annuite: data.annuite || []
         });
       })
       .catch(error => console.error('Erreur lors de la récupération des cabinets:', error));
@@ -152,10 +156,9 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
       dataToSubmit.append('piece_jointe', formData.piece_jointe);
     }
 
-    axios.put(`http://localhost:3100/brevets/${brevetId}`, dataToSubmit, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+    fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+      method: 'PUT',
+      body: dataToSubmit,
     })
       .then(() => {
         refreshBrevets();

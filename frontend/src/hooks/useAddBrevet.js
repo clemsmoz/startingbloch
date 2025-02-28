@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 
 const useAddBrevet = (handleClose) => {
   const [formData, setFormData] = useState({
@@ -34,21 +34,25 @@ const useAddBrevet = (handleClose) => {
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    axios.get('http://localhost:3100/clients')
-      .then(response => setClientsList(response.data.data || []))
+    fetch(`${API_BASE_URL}/clients`)
+      .then(response => response.json())
+      .then(data => setClientsList(data.data || []))
       .catch(() => setError('Erreur lors de la récupération des clients'));
 
-    axios.get('http://localhost:3100/statuts')
-      .then(response => setStatuts(response.data.data || []))
+    fetch(`${API_BASE_URL}/statuts`)
+      .then(response => response.json())
+      .then(data => setStatuts(data.data || []))
       .catch(() => setError('Erreur lors de la récupération des statuts'));
 
-    axios.get('http://localhost:3100/pays')
-      .then(response => setPaysList(response.data.data || []))
+    fetch(`${API_BASE_URL}/pays`)
+      .then(response => response.json())
+      .then(data => setPaysList(data.data || []))
       .catch(() => setError('Erreur lors de la récupération des pays'));
 
-    axios.get('http://localhost:3100/cabinet')
-      .then(response => {
-        const { procedure, annuite } = response.data;
+    fetch(`${API_BASE_URL}/cabinet`)
+      .then(response => response.json())
+      .then(data => {
+        const { procedure, annuite } = data;
         setCabinets({
           procedure: Array.isArray(procedure) ? procedure : [],
           annuite: Array.isArray(annuite) ? annuite : []
@@ -58,12 +62,13 @@ const useAddBrevet = (handleClose) => {
   }, []);
 
   const fetchContacts = (cabinetId, type) => {
-    axios.get(`http://localhost:3100/contacts/cabinets/${cabinetId}`)
-      .then(response => {
+    fetch(`${API_BASE_URL}/contacts/cabinets/${cabinetId}`)
+      .then(response => response.json())
+      .then(data => {
         if (type === 'procedure') {
-          setContactsProcedure(response.data.data || []);
+          setContactsProcedure(data.data || []);
         } else {
-          setContactsAnnuite(response.data.data || []);
+          setContactsAnnuite(data.data || []);
         }
       })
       .catch(() => setError('Erreur lors de la récupération des contacts'));
@@ -206,10 +211,9 @@ const useAddBrevet = (handleClose) => {
     }
   
     try {
-      await axios.post('http://localhost:3100/brevets', dataToSubmit, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      await fetch(`${API_BASE_URL}/brevets`, {
+        method: 'POST',
+        body: dataToSubmit,
       });
       setConfirmationMessage('Le brevet a été ajouté avec succès.');
       setIsError(false);

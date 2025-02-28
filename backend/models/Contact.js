@@ -1,6 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
 
-
 const Contact = sequelize.define('Contact', {
   
   nom_contact: {
@@ -22,10 +21,33 @@ const Contact = sequelize.define('Contact', {
   poste_contact: {
     type: DataTypes.STRING,
     allowNull: true,
-  }}, {
+  },
+  client_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'client',
+      key: 'id'
+    }
+  },
+  cabinet_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'cabinet',
+      key: 'id'
+    }
+  }
+}, {
   tableName: 'contact',
   timestamps: false
+  // La validation d'exclusivité a été supprimée ici
 });
+
+Contact.associate = (models) => {
+  Contact.belongsTo(models.Client, { foreignKey: 'client_id' });
+  Contact.belongsTo(models.Cabinet, { foreignKey: 'cabinet_id' });
+};
 
 return Contact;
 };

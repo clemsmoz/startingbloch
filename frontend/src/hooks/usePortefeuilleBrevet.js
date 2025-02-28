@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
+import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 
 // Hook pour gérer le portefeuille de brevets global 
 const usePortefeuilleBrevet = () => {
@@ -16,8 +15,9 @@ const usePortefeuilleBrevet = () => {
   const fetchBrevets = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3100/brevets');
-      setBrevets(response.data.data);
+      const response = await fetch(`${API_BASE_URL}/brevets`);
+      const data = await response.json();
+      setBrevets(data.data);
       setError(null);
     } catch (error) {
       setError('Erreur lors de la récupération des brevets');
@@ -30,7 +30,13 @@ const usePortefeuilleBrevet = () => {
   const addBrevet = async (brevetData) => {
     setLoading(true);
     try {
-      await axios.post('http://localhost:3100/brevets', brevetData);
+      await fetch(`${API_BASE_URL}/brevets`, {
+        method: 'POST',
+        body: JSON.stringify(brevetData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       fetchBrevets(); // Refresh the list after adding
       setError(null);
     } catch (error) {
@@ -44,7 +50,13 @@ const usePortefeuilleBrevet = () => {
   const updateBrevet = async (brevetId, brevetData) => {
     setLoading(true);
     try {
-      await axios.put(`http://localhost:3100/brevets/${brevetId}`, brevetData);
+      await fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+        method: 'PUT',
+        body: JSON.stringify(brevetData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       fetchBrevets(); // Refresh the list after editing
       setError(null);
     } catch (error) {
@@ -58,7 +70,9 @@ const usePortefeuilleBrevet = () => {
   const deleteBrevet = async (brevetId) => {
     setLoading(true);
     try {
-      await axios.delete(`http://localhost:3100/brevets/${brevetId}`);
+      await fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+        method: 'DELETE',
+      });
       fetchBrevets(); // Refresh the list after deletion
       setError(null);
     } catch (error) {
@@ -71,14 +85,15 @@ const usePortefeuilleBrevet = () => {
   const handleDeleteBrevet = async (id) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce brevet ?")) {
       try {
-        await axios.delete(`http://localhost:3100/brevets/${id}`);
+        await fetch(`${API_BASE_URL}/brevets/${id}`, {
+          method: 'DELETE',
+        });
         // refreshBrevets(); // Actualiser la liste des brevets après suppression
       } catch (error) {
         console.error('Erreur lors de la suppression du brevet', error);
       }
     }
   };
-  
 
   // Gestion des modals
   const handleShowAddModal = () => setShowAddModal(true);

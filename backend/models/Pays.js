@@ -32,5 +32,13 @@ const Pays = sequelize.define('Pays', {
   timestamps: false
 });
 
+Pays.associate = (models) => {
+  Pays.hasMany(models.NumeroPays, { foreignKey: 'id_pays' });
+  Pays.belongsToMany(models.Titulaire, { through: 'TitulairePays' });
+  Pays.belongsToMany(models.Deposant, { through: 'DeposantPays' });
+  Pays.belongsToMany(models.Inventeur, { through: 'InventeurPays' });
+  Pays.belongsToMany(models.Statuts, { through: 'PaysStatuts' });
+};
+
 return Pays;
 };

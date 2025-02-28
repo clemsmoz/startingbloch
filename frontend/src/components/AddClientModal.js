@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
+import { API_BASE_URL } from '../config';
 import axios from 'axios';
 
 const AddClientModal = ({ show, handleClose, refreshClients }) => {
@@ -29,8 +30,15 @@ const AddClientModal = ({ show, handleClose, refreshClients }) => {
     setLoading(true);  // Activation de l'état de chargement
     setError(null);    // Réinitialisation des erreurs
 
-    axios.post('http://localhost:3100/clients', formData)
-      .then(() => {
+    fetch(`${API_BASE_URL}/clients`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+      .then(response => response.json())
+      .then(data => {
         refreshClients();
         handleClose();
       })

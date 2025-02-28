@@ -14,5 +14,10 @@ const Statuts = sequelize.define('Statuts', {
   timestamps: false
 });
 
+Statuts.associate = (models) => {
+  Statuts.hasMany(models.NumeroPays, { foreignKey: 'id_statuts' });
+  Statuts.belongsToMany(models.Pays, { through: 'PaysStatuts' });
+};
+
 return Statuts;
 };

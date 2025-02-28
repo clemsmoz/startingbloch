@@ -1,33 +1,50 @@
-const { Cabinet } = require('../models');
+const { Cabinet, Pays, sequelize } = require('../models');
 
 const cabinetController = {
   createCabinet: async (req, res) => {
     try {
-      const result = await Cabinet.create(req.body);
-      console.log('Cabinet créé', result);
-      res.status(201).json({ message: 'Cabinet créé avec succès', data: result });
+      // Extraction des données du cabinet et de la liste des pays à associer
+      const { pays, ...cabinetData } = req.body;
+      
+      // Création du cabinet dans la table 'cabinet'
+      const cabinet = await Cabinet.create(cabinetData);
+      
+      // Si des pays sont fournis, on associe ces pays au cabinet via l'association many-to-many
+      if (pays && pays.length > 0) {
+        await cabinet.setPays(pays); // 'pays' est un tableau d'IDs
+        // Recharger le cabinet pour inclure les Pays associés dans la réponse
+        await cabinet.reload({ include: [{ model: Pays }] });
+      }
+      
+      console.log('Cabinet créé', cabinet);
+      res.status(201).json({ message: 'Cabinet créé avec succès', data: cabinet });
     } catch (error) {
       console.error('Erreur création cabinet:', error);
       res.status(500).json({ error: 'Erreur lors de la création du cabinet' });
     }
   },
+
+  // Récupère tous les cabinets, en incluant les pays associés depuis la table de jointure
   getAllCabinets: async (req, res) => {
     try {
-      const results = await Cabinet.findAll();
-      // Séparation par type
-      const procedureCabinets = results.filter(c => c.type === 'procedure');
-      const annuiteCabinets = results.filter(c => c.type === 'annuite');
-      res.status(200).json({ procedure: procedureCabinets, annuite: annuiteCabinets });
+      const cabinets = await Cabinet.findAll({
+        include: [{ model: Pays }]
+      });
+      res.status(200).json({ data: cabinets });
     } catch (error) {
       console.error('Erreur récupération cabinets:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des cabinets' });
     }
   },
+
+  // Récupère un cabinet par son ID, en incluant les pays associés
   getCabinetById: async (req, res) => {
     try {
-      const result = await Cabinet.findByPk(req.params.id);
-      if (result) {
-        res.status(200).json({ data: result });
+      const cabinet = await Cabinet.findByPk(req.params.id, {
+        include: [{ model: Pays }]
+      });
+      if (cabinet) {
+        res.status(200).json({ data: cabinet });
       } else {
         res.status(404).json({ error: 'Cabinet non trouvé' });
       }
@@ -83,6 +100,48 @@ const cabinetController = {
     } catch (error) {
       console.error('Erreur récupération références cabinets:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des références de cabinets' });
+    }
+  },
+  
+  // Ajouter un pays à un cabinet
+  addPays: async (req, res) => {
+    try {
+      const cabinetId = req.params.cabinetId;
+      const paysId = req.body.paysId;
+      
+      await sequelize.models.CabinetPays.create({
+        CabinetId: cabinetId,
+        PaysId: paysId
+      });
+      
+      res.status(200).json({ message: "Pays ajouté au cabinet avec succès!" });
+    } catch (error) {
+      console.error('Erreur ajout pays au cabinet:', error);
+      res.status(500).json({ error: 'Erreur lors de l\'ajout du pays au cabinet' });
+    }
+  },
+
+  // Supprimer un pays d'un cabinet
+  removePays: async (req, res) => {
+    try {
+      const cabinetId = req.params.cabinetId;
+      const paysId = req.params.paysId;
+      
+      const deleted = await sequelize.models.CabinetPays.destroy({
+        where: {
+          CabinetId: cabinetId,
+          PaysId: paysId
+        }
+      });
+      
+      if (deleted) {
+        res.status(200).json({ message: "Pays retiré du cabinet avec succès!" });
+      } else {
+        res.status(404).json({ message: `Impossible de retirer le pays id=${paysId} du cabinet id=${cabinetId}. Peut-être que la relation n'existe pas!` });
+      }
+    } catch (error) {
+      console.error('Erreur suppression pays du cabinet:', error);
+      res.status(500).json({ error: 'Erreur lors de la suppression du pays du cabinet' });
     }
   }
 };

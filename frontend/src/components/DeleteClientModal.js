@@ -1,11 +1,14 @@
 import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
-import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const DeleteClientModal = ({ show, handleClose, refreshClients, client }) => {
   const handleDelete = () => {
-    axios.delete(`http://localhost:3100/clients/${client.id_client}`)
-      .then(() => {
+    fetch(`${API_BASE_URL}/clients/${client.id_client}`, {
+      method: 'DELETE',
+    })
+      .then(response => response.json())
+      .then(data => {
         refreshClients();
         handleClose();
       })

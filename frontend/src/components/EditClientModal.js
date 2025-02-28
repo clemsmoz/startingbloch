@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
   const [formData, setFormData] = useState({
@@ -35,8 +35,15 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.put(`http://localhost:3100/clients/${client.id_client}`, formData)
-      .then(() => {
+    fetch(`${API_BASE_URL}/clients/${client.id_client}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+      .then(response => response.json())
+      .then(data => {
         refreshClients();
         handleClose();
       })
