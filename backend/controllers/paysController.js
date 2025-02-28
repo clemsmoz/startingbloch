@@ -101,4 +101,3 @@ const PaysController = {
 };
 
 module.exports = PaysController;
-//       });

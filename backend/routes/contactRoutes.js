@@ -17,4 +17,9 @@ router.get('/contacts/clients/:id_client', contactController.getContactsByClient
 router.put('/contacts/clients/:id', contactController.updateContactForClient);
 router.delete('/contacts/clients/:id', contactController.deleteContactFromClient);
 
+// Les routes invoquent les fonctions : 
+// - Pour cabinets : createContactForCabinet, getAllContactsFromCabinet, getContactsByCabinetId, updateContactForCabinet, deleteContactFromCabinet
+// - Pour clients : createContactForClient, getAllContactsFromClient, getContactsByClientId, updateContactForClient, deleteContactFromClient
+// Aucune modification n'est requise.
+
 module.exports = router;

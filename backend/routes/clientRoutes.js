@@ -9,5 +9,8 @@ router.get('/clients/:id', clientController.getClientById);
 router.put('/clients/:id', clientController.updateClient);
 router.delete('/clients/:id', clientController.deleteClient);
 router.get('/brevets/:brevetId/clients', clientController.getClientsByBrevetId);
+// Ajout des routes pour la gestion des brevets pour un client
+router.post('/clients/:clientId/brevets', clientController.addBrevet);
+router.delete('/clients/:clientId/brevets/:brevetId', clientController.removeBrevet);
 
 module.exports = router;

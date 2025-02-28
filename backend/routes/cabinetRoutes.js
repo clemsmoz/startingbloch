@@ -11,4 +11,8 @@ router.delete('/cabinet/:id', cabinetController.deleteCabinet);
 router.get('/cabinets', cabinetController.getCabinetsByBrevetId);
 router.get('/reference', cabinetController.getAllCabinetReferences);
 
+// Ajout des routes pour l'association de pays à un cabinet
+router.post('/cabinet/:cabinetId/pays', cabinetController.addPays);
+router.delete('/cabinet/:cabinetId/pays/:paysId', cabinetController.removePays);
+
 module.exports = router;
