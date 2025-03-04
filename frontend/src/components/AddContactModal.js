@@ -20,21 +20,34 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-
+  
     let url = '';
     let dataToSend = {};
-
+  
     if (cabinetId) {
-      url = `${API_BASE_URL}/contacts/cabinets`;
-      dataToSend = { ...formData, id_cabinet: cabinetId };
+      url = `${API_BASE_URL}/api/contacts/cabinets`;
+      dataToSend = { 
+        nom_contact: formData.nom,
+        prenom_contact: formData.prenom,
+        poste_contact: formData.fonction,
+        email_contact: formData.email,
+        telephone_contact: formData.telephone,
+        cabinet_id: cabinetId 
+      };
     } else if (clientId) {
-      url = `${API_BASE_URL}/contacts/clients`;
-      dataToSend = { ...formData, id_client: clientId };
+      url = `${API_BASE_URL}/api/contacts/clients`;
+      dataToSend = { 
+        nom_contact: formData.nom,
+        prenom_contact: formData.prenom,
+        poste_contact: formData.fonction,
+        email_contact: formData.email,
+        telephone_contact: formData.telephone,
+        client_id: clientId 
+      };
     }
-
+  
     fetch(url, {
       method: 'POST',
       headers: {
@@ -44,14 +57,20 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
     })
       .then(response => response.json())
       .then(data => {
-        refreshContacts();
+        // Passez l'objet d'identification à refreshContacts afin d'éviter l'erreur
+        if (cabinetId) {
+          refreshContacts({ cabinet_id: cabinetId });
+        } else if (clientId) {
+          refreshContacts({ client_id: clientId });
+        }
         handleClose();
       })
       .catch(error => {
         console.error('There was an error adding the contact!', error);
       });
   };
-
+  
+  
   return (
     <Modal open={show} onClose={handleClose}>
       <Box

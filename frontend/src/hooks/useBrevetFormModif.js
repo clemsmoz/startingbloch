@@ -28,7 +28,7 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
 
   useEffect(() => {
     if (brevetId) {
-      fetch(`${API_BASE_URL}/brevets/${brevetId}`)
+      fetch(`${API_BASE_URL}/api/brevets/${brevetId}`)
         .then(response => response.json())
         .then(data => {
           const brevetData = data.data;
@@ -54,22 +54,22 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
         .catch(error => console.error('Erreur lors du chargement des données du brevet:', error));
     }
 
-    fetch(`${API_BASE_URL}/clients`)
+    fetch(`${API_BASE_URL}/api/clients`)
       .then(response => response.json())
       .then(data => setClients(data.data || []))
       .catch(error => console.error('Erreur lors de la récupération des clients:', error));
 
-    fetch(`${API_BASE_URL}/statuts`)
+    fetch(`${API_BASE_URL}/api/statuts`)
       .then(response => response.json())
       .then(data => setStatuts(data.data || []))
       .catch(error => console.error('Erreur lors de la récupération des statuts:', error));
 
-    fetch(`${API_BASE_URL}/pays`)
+    fetch(`${API_BASE_URL}/api/pays`)
       .then(response => response.json())
       .then(data => setPaysList(data.data || []))
       .catch(error => console.error('Erreur lors de la récupération des pays:', error));
 
-    fetch(`${API_BASE_URL}/cabinets`)
+    fetch(`${API_BASE_URL}/api/cabinets`)
       .then(response => response.json())
       .then(data => {
         setCabinets({
@@ -156,7 +156,7 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
       dataToSubmit.append('piece_jointe', formData.piece_jointe);
     }
 
-    fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+    fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
       method: 'PUT',
       body: dataToSubmit,
     })

@@ -10,6 +10,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Document, Page, pdfjs } from 'react-pdf';
 import useBrevetData from '../hooks/useBrevetData';
+import { API_BASE_URL } from '../config';
 
 // Configurer le worker pour react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
@@ -61,7 +62,7 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
 
   useEffect(() => {
     if (showPreview && showPreview.type_fichier.includes('text')) {
-      const filePath = `http://localhost:3100/brevets/${brevet.id_brevet}/piece-jointe`;
+      const filePath = `${API_BASE_URL}/api/brevets/${brevet.id_brevet}/piece-jointe`;
       fetch(filePath)
         .then((response) => {
           if (!response.ok) {

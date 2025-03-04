@@ -31,7 +31,7 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
   useEffect(() => {
     const fetchPays = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/pays`);
+        const response = await fetch(`${API_BASE_URL}/api/pays`);
         const data = await response.json();
         setPaysList(data.data); // Assurez-vous que la structure des données correspond
       } catch (error) {
@@ -62,7 +62,7 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = `${API_BASE_URL}/cabinet`;
+    const url = `${API_BASE_URL}/api/cabinet`;
     try {
       const response = await fetch(url, {
         method: 'POST',

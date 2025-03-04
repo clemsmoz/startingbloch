@@ -45,6 +45,7 @@ const brevetController = {
       res.status(500).json({ error: 'Erreur lors de la création du brevet' });
     }
   },
+
   getAllBrevets: async (req, res) => {
     try {
       const results = await Brevet.findAll();
@@ -54,6 +55,7 @@ const brevetController = {
       res.status(500).json({ error: 'Erreur lors de la récupération des brevets' });
     }
   },
+
   getBrevetById: async (req, res) => {
     try {
       const result = await Brevet.findByPk(req.params.id);
@@ -67,6 +69,7 @@ const brevetController = {
       res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
     }
   },
+
   getPiecesJointesByBrevetId: async (req, res) => {
     try {
       const brevet = await Brevet.findByPk(req.params.id);
@@ -81,10 +84,9 @@ const brevetController = {
       const fichiersBase64 = fichiers.map(fichier => ({
         nom_fichier: fichier.nom_fichier,
         type_fichier: fichier.type_fichier,
-        // Si fichier.donnees est un buffer, convertissez-le, sinon retournez-le tel quel
-        donnees: fichier.donnees && fichier.donnees.data 
-                 ? Buffer.from(fichier.donnees.data).toString('base64')
-                 : fichier.donnees || null
+        donnees: fichier.donnees?.data 
+             ? Buffer.from(fichier.donnees.data).toString('base64')
+             : fichier.donnees || null
       }));
       res.status(200).json({ data: fichiersBase64 });
     } catch (error) {
@@ -92,15 +94,24 @@ const brevetController = {
       res.status(500).json({ error: 'Erreur lors de la récupération des pièces jointes' });
     }
   },
+
+  // Méthode corrigée pour récupérer les brevets d'un client via la table de jointure
   getByClientId: async (req, res) => {
     try {
-      const results = await Brevet.findAll({ where: { clientId: req.params.id } });
-      res.status(200).json(results);
+      const clientId = req.params.id; // On suppose que la route est /brevets/client/:id
+      const brevets = await Brevet.findAll({
+        include: [{
+          model: Client,
+          where: { id: clientId }
+        }]
+      });
+      res.status(200).json({ data: brevets });
     } catch (error) {
       console.error('Erreur récupération brevets par client:', error);
-      res.status(500).json({ error: 'Erreur lors de la récupération des brevets par client' });
+      res.status(500).json({ error: error.message });
     }
   },
+
   updateBrevet: async (req, res) => {
     try {
       const result = await Brevet.update(req.body, { where: { id: req.params.id } });
@@ -114,6 +125,7 @@ const brevetController = {
       res.status(500).json({ error: 'Erreur lors de la mise à jour du brevet' });
     }
   },
+
   deleteBrevet: async (req, res) => {
     try {
       const result = await Brevet.destroy({ where: { id: req.params.id } });
@@ -128,7 +140,6 @@ const brevetController = {
     }
   },
 
-  // Version améliorée de getAllBrevets avec relations
   getAllBrevetsWithRelations: async (req, res) => {
     try {
       const titre = req.query.titre;
@@ -157,7 +168,6 @@ const brevetController = {
     }
   },
 
-  // Version améliorée de getBrevetById avec relations
   getBrevetByIdWithRelations: async (req, res) => {
     try {
       const result = await Brevet.findByPk(req.params.id, {
@@ -192,7 +202,6 @@ const brevetController = {
     }
   },
 
-  // Ajouter un titulaire à un brevet
   addTitulaire: async (req, res) => {
     try {
       const brevetId = req.params.brevetId;
@@ -210,7 +219,6 @@ const brevetController = {
     }
   },
 
-  // Ajouter un inventeur à un brevet
   addInventeur: async (req, res) => {
     try {
       const brevetId = req.params.brevetId;
@@ -228,7 +236,6 @@ const brevetController = {
     }
   },
 
-  // Ajouter un déposant à un brevet
   addDeposant: async (req, res) => {
     try {
       const brevetId = req.params.brevetId;

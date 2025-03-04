@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Box, Container, TextField, Select, MenuItem, Typography, Button, Paper, IconButton, Pagination, FormControl } from '@mui/material';
 import { FaEdit, FaTrash, FaInfoCircle, FaPlus, FaArrowUp } from 'react-icons/fa';
 import AddBrevetModal from '../components/AddBrevetModal';
 import BrevetDetailModal from '../components/BrevetDetailModal';
 import EditBrevetModal from '../components/EditBrevetModal';
 import { useNavigate, useParams } from 'react-router-dom';
-import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
+import logo from '../assets/startigbloch_transparent_corrected.png';
+import { API_BASE_URL } from '../config';
 
 const BrevetClientPage = () => {
   const { clientId } = useParams();
@@ -28,9 +28,12 @@ const BrevetClientPage = () => {
   }, [clientId]);
 
   const refreshBrevets = () => {
-    axios.get(`http://localhost:3100/brevets/client/${clientId}`)
-      .then(response => {
-        setBrevets(response.data);
+    fetch(`${API_BASE_URL}/api/brevets/client/${clientId}`)
+      .then(response => response.json())
+      .then(data => {
+        // Supposons que l'API renvoie { data: [...] }
+        const brevetsArray = Array.isArray(data.data) ? data.data : data;
+        setBrevets(brevetsArray);
       })
       .catch(error => {
         console.error('There was an error fetching the brevets!', error);
@@ -38,9 +41,10 @@ const BrevetClientPage = () => {
   };
 
   const fetchClientName = () => {
-    axios.get(`http://localhost:3100/clients/${clientId}`)
-      .then(response => {
-        setClientName(response.data.data.nom_client);
+    fetch(`${API_BASE_URL}/api/clients/${clientId}`)
+      .then(response => response.json())
+      .then(data => {
+        setClientName(data.data.nom_client);
       })
       .catch(error => {
         console.error('There was an error fetching the client name!', error);
@@ -58,6 +62,7 @@ const BrevetClientPage = () => {
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
   const handleShowDetailModal = (brevetId, event) => {
     event.stopPropagation();
     setSelectedBrevetId(brevetId);
@@ -69,7 +74,7 @@ const BrevetClientPage = () => {
   const handleShowAddModal = () => setShowAddModal(true);
   const handleCloseAddModal = () => setShowAddModal(false);
 
-  // Fonction pour la recherche
+  // Fonction de normalisation pour la recherche
   const normalizeString = (str) => {
     return str.trim().toLowerCase();
   };
@@ -89,9 +94,6 @@ const BrevetClientPage = () => {
         )
       );
     }
-
-
-
     return true;
   });
 
@@ -112,8 +114,8 @@ const BrevetClientPage = () => {
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Container sx={{ padding: '40px' }} maxWidth="xl">
-           {/* Logo de l'entreprise */}
-           <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
+        {/* Logo de l'entreprise */}
+        <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
         </Box>
         
@@ -265,8 +267,8 @@ const BrevetClientPage = () => {
             refreshBrevets={refreshBrevets}
           />
         )}
-          {/* Bouton "Retour en haut" toujours visible */}
-          <IconButton
+        {/* Bouton "Retour en haut" */}
+        <IconButton
           onClick={scrollTop}
           sx={{
             position: 'fixed',

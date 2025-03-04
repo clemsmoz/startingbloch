@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CardContent, Typography, Container, Button, IconButton, Avatar, Box, Paper } from '@mui/material';
+import { CardContent, Typography, Container, Button, Avatar, Box, Paper } from '@mui/material';
 import Sidebar from '../components/Sidebar';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import AddContactModal from '../components/AddContactModal';
 import DeleteContactModal from '../components/DeleteContactModal';
 import EditContactModal from '../components/EditContactModal';
-import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
+import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
 
 const ContactsPage = () => {
@@ -22,18 +22,25 @@ const ContactsPage = () => {
 
   useEffect(() => {
     if (cabinetId) {
-      refreshContacts('cabinet', cabinetId);
+      refreshContacts({ cabinet_id: cabinetId });
     } else if (clientId) {
-      refreshContacts('client', clientId);
+      refreshContacts({ client_id: clientId });
     } else {
       console.error('Neither cabinet ID nor client ID is provided in query parameters.');
     }
   }, [cabinetId, clientId]);
 
-  const refreshContacts = (type, id) => {
-    const url = type === 'cabinet'
-      ? `${API_BASE_URL}/contacts/cabinets/${id}`
-      : `${API_BASE_URL}/contacts/clients/${id}`;
+  const refreshContacts = (contactIdentifier) => {
+    let url = '';
+
+    if (contactIdentifier.cabinet_id) {
+      url = `${API_BASE_URL}/api/contacts/cabinets/${contactIdentifier.cabinet_id}`;
+    } else if (contactIdentifier.client_id) {
+      url = `${API_BASE_URL}/api/contacts/clients/${contactIdentifier.client_id}`;
+    } else {
+      console.error("Aucun identifiant (cabinet_id ou client_id) fourni !");
+      return;
+    }
 
     fetch(url)
       .then(response => response.json())
@@ -64,22 +71,22 @@ const ContactsPage = () => {
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
       <Container sx={{ padding: '20px' }} maxWidth="xl">
-           {/* Logo de l'entreprise */}
-           <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
+        {/* Logo de l'entreprise */}
+        <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
         </Box>
-        
+
         <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
           Contacts
         </Typography>
-        
-        {/* Alignement des boutons avec espace entre eux */}
+
+        {/* Boutons d'action */}
         <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
           <Button 
             variant="outlined" 
             color="primary" 
             onClick={() => navigate(-1)} 
-            sx={{ fontWeight: 'bold', padding: '12px 20px' }} // Augmentation de la taille
+            sx={{ fontWeight: 'bold', padding: '12px 20px' }}
           >
             Retour
           </Button>
@@ -87,7 +94,7 @@ const ContactsPage = () => {
             variant="outlined" 
             color="primary" 
             onClick={handleShowAddModal} 
-            sx={{ fontWeight: 'bold', padding: '12px 20px' }} // Augmentation de la taille
+            sx={{ fontWeight: 'bold', padding: '12px 20px' }}
           >
             Ajouter un nouveau Contact
           </Button>
@@ -96,7 +103,7 @@ const ContactsPage = () => {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {contacts.map(contact => (
             <Box
-              key={contact.id_contact}
+              key={contact.id || contact.id_contact}
               component={Paper}
               elevation={6}
               sx={{
@@ -110,7 +117,7 @@ const ContactsPage = () => {
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-                  {contact.nom.charAt(0)}{contact.prenom.charAt(0)}
+                  {contact.nom_contact ? contact.nom_contact.charAt(0) : ''}{contact.prenom_contact ? contact.prenom_contact.charAt(0) : ''}
                 </Avatar>
                 <Box>
                   <FaEdit
@@ -125,16 +132,17 @@ const ContactsPage = () => {
               </Box>
               <CardContent sx={{ textAlign: 'center', mt: 2 }}>
                 <Typography variant="h5" component="div" fontWeight="bold">
-                  {contact.nom} {contact.prenom}
+                  {contact.nom_contact} {contact.prenom_contact}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  <strong>Téléphone :</strong> {contact.telephone}<br />
-                  <strong>Email :</strong> {contact.email}
+                  <strong>Téléphone :</strong> {contact.telephone_contact}<br />
+                  <strong>Email :</strong> {contact.email_contact}
                 </Typography>
               </CardContent>
             </Box>
           ))}
         </Box>
+
         <AddContactModal 
           show={showAddModal} 
           handleClose={handleCloseAddModal} 

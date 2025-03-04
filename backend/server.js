@@ -17,7 +17,7 @@ expressApp.use(express.json());
 // Charger les routes Express (assurez-vous que le dossier routes existe et est correctement configuré)
 try {
   const routes = require('./routes');
-  expressApp.use('/', routes);
+  expressApp.use('/api', routes);
   console.log("📌 Routes Express chargées.");
 } catch (err) {
   console.error("❌ Erreur lors du chargement des routes Express :", err);
@@ -51,8 +51,8 @@ if (fs.existsSync(frontendStaticPath)) {
 function createWindow(port) {
   console.log("📌 Création de la fenêtre Electron...");
   const win = new BrowserWindow({
-    width: 1024,
-    height: 768,
+    width: 1920,
+    height: 1080,
     webPreferences: {
       nodeIntegration: false, // Désactive l'intégration de Node.js pour plus de sécurité
       contextIsolation: true,
@@ -64,6 +64,15 @@ function createWindow(port) {
   win.loadURL(startUrl)
     .then(() => console.log("✅ URL chargée avec succès :", startUrl))
     .catch(err => console.error("❌ Échec du chargement de l'URL :", err.message));
+
+  // Ajouter des écouteurs d'événements pour les changements de page
+  win.webContents.on('did-navigate', (event, url) => {
+    console.log(`📄 Navigation vers : ${url}`);
+  });
+
+  win.webContents.on('did-navigate-in-page', (event, url) => {
+    console.log(`📄 Navigation dans la page vers : ${url}`);
+  });
 }
 
 // Démarrage d'Electron une fois prêt

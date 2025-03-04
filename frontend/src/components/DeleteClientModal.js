@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config';
 
 const DeleteClientModal = ({ show, handleClose, refreshClients, client }) => {
   const handleDelete = () => {
-    fetch(`${API_BASE_URL}/clients/${client.id_client}`, {
+    fetch(`${API_BASE_URL}/api/clients/${client.id_client}`, {
       method: 'DELETE',
     })
       .then(response => response.json())

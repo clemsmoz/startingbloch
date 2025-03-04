@@ -24,21 +24,21 @@ const useBrevetData = (brevetId) => {
 
       const fetchBrevetData = async () => {
         try {
-          const brevetResponse = await fetch(`${API_BASE_URL}/brevets/${brevetId}`);
+          const brevetResponse = await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`);
           const brevetData = await brevetResponse.json();
           setBrevet(brevetData.data);
 
-          const clientsResponse = await fetch(`${API_BASE_URL}/brevets/${brevetId}/clients`);
+          const clientsResponse = await fetch(`${API_BASE_URL}/api/brevets/${brevetId}/clients`);
           const clientsData = await clientsResponse.json();
           setClients(clientsData.data || []);
 
-          const statutsResponse = await fetch(`${API_BASE_URL}/statuts`);
+          const statutsResponse = await fetch(`${API_BASE_URL}/api/statuts`);
           const statutsData = await statutsResponse.json();
           const allStatuts = statutsData.data;
           setStatutsList(allStatuts);
 
           if (brevetData.data.numero_pays && brevetData.data.numero_pays.length > 0) {
-            const paysResponse = await fetch(`${API_BASE_URL}/numeros_pays?id_brevet=${brevetId}`);
+            const paysResponse = await fetch(`${API_BASE_URL}/api/numeros_pays?id_brevet=${brevetId}`);
             const paysData = await paysResponse.json();
             const paysWithStatut = paysData.data.map((paysItem) => {
               const matchingStatut = allStatuts.find(st => st.id_statuts === paysItem.id_statuts);
@@ -54,7 +54,7 @@ const useBrevetData = (brevetId) => {
 
           if (brevetData.data.inventeurs && brevetData.data.inventeurs.length > 0) {
             const inventeurIds = brevetData.data.inventeurs.map(inv => inv.id_inventeur);
-            const inventeursResponse = await fetch(`${API_BASE_URL}/inventeur?id_inventeurs=${inventeurIds.join('&id_inventeurs=')}`);
+            const inventeursResponse = await fetch(`${API_BASE_URL}/api/inventeur?id_inventeurs=${inventeurIds.join('&id_inventeurs=')}`);
             const inventeursData = await inventeursResponse.json();
             setInventeurs(inventeursData.data || []);
           } else {
@@ -63,7 +63,7 @@ const useBrevetData = (brevetId) => {
 
           if (brevetData.data.deposants && brevetData.data.deposants.length > 0) {
             const deposantIds = brevetData.data.deposants.map(dep => dep.id_deposant);
-            const deposantsResponse = await fetch(`${API_BASE_URL}/deposant?id_deposants=${deposantIds.join('&id_deposants=')}`);
+            const deposantsResponse = await fetch(`${API_BASE_URL}/api/deposant?id_deposants=${deposantIds.join('&id_deposants=')}`);
             const deposantsData = await deposantsResponse.json();
             setDeposants(deposantsData.data || []);
           } else {
@@ -72,18 +72,18 @@ const useBrevetData = (brevetId) => {
 
           if (brevetData.data.titulaires && brevetData.data.titulaires.length > 0) {
             const titulaireIds = brevetData.data.titulaires.map(tit => tit.id_titulaire);
-            const titulairesResponse = await fetch(`${API_BASE_URL}/titulaire?id_titulaires=${titulaireIds.join('&id_titulaires=')}`);
+            const titulairesResponse = await fetch(`${API_BASE_URL}/api/titulaire?id_titulaires=${titulaireIds.join('&id_titulaires=')}`);
             const titulairesData = await titulairesResponse.json();
             setTitulaires(titulairesData.data || []);
           } else {
             setTitulaires([]);
           }
 
-          const paysResponse = await fetch(`${API_BASE_URL}/numeros_pays?id_brevet=${brevetId}`);
+          const paysResponse = await fetch(`${API_BASE_URL}/api/numeros_pays?id_brevet=${brevetId}`);
           const paysData = await paysResponse.json();
           setPays(paysData.data || []);
 
-          const cabinetsResponse = await fetch(`${API_BASE_URL}/cabinets?id_brevet=${brevetId}`);
+          const cabinetsResponse = await fetch(`${API_BASE_URL}/api/cabinets?id_brevet=${brevetId}`);
           const cabinetsData = await cabinetsResponse.json();
           const cabinetDetailsPromises = cabinetsData.data.map(cabinet =>
             fetch(`${API_BASE_URL}/cabinet/${cabinet.id_cabinet}`).then(res => res.json())
@@ -98,19 +98,19 @@ const useBrevetData = (brevetId) => {
           setAnnuiteCabinets(annuiteCabinetsData);
 
           const contactsProcedurePromises = procedureCabinetsData.map(cabinet =>
-            fetch(`${API_BASE_URL}/contacts/cabinets/${cabinet.id_cabinet}`).then(res => res.json())
+            fetch(`${API_BASE_URL}/api/contacts/cabinets/${cabinet.id_cabinet}`).then(res => res.json())
           );
           const contactsProcedureResults = await Promise.all(contactsProcedurePromises);
           setContactsProcedure(contactsProcedureResults.flatMap(result => result.data || []));
 
           const contactsAnnuitePromises = annuiteCabinetsData.map(cabinet =>
-            fetch(`${API_BASE_URL}/contacts/cabinets/${cabinet.id_cabinet}`).then(res => res.json())
+            fetch(`${API_BASE_URL}/api/contacts/cabinets/${cabinet.id_cabinet}`).then(res => res.json())
           );
           const contactsAnnuiteResults = await Promise.all(contactsAnnuitePromises);
           setContactsAnnuite(contactsAnnuiteResults.flatMap(result => result.data || []));
           
           
-          const piecesJointesResponse = await fetch(`${API_BASE_URL}/brevets/${brevetId}/piece-jointe`);
+          const piecesJointesResponse = await fetch(`${API_BASE_URL}/api/brevets/${brevetId}/piece-jointe`);
           const piecesData = await piecesJointesResponse.json();
           setPiecesJointes(piecesData.data);
           

@@ -31,7 +31,7 @@ const EditContactModal = ({ show, handleClose, refreshContacts, contact }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetch(`${API_BASE_URL}/contacts/${contact.id_contact}`, {
+    fetch(`${API_BASE_URL}/api/contacts/${contact.id_contact}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

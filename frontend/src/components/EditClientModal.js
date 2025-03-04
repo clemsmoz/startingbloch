@@ -35,7 +35,7 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetch(`${API_BASE_URL}/clients/${client.id_client}`, {
+    fetch(`${API_BASE_URL}/api/clients/${client.id_client}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

@@ -15,7 +15,7 @@ const usePortefeuilleBrevet = () => {
   const fetchBrevets = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/brevets`);
+      const response = await fetch(`${API_BASE_URL}/api/brevets`);
       const data = await response.json();
       setBrevets(data.data);
       setError(null);
@@ -30,7 +30,7 @@ const usePortefeuilleBrevet = () => {
   const addBrevet = async (brevetData) => {
     setLoading(true);
     try {
-      await fetch(`${API_BASE_URL}/brevets`, {
+      await fetch(`${API_BASE_URL}/api/brevets`, {
         method: 'POST',
         body: JSON.stringify(brevetData),
         headers: {
@@ -50,7 +50,7 @@ const usePortefeuilleBrevet = () => {
   const updateBrevet = async (brevetId, brevetData) => {
     setLoading(true);
     try {
-      await fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+      await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
         method: 'PUT',
         body: JSON.stringify(brevetData),
         headers: {
@@ -70,7 +70,7 @@ const usePortefeuilleBrevet = () => {
   const deleteBrevet = async (brevetId) => {
     setLoading(true);
     try {
-      await fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+      await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
         method: 'DELETE',
       });
       fetchBrevets(); // Refresh the list after deletion
@@ -85,7 +85,7 @@ const usePortefeuilleBrevet = () => {
   const handleDeleteBrevet = async (id) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce brevet ?")) {
       try {
-        await fetch(`${API_BASE_URL}/brevets/${id}`, {
+        await fetch(`${API_BASE_URL}/api/brevets/${id}`, {
           method: 'DELETE',
         });
         // refreshBrevets(); // Actualiser la liste des brevets après suppression

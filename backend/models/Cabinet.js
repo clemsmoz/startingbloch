@@ -1,26 +1,11 @@
+// models/Cabinet.js
 module.exports = (sequelize, DataTypes) => {
   const Cabinet = sequelize.define('Cabinet', {
-    nom: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    reference: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    adresse: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    reference_cabinet: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    type: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    }
-    // Supprimez l'attribut "pays" ici
+    nom_cabinet: { type: DataTypes.STRING, allowNull: true },
+    email_cabinet: { type: DataTypes.STRING, allowNull: true },
+    telephone_cabinet: { type: DataTypes.STRING, allowNull: true },
+    reference_cabinet: { type: DataTypes.STRING, allowNull: true },
+    type: { type: DataTypes.STRING, allowNull: true }
   }, {
     tableName: 'cabinet',
     timestamps: false
@@ -28,7 +13,11 @@ module.exports = (sequelize, DataTypes) => {
 
   Cabinet.associate = (models) => {
     Cabinet.belongsToMany(models.Brevet, { through: 'BrevetCabinets' });
-    Cabinet.belongsToMany(models.Pays, { through: 'CabinetPays', foreignKey: 'CabinetId', otherKey: 'PaysId' });
+    Cabinet.belongsToMany(models.Pays, { 
+      through: 'CabinetPays',       // utilisation de la table jointe "CabinetPays"
+      foreignKey: 'CabinetId',       // colonne pour Cabinet
+      otherKey: 'PaysId'             // colonne pour Pays
+    });
     Cabinet.hasMany(models.Contact, { foreignKey: 'cabinet_id' });
   };
 

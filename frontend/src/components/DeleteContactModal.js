@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config';
 
 const DeleteContactModal = ({ show, handleClose, refreshContacts, contact }) => {
   const handleDelete = () => {
-    fetch(`${API_BASE_URL}/contacts/${contact.id_contact}`, {
+    fetch(`${API_BASE_URL}/api/contacts/${contact.id_contact}`, {
       method: 'DELETE',
     })
       .then(response => response.json())

@@ -2,9 +2,10 @@ const { Contact, Client, Cabinet, Sequelize } = require('../models');
 const Op = Sequelize.Op;
 
 const contactController = {
+  // Création d'un contact pour un cabinet
   createContactForCabinet: async (req, res) => {
     try {
-      const result = await Contact.create({ ...req.body, type: 'cabinet' });
+      const result = await Contact.create({ ...req.body });
       console.log('Contact pour cabinet créé', result);
       res.status(201).json({ message: 'Contact créé avec succès', data: result });
     } catch (error) {
@@ -12,28 +13,44 @@ const contactController = {
       res.status(500).json({ error: 'Erreur lors de la création du contact pour cabinet' });
     }
   },
+
+  // Récupération de tous les contacts d'un cabinet via query string (ex: /contacts?cabinet_id=1)
   getAllContactsFromCabinet: async (req, res) => {
     try {
-      const results = await Contact.findAll({ where: { type: 'cabinet' } });
+      const cabinetId = req.query.cabinet_id;
+      if (!cabinetId) {
+        return res.status(400).json({ error: 'cabinet_id is required' });
+      }
+      const results = await Contact.findAll({ where: { cabinet_id: cabinetId } });
       res.status(200).json({ data: results });
     } catch (error) {
       console.error('Erreur récupération contacts cabinet:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour cabinet' });
     }
   },
+
+  // Récupération de contacts d'un cabinet via paramètre d'URL (ex: /contacts/cabinets/1)
   getContactsByCabinetId: async (req, res) => {
     try {
-      const idCabinet = req.params.id;
-      const results = await Contact.findAll({ where: { type: 'cabinet', cabinetId: idCabinet } });
+      const cabinetId = req.params.id;
+      if (!cabinetId) {
+        return res.status(400).json({ error: 'cabinet id is required' });
+      }
+      const results = await Contact.findAll({ where: { cabinet_id: cabinetId } });
       res.status(200).json({ data: results });
     } catch (error) {
       console.error('Erreur récupération contacts cabinet par ID:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour cabinet' });
     }
   },
+
+  // Mise à jour d'un contact pour un cabinet
   updateContactForCabinet: async (req, res) => {
     try {
-      const [updated] = await Contact.update(req.body, { where: { id: req.params.id, type: 'cabinet' } });
+      // On filtre par id et par cabinet_id (attendu dans req.body ou déjà connu)
+      const [updated] = await Contact.update(req.body, {
+        where: { id: req.params.id, cabinet_id: req.body.cabinet_id }
+      });
       if (updated) {
         const updatedContact = await Contact.findByPk(req.params.id);
         res.status(200).json({ message: 'Contact mis à jour', data: updatedContact });
@@ -45,9 +62,13 @@ const contactController = {
       res.status(500).json({ error: 'Erreur lors de la mise à jour du contact pour cabinet' });
     }
   },
+
+  // Suppression d'un contact pour un cabinet
   deleteContactFromCabinet: async (req, res) => {
     try {
-      const deleted = await Contact.destroy({ where: { id: req.params.id, type: 'cabinet' } });
+      const deleted = await Contact.destroy({
+        where: { id: req.params.id, cabinet_id: req.body.cabinet_id }
+      });
       if (deleted) {
         res.status(200).json({ message: 'Contact supprimé' });
       } else {
@@ -58,9 +79,11 @@ const contactController = {
       res.status(500).json({ error: 'Erreur lors de la suppression du contact pour cabinet' });
     }
   },
+
+  // Création d'un contact pour un client
   createContactForClient: async (req, res) => {
     try {
-      const result = await Contact.create({ ...req.body, type: 'client' });
+      const result = await Contact.create({ ...req.body });
       console.log('Contact pour client créé', result);
       res.status(201).json({ message: 'Contact créé avec succès', data: result });
     } catch (error) {
@@ -68,28 +91,43 @@ const contactController = {
       res.status(500).json({ error: 'Erreur lors de la création du contact pour client' });
     }
   },
+
+  // Récupération de tous les contacts d'un client via query string (ex: /contacts?client_id=1)
   getAllContactsFromClient: async (req, res) => {
     try {
-      const results = await Contact.findAll({ where: { type: 'client' } });
+      const clientId = req.query.client_id;
+      if (!clientId) {
+        return res.status(400).json({ error: 'client_id is required' });
+      }
+      const results = await Contact.findAll({ where: { client_id: clientId } });
       res.status(200).json({ data: results });
     } catch (error) {
       console.error('Erreur récupération contacts client:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour client' });
     }
   },
+
+  // Récupération de contacts d'un client via paramètre d'URL (ex: /contacts/clients/1)
   getContactsByClientId: async (req, res) => {
     try {
-      const idClient = req.params.id_client;
-      const results = await Contact.findAll({ where: { type: 'client', clientId: idClient } });
+      const clientId = req.params.id_client;
+      if (!clientId) {
+        return res.status(400).json({ error: 'client id is required' });
+      }
+      const results = await Contact.findAll({ where: { client_id: clientId } });
       res.status(200).json({ data: results });
     } catch (error) {
       console.error('Erreur récupération contacts client par ID:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour client' });
     }
   },
+
+  // Mise à jour d'un contact pour un client
   updateContactForClient: async (req, res) => {
     try {
-      const [updated] = await Contact.update(req.body, { where: { id: req.params.id, type: 'client' } });
+      const [updated] = await Contact.update(req.body, {
+        where: { id: req.params.id, client_id: req.body.client_id }
+      });
       if (updated) {
         const updatedContact = await Contact.findByPk(req.params.id);
         res.status(200).json({ message: 'Contact mis à jour', data: updatedContact });
@@ -101,9 +139,13 @@ const contactController = {
       res.status(500).json({ error: 'Erreur lors de la mise à jour du contact pour client' });
     }
   },
+
+  // Suppression d'un contact pour un client
   deleteContactFromClient: async (req, res) => {
     try {
-      const deleted = await Contact.destroy({ where: { id: req.params.id, type: 'client' } });
+      const deleted = await Contact.destroy({
+        where: { id: req.params.id, client_id: req.body.client_id }
+      });
       if (deleted) {
         res.status(200).json({ message: 'Contact supprimé' });
       } else {
@@ -115,6 +157,7 @@ const contactController = {
     }
   },
 
+  // Création générique d'un contact (avec vérification qu'il ne soit pas associé aux deux entités)
   create: async (req, res) => {
     try {
       const contact = {
@@ -142,6 +185,7 @@ const contactController = {
     }
   },
 
+  // Récupération de tous les contacts avec option de filtre par nom
   findAll: async (req, res) => {
     try {
       const nom = req.query.nom;
@@ -164,6 +208,7 @@ const contactController = {
     }
   },
 
+  // Récupération d'un contact par son ID, avec les associations
   findOne: async (req, res) => {
     try {
       const id = req.params.id;
@@ -189,6 +234,7 @@ const contactController = {
     }
   },
 
+  // Récupération de contacts par client via un paramètre "clientId"
   findByClientId: async (req, res) => {
     try {
       const clientId = req.params.clientId;
@@ -204,6 +250,7 @@ const contactController = {
     }
   },
 
+  // Récupération de contacts par cabinet via un paramètre "cabinetId"
   findByCabinetId: async (req, res) => {
     try {
       const cabinetId = req.params.cabinetId;
@@ -219,6 +266,7 @@ const contactController = {
     }
   },
 
+  // Mise à jour générique d'un contact
   update: async (req, res) => {
     try {
       const id = req.params.id;
@@ -249,6 +297,7 @@ const contactController = {
     }
   },
 
+  // Suppression générique d'un contact
   delete: async (req, res) => {
     try {
       const id = req.params.id;

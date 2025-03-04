@@ -92,7 +92,7 @@ const useUpdateBrevet = (brevetId, handleClose) => {
     });
 
     try {
-      await fetch(`${API_BASE_URL}/brevets/${brevetId}`, {
+      await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
         method: 'PUT',
         body: dataToSubmit,
       });

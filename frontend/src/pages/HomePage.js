@@ -2,7 +2,7 @@ import React from 'react';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
 import { Container, Typography, Box, Stack, Card, CardContent, CardActions, Button, Avatar } from '@mui/material';
-import { FaBuilding, FaUsers, FaFileContract, FaFlask } from 'react-icons/fa';
+import { FaBuilding, FaUsers, FaFileContract } from 'react-icons/fa';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
 
 const HomePage = () => {

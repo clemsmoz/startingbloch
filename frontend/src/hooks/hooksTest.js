@@ -31,7 +31,7 @@ const useAllBrevetsData = () => {
   const addBrevet = async (brevetData) => {
     setLoading(true);
     try {
-      await axios.post('http://localhost:3100/brevets', brevetData);
+      await axios.post('http://localhost:3100/api/brevets', brevetData);
     //   fetchBrevets(); // Refresh the list after adding
       setError(null);
     } catch (error) {

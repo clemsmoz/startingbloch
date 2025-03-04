@@ -82,7 +82,7 @@ const BrevetsList = () => {
   useEffect(() => {
     const fetchReferences = async () => {
       try {
-        const response = await axios.get('http://localhost:3100/reference');
+        const response = await axios.get('http://localhost:3100/api/reference');
         setReferences(response.data.data);
       } catch (error) {
         console.error('Erreur lors de la récupération des références des cabinets', error);

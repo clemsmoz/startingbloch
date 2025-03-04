@@ -30,7 +30,7 @@ const AddClientModal = ({ show, handleClose, refreshClients }) => {
     setLoading(true);  // Activation de l'état de chargement
     setError(null);    // Réinitialisation des erreurs
 
-    fetch(`${API_BASE_URL}/clients`, {
+    fetch(`${API_BASE_URL}/api/clients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

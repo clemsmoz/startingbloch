@@ -34,22 +34,22 @@ const useAddBrevet = (handleClose) => {
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/clients`)
+    fetch(`${API_BASE_URL}/api/clients`)
       .then(response => response.json())
       .then(data => setClientsList(data.data || []))
       .catch(() => setError('Erreur lors de la récupération des clients'));
 
-    fetch(`${API_BASE_URL}/statuts`)
+    fetch(`${API_BASE_URL}/api/statuts`)
       .then(response => response.json())
       .then(data => setStatuts(data.data || []))
       .catch(() => setError('Erreur lors de la récupération des statuts'));
 
-    fetch(`${API_BASE_URL}/pays`)
+    fetch(`${API_BASE_URL}/api/pays`)
       .then(response => response.json())
       .then(data => setPaysList(data.data || []))
       .catch(() => setError('Erreur lors de la récupération des pays'));
 
-    fetch(`${API_BASE_URL}/cabinet`)
+    fetch(`${API_BASE_URL}/api/cabinet`)
       .then(response => response.json())
       .then(data => {
         const { procedure, annuite } = data;
@@ -62,7 +62,7 @@ const useAddBrevet = (handleClose) => {
   }, []);
 
   const fetchContacts = (cabinetId, type) => {
-    fetch(`${API_BASE_URL}/contacts/cabinets/${cabinetId}`)
+    fetch(`${API_BASE_URL}/api/contacts/cabinets/${cabinetId}`)
       .then(response => response.json())
       .then(data => {
         if (type === 'procedure') {
@@ -211,7 +211,7 @@ const useAddBrevet = (handleClose) => {
     }
   
     try {
-      await fetch(`${API_BASE_URL}/brevets`, {
+      await fetch(`${API_BASE_URL}/api/brevets`, {
         method: 'POST',
         body: dataToSubmit,
       });

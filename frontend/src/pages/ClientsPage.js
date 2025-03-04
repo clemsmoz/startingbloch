@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Container, Typography, Box, Button, Modal, Card, CardContent, CardActions, Avatar, Paper, Stack } from '@mui/material';
+import { Container, Typography, Box, Button, Paper, CardContent, CardActions, Avatar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { FaEdit, FaTrash, FaUser } from 'react-icons/fa';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import EditClientModal from '../components/EditClientModal';
 import DeleteClientModal from '../components/DeleteClientModal';
 import AddClientModal from '../components/AddClientModal';
-import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
-
+import logo from '../assets/startigbloch_transparent_corrected.png';
+import { API_BASE_URL } from '../config';
 
 const ClientsPage = () => {
   const [clients, setClients] = useState([]);
@@ -23,9 +22,10 @@ const ClientsPage = () => {
   }, []);
 
   const refreshClients = () => {
-    axios.get('http://localhost:3100/clients')
-      .then(response => {
-        setClients(response.data.data);
+    fetch(`${API_BASE_URL}/api/clients`)
+      .then(response => response.json())
+      .then(data => {
+        setClients(data.data);
       })
       .catch(error => {
         console.error('There was an error fetching the clients!', error);
@@ -61,26 +61,31 @@ const ClientsPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex',  bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
       <Container sx={{ padding: '20px', marginLeft: '0px' }} maxWidth="xl">
-           {/* Logo de l'entreprise */}
-           <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
+        {/* Logo de l'entreprise */}
+        <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
         </Box>
         
-      <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
-      Portefeuille Clients
+        <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
+          Portefeuille Clients
         </Typography>
-        <Button variant="contained" color="primary" onClick={handleShowAddModal} sx={{ mb: 4, textTransform: 'uppercase', fontWeight: 'bold' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleShowAddModal}
+          sx={{ mb: 4, textTransform: 'uppercase', fontWeight: 'bold' }}
+        >
           Ajouter un nouveau client
         </Button>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {clients.map(client => (
             <Paper
-              key={client.id_client}
+              key={client.id}
               elevation={6}
-              onClick={() => handleClientClick(client.id_client)}
+              onClick={() => handleClientClick(client.id)}
               sx={{
                 width: 300,
                 padding: 3,
@@ -91,20 +96,17 @@ const ClientsPage = () => {
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-  {client.nom_client ? client.nom_client.charAt(0) : ''}
-  {client.prenom_client ? client.prenom_client.charAt(0) : ''}
-</Avatar>
-
+                <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
+                  {client.nom_client ? client.nom_client.charAt(0) : ''}
+                  {client.prenom_client ? client.prenom_client.charAt(0) : ''}
+                </Avatar>
                 <Box>
                   <FaEdit
-                    className="text-primary mx-2"
                     style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#3f51b5' }}
                     onClick={(event) => handleShowEditModal(client, event)}
                   />
                   <FaTrash
-                    className="text-danger mx-2"
-                    style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336' }}
+                    style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336', marginLeft: '1rem' }}
                     onClick={(event) => handleShowDeleteModal(client, event)}
                   />
                 </Box>
@@ -122,7 +124,11 @@ const ClientsPage = () => {
                 </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: 'center' }}>
-                <Button variant="outlined" color="primary" onClick={(event) => handleViewContacts(client.id_client, event)}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={(event) => handleViewContacts(client.id, event)}
+                >
                   Voir Contacts
                 </Button>
               </CardActions>

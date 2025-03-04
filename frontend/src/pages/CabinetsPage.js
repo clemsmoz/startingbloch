@@ -20,7 +20,7 @@ const CabinetsPage = () => {
 
   const refreshCabinets = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/cabinet`);
+      const response = await fetch(`${API_BASE_URL}/api/cabinet`);
       const data = await response.json();
       setAnnuiteCabinets(data.data.filter(cabinet => cabinet.type === 'annuite') || []);
       setProcedureCabinets(data.data.filter(cabinet => cabinet.type === 'procedure') || []);
