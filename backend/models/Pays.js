@@ -2,30 +2,30 @@ module.exports = (sequelize, DataTypes) => {
 
 const Pays = sequelize.define('Pays', {
   id: {
-    type: DataTypes.INTEGER.UNSIGNED,
+    type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
   code: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true
   },
   alpha2: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true
   },
   alpha3: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true
   },
   nom_en_gb: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   nom_fr_fr: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   }
 }, {
   tableName: 'pays',

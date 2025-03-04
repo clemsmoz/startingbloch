@@ -3,19 +3,19 @@ module.exports = (sequelize, DataTypes) => {
   const Titulaire = sequelize.define('Titulaire', {
     nom_titulaire: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     prenom_titulaire: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     email_titulaire: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     telephone_titulaire: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     }
   }, {
     tableName: 'titulaire',

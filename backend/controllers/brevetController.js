@@ -77,10 +77,14 @@ const brevetController = {
       if (!fichiers.length) {
         return res.status(404).json({ message: 'Aucune pièce jointe trouvée pour ce brevet' });
       }
-      const fichiersBase64 = fichiers.map(result => ({
-        nom_fichier: result.nom_fichier,
-        type_fichier: result.type_fichier,
-        donnees: result.donnees ? result.donnees.toString('base64') : null
+      // Si les données stockées sont des buffers, utilisez Buffer.from(...).toString('base64')
+      const fichiersBase64 = fichiers.map(fichier => ({
+        nom_fichier: fichier.nom_fichier,
+        type_fichier: fichier.type_fichier,
+        // Si fichier.donnees est un buffer, convertissez-le, sinon retournez-le tel quel
+        donnees: fichier.donnees && fichier.donnees.data 
+                 ? Buffer.from(fichier.donnees.data).toString('base64')
+                 : fichier.donnees || null
       }));
       res.status(200).json({ data: fichiersBase64 });
     } catch (error) {

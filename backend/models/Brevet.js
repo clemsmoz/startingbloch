@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     }
   }, {
-    tableName: 'Brevets',
+    tableName: 'brevet',
     timestamps: false
   });
 
@@ -30,5 +30,6 @@ module.exports = (sequelize, DataTypes) => {
     Brevet.hasMany(models.NumeroPays, { foreignKey: 'id_brevet' });
   };
 
+  // Remarque : Assurez-vous de synchroniser ce modèle avec la base (ex. via migration ou sequelize.sync({ alter: true }))
   return Brevet;
 };

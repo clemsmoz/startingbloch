@@ -22,7 +22,7 @@ Object.keys(db).forEach((modelName) => {
   }
 });
 
-const Brevet = require('./Brevet');
+db.sequelize = sequelize; // Ajoute l'instance Sequelize
 db.Sequelize = Sequelize; // Ajoute la classe Sequelize
 
 module.exports = db;

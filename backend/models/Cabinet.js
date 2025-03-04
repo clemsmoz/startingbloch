@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const Cabinet = sequelize.define('Cabinet', {
     nom: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     reference: {
       type: DataTypes.STRING,
@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Cabinet.associate = (models) => {
     Cabinet.belongsToMany(models.Brevet, { through: 'BrevetCabinets' });
-    Cabinet.belongsToMany(models.Pays, { through: 'CabinetPays' });
+    Cabinet.belongsToMany(models.Pays, { through: 'CabinetPays', foreignKey: 'CabinetId', otherKey: 'PaysId' });
     Cabinet.hasMany(models.Contact, { foreignKey: 'cabinet_id' });
   };
 
