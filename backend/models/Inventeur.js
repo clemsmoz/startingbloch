@@ -1,5 +1,4 @@
 module.exports = (sequelize, DataTypes) => {
-
   const Inventeur = sequelize.define('Inventeur', {
     nom_inventeur: {
       type: DataTypes.STRING,
@@ -24,6 +23,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Inventeur.associate = (models) => {
     Inventeur.belongsToMany(models.Brevet, { through: 'BrevetInventeurs' });
+    // La table pivot InventeurPays doit inclure le champ "licence".
     Inventeur.belongsToMany(models.Pays, { through: 'InventeurPays' });
   };
 

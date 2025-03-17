@@ -45,10 +45,15 @@ const ContactsPage = () => {
     fetch(url)
       .then(response => response.json())
       .then(data => {
-        setContacts(data.data);
+        // S'assurer que data.data est un tableau avant de l'affecter à contacts
+        const contactsData = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+        console.log('Contacts récupérés:', contactsData);
+        setContacts(contactsData);
       })
       .catch(error => {
         console.error('There was an error fetching the contacts!', error);
+        // En cas d'erreur, définir contacts comme un tableau vide
+        setContacts([]);
       });
   };
 
@@ -101,46 +106,52 @@ const ContactsPage = () => {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {contacts.map(contact => (
-            <Box
-              key={contact.id || contact.id_contact}
-              component={Paper}
-              elevation={6}
-              sx={{
-                width: 300,
-                padding: 3,
-                borderRadius: 3,
-                transition: 'transform 0.3s',
-                '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
-                position: 'relative',
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-                  {contact.nom_contact ? contact.nom_contact.charAt(0) : ''}{contact.prenom_contact ? contact.prenom_contact.charAt(0) : ''}
-                </Avatar>
-                <Box>
-                  <FaEdit
-                    style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#3f51b5' }}
-                    onClick={() => handleShowEditModal(contact)}
-                  />
-                  <FaTrash
-                    style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336', marginLeft: '1rem' }}
-                    onClick={() => handleShowDeleteModal(contact)}
-                  />
+          {Array.isArray(contacts) && contacts.length > 0 ? (
+            contacts.map(contact => (
+              <Box
+                key={contact.id || contact.id_contact}
+                component={Paper}
+                elevation={6}
+                sx={{
+                  width: 300,
+                  padding: 3,
+                  borderRadius: 3,
+                  transition: 'transform 0.3s',
+                  '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                  position: 'relative',
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
+                    {contact.nom_contact ? contact.nom_contact.charAt(0) : ''}{contact.prenom_contact ? contact.prenom_contact.charAt(0) : ''}
+                  </Avatar>
+                  <Box>
+                    <FaEdit
+                      style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#3f51b5' }}
+                      onClick={() => handleShowEditModal(contact)}
+                    />
+                    <FaTrash
+                      style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336', marginLeft: '1rem' }}
+                      onClick={() => handleShowDeleteModal(contact)}
+                    />
+                  </Box>
                 </Box>
+                <CardContent sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="h5" component="div" fontWeight="bold">
+                    {contact.nom_contact} {contact.prenom_contact}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    <strong>Téléphone :</strong> {contact.telephone_contact}<br />
+                    <strong>Email :</strong> {contact.email_contact}
+                  </Typography>
+                </CardContent>
               </Box>
-              <CardContent sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="h5" component="div" fontWeight="bold">
-                  {contact.nom_contact} {contact.prenom_contact}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  <strong>Téléphone :</strong> {contact.telephone_contact}<br />
-                  <strong>Email :</strong> {contact.email_contact}
-                </Typography>
-              </CardContent>
-            </Box>
-          ))}
+            ))
+          ) : (
+            <Typography variant="body1" sx={{ width: '100%', textAlign: 'center', mt: 3 }}>
+              Aucun contact trouvé
+            </Typography>
+          )}
         </Box>
 
         <AddContactModal 

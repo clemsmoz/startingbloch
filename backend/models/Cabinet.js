@@ -14,9 +14,17 @@ module.exports = (sequelize, DataTypes) => {
   Cabinet.associate = (models) => {
     Cabinet.belongsToMany(models.Brevet, { through: 'BrevetCabinets' });
     Cabinet.belongsToMany(models.Pays, { 
-      through: 'CabinetPays',       // utilisation de la table jointe "CabinetPays"
-      foreignKey: 'CabinetId',       // colonne pour Cabinet
-      otherKey: 'PaysId'             // colonne pour Pays
+      through: 'CabinetPays', // La table jointe
+      foreignKey: { 
+        name: 'CabinetId', 
+        allowNull: false,
+        unique: false  // Empêche l'ajout d'une contrainte unique sur cette colonne
+      },
+      otherKey: { 
+        name: 'PaysId', 
+        allowNull: false,
+        unique: false  // Pareil pour l'autre clé
+      }
     });
     Cabinet.hasMany(models.Contact, { foreignKey: 'cabinet_id' });
   };

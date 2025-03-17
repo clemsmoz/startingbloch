@@ -37,7 +37,10 @@ const contactController = {
         return res.status(400).json({ error: 'cabinet id is required' });
       }
       const results = await Contact.findAll({ where: { cabinet_id: cabinetId } });
-      res.status(200).json({ data: results });
+      
+      // Modifier la structure de la réponse pour qu'elle soit directement utilisable
+      // dans le frontend sans manipulation complexe
+      res.status(200).json(results);
     } catch (error) {
       console.error('Erreur récupération contacts cabinet par ID:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des contacts pour cabinet' });
