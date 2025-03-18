@@ -14,16 +14,17 @@ module.exports = (sequelize, DataTypes) => {
   Cabinet.associate = (models) => {
     Cabinet.belongsToMany(models.Brevet, { through: 'BrevetCabinets' });
     Cabinet.belongsToMany(models.Pays, { 
-      through: 'CabinetPays', // La table jointe
-      foreignKey: { 
-        name: 'CabinetId', 
-        allowNull: false,
-        unique: false  // Empêche l'ajout d'une contrainte unique sur cette colonne
+      through: {
+        model: 'CabinetPays',
+        unique: false
       },
-      otherKey: { 
-        name: 'PaysId', 
-        allowNull: false,
-        unique: false  // Pareil pour l'autre clé
+      foreignKey: {
+        name: 'CabinetId',
+        unique: false
+      },
+      otherKey: {
+        name: 'PaysId',
+        unique: false
       }
     });
     Cabinet.hasMany(models.Contact, { foreignKey: 'cabinet_id' });

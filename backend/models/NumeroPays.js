@@ -1,17 +1,13 @@
 module.exports = (sequelize, DataTypes) => {
 
   const NumeroPays = sequelize.define('NumeroPays', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      allowNull: false
-    },
+    
     id_brevet: {
       type: DataTypes.INTEGER,
+      primaryKey: true,
       allowNull: false,
       references: {
-        model: 'brevet',
+        model: 'brevet', // Supposant l'existence d'une table 'pays'
         key: 'id'
       }
     },
@@ -27,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'pays',
+        model: 'pays', // Supposant l'existence d'une table 'pays'
         key: 'id'
       }
     },
@@ -39,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'statuts',
+        model: 'statuts', // Supposant l'existence d'une table 'statuts'
         key: 'id'
       }
     },
@@ -53,6 +49,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     numero_delivrance: {
       type: DataTypes.STRING(50),
+      allowNull: true
+    },
+    date_publication: {
+      type: DataTypes.DATEONLY,
       allowNull: true
     },
     licence: {

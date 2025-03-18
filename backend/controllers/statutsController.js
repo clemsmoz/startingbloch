@@ -23,18 +23,15 @@ const StatutsController = {
     const statut = req.query.statut;
     const condition = statut ? { statuts: { [Op.like]: `%${statut}%` } } : null;
     try {
-      // Modifié pour éviter les erreurs de jointure avec NumeroPays
       const data = await Statuts.findAll({
         where: condition,
-        // Retirer les associations problématiques temporairement
-        // include: [
-        //   { model: db.NumeroPays },
-        //   { model: db.Pays }
-        // ]
+        include: [
+          { model: db.NumeroPays },
+          { model: db.Pays }
+        ]
       });
       return res.status(200).json({ data });
     } catch (err) {
-      console.error("Erreur lors de la récupération des statuts:", err);
       return res.status(500).json({ message: err.message || "Une erreur est survenue lors de la récupération des statuts." });
     }
   },
@@ -44,18 +41,16 @@ const StatutsController = {
     const id = req.params.id;
     try {
       const data = await Statuts.findByPk(id, {
-        // Retirer les associations problématiques temporairement
-        // include: [
-        //   { model: db.NumeroPays },
-        //   { model: db.Pays }
-        // ]
+        include: [
+          { model: db.NumeroPays },
+          { model: db.Pays }
+        ]
       });
       if (!data) {
         return res.status(404).json({ message: `Impossible de trouver le statut avec id=${id}.` });
       }
       return res.status(200).json(data);
     } catch (err) {
-      console.error("Erreur lors de la récupération du statut:", err);
       return res.status(500).json({ message: "Erreur lors de la récupération du statut avec id=" + id });
     }
   },
