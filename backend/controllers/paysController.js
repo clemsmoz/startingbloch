@@ -31,18 +31,21 @@ const PaysController = {
     const nom = req.query.nom;
     const condition = nom ? { nom_fr_fr: { [Op.like]: `%${nom}%` } } : null;
     try {
+      // Modifié pour éviter les erreurs de jointure avec NumeroPays
       const data = await Pays.findAll({
         where: condition,
-        include: [
-          { model: db.NumeroPays },
-          { model: db.Titulaire },
-          { model: db.Deposant },
-          { model: db.Inventeur },
-          { model: db.Statuts }
-        ]
+        // Retirer les associations problématiques temporairement
+        // include: [
+        //   { model: db.NumeroPays },
+        //   { model: db.Titulaire },
+        //   { model: db.Deposant },
+        //   { model: db.Inventeur },
+        //   { model: db.Statuts }
+        // ]
       });
       return res.status(200).json({ data });
     } catch (err) {
+      console.error("Erreur lors de la récupération des pays:", err);
       return res.status(500).json({ message: err.message || "Une erreur est survenue lors de la récupération des pays." });
     }
   },
@@ -52,19 +55,21 @@ const PaysController = {
     const id = req.params.id;
     try {
       const data = await Pays.findByPk(id, {
-        include: [
-          { model: db.NumeroPays },
-          { model: db.Titulaire },
-          { model: db.Deposant },
-          { model: db.Inventeur },
-          { model: db.Statuts }
-        ]
+        // Retirer les associations problématiques temporairement
+        // include: [
+        //   { model: db.NumeroPays },
+        //   { model: db.Titulaire },
+        //   { model: db.Deposant },
+        //   { model: db.Inventeur },
+        //   { model: db.Statuts }
+        // ]
       });
       if (!data) {
         return res.status(404).json({ message: `Impossible de trouver le pays avec id=${id}.` });
       }
       return res.status(200).json(data);
     } catch (err) {
+      console.error("Erreur lors de la récupération du pays:", err);
       return res.status(500).json({ message: "Erreur lors de la récupération du pays avec id=" + id });
     }
   },

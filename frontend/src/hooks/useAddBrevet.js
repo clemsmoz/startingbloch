@@ -2,384 +2,508 @@ import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 
 const useAddBrevet = (handleClose) => {
-  const [formData, setFormData] = useState({
+  // Structure initiale des données - standardisée et simplifiée
+  const initialFormData = {
     reference_famille: '',
     titre: '',
-    date_depot: '',
-    numero_delivrance: '',
-    date_delivrance: '',
-    licence: false,
-    // Exemple pour "pays" global (non utilisé ici directement)
-    pays: [{
-      id_pays: '',
-      numero_depot: '',
-      numero_publication: '',
-      id_statuts: '',
-      date_depot: '',
-      numero_delivrance: '',
-      date_delivrance: '',
-      licence: false,
-    }],
-    // Pour chaque inventeur, ajout d'un sous-tableau "pays"
-    inventeurs: [{
-      nom_inventeur: '',
-      prenom_inventeur: '',
-      email_inventeur: '',
-      telephone_inventeur: '',
-      pays: [{ id_pays: '', licence: false }]
-    }],
-    // Pour titulaires
-    titulaires: [{
-      nom_titulaire: '',
-      prenom_titulaire: '',
-      email_titulaire: '',
-      telephone_titulaire: '',
-      part_pi: '',
-      executant: false,
-      client_correspondant: false,
-      pays: [{ id_pays: '', licence: false }]
-    }],
-    // Pour déposants
-    deposants: [{
-      nom_deposant: '',
-      prenom_deposant: '',
-      email_deposant: '',
-      telephone_deposant: '',
-      pays: [{ id_pays: '', licence: false }]
-    }],
-    cabinets_procedure: [{
-      id_cabinet: '',
-      id_contact: '', // Utilisé pour le contact
-      reference: '',
-      dernier_intervenant: false,
-      numero_depot: '',
-      numero_publication: '',
-      numero_delivrance: '',
-      id_statuts: '',
-      date_depot: '',
-      date_delivrance: '',
-      licence: false
-    }],
-    cabinets_annuite: [{
-      id_cabinet: '',
-      id_contact: '',
-      reference: '',
-      dernier_intervenant: false,
-      numero_depot: '',
-      numero_publication: '',
-      numero_delivrance: '',
-      id_statuts: '',
-      date_depot: '',
-      date_delivrance: '',
-      licence: false
-    }],
     commentaire: '',
-    pieces_jointes: [],
-    clients: [{
-      id_client: ''
-    }]
-  });
+    numeros_pays: [{ 
+      id_pays: '', 
+      numero_depot: '', 
+      numero_publication: '', 
+      id_statuts: '', 
+      date_depot: '', 
+      date_delivrance: '', 
+      numero_delivrance: '', 
+      licence: false 
+    }],
+    inventeurs: [{ 
+      nom_inventeur: '', 
+      prenom_inventeur: '', 
+      email_inventeur: '', 
+      telephone_inventeur: '', 
+      pays_associes: [] 
+    }],
+    deposants: [{ 
+      nom_deposant: '', 
+      prenom_deposant: '', 
+      email_deposant: '', 
+      telephone_deposant: '', 
+      pays_associes: []
+    }],
+    titulaires: [{ 
+      nom_titulaire: '', 
+      prenom_titulaire: '', 
+      email_titulaire: '', 
+      telephone_titulaire: '',
+      part_pi: '', 
+      executant: false, 
+      client_correspondant: false, 
+      pays_associes: [] 
+    }],
+    cabinets_procedure: [{ 
+      id_cabinet: '', 
+      id_contact: '', 
+      reference: '', 
+      dernier_intervenant: false, 
+      pays_associes: [] 
+    }],
+    cabinets_annuite: [{ 
+      id_cabinet: '', 
+      id_contact: '', 
+      reference: '', 
+      dernier_intervenant: false, 
+      pays_associes: [] 
+    }],
+    clients: [{ id_client: '' }],
+    pieces_jointes: []
+  };
 
+  // États
+  const [formData, setFormData] = useState(initialFormData);
   const [clientsList, setClientsList] = useState([]);
   const [statuts, setStatuts] = useState([]);
   const [paysList, setPaysList] = useState([]);
   const [cabinets, setCabinets] = useState({ procedure: [], annuite: [] });
   const [contactsProcedure, setContactsProcedure] = useState([]);
   const [contactsAnnuite, setContactsAnnuite] = useState([]);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
-  useEffect(() => {
-    // Clients
-    fetch(`${API_BASE_URL}/api/clients`)
-      .then(response => response.json())
-      .then(data => {
-        console.log('Clients récupérés :', data);
-        setClientsList(data.data || []);
-      })
-      .catch(() => setError('Erreur lors de la récupération des clients'));
+  // Pays sélectionnés pour les cabinets
+  const selectedPays = formData.numeros_pays
+    .filter(item => item && item.id_pays)
+    .map(item => {
+      const pays = paysList.find(p => p && p.id_pays === item.id_pays);
+      return {
+        id_pays: item.id_pays,
+        nom_fr_fr: pays?.nom_fr_fr || `Pays ID: ${item.id_pays}`
+      };
+    });
 
-    // Statuts
-    fetch(`${API_BASE_URL}/api/statuts`)
-      .then(response => response.json())
-      .then(data => {
-        console.log('Statuts récupérés :', data);
-        // Adapter le format des statuts pour correspondre à ce qu'attend le composant
-        const formattedStatuts = (data.data || []).map(statut => ({
-          id_statuts: statut.id,
+  // Chargement initial des données de référence
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      try {
+        // Chargement des clients
+        const clientsResponse = await fetch(`${API_BASE_URL}/api/clients`);
+        const clientsData = await clientsResponse.json();
+        setClientsList(clientsData.data || []);
+
+        // Chargement des statuts
+        const statutsResponse = await fetch(`${API_BASE_URL}/api/statuts`);
+        const statutsData = await statutsResponse.json();
+        const formattedStatuts = (statutsData.data || []).map(statut => ({
+          id_statuts: String(statut.id),
           valeur: statut.statuts
         }));
         setStatuts(formattedStatuts);
-      })
-      .catch(() => setError('Erreur lors de la récupération des statuts'));
 
-    // Pays
-    fetch(`${API_BASE_URL}/api/pays`)
-      .then(response => response.json())
-      .then(data => {
-        console.log('Pays récupérés :', data);
-        setPaysList(data.data || []);
-      })
-      .catch(() => setError('Erreur lors de la récupération des pays'));
+        // Chargement des pays
+        const paysResponse = await fetch(`${API_BASE_URL}/api/pays`);
+        const paysData = await paysResponse.json();
+        // Conversion explicite de tous les ID en chaînes
+        const formattedPays = (paysData.data || []).map(pays => ({
+          ...pays,
+          id_pays: String(pays.id_pays || pays.id)  // S'assure que l'ID est une chaîne
+        }));
+        setPaysList(formattedPays);
 
-    // Cabinets
-    fetch(`${API_BASE_URL}/api/cabinet`)
-      .then(response => response.json())
-      .then(data => {
-        console.log('Cabinets récupérés (brut) :', data);
-        const cabinetData = data.data ? data.data : data;
-        if (Array.isArray(cabinetData)) {
-          setCabinets({
-            procedure: cabinetData.filter(cabinet => cabinet.type === 'procedure'),
-            annuite: cabinetData.filter(cabinet => cabinet.type === 'annuite')
-          });
-        } else {
-          const procedure = cabinetData.procedure || [];
-          const annuite = cabinetData.annuite || [];
-          setCabinets({
-            procedure: Array.isArray(procedure) ? procedure : [],
-            annuite: Array.isArray(annuite) ? annuite : []
-          });
-        }
-      })
-      .catch(() => setError('Erreur lors de la récupération des cabinets'));
+        // Chargement des cabinets
+        const cabinetsResponse = await fetch(`${API_BASE_URL}/api/cabinet`);
+        const cabinetsData = await cabinetsResponse.json();
+        const cabinetsList = cabinetsData.data || cabinetsData || [];
+        
+        // Formatage des cabinets avec IDs en chaînes
+        const formattedCabinets = cabinetsList.map(cabinet => ({
+          ...cabinet,
+          id: String(cabinet.id)
+        }));
+        
+        setCabinets({
+          procedure: formattedCabinets.filter(cabinet => cabinet.type === 'procedure'),
+          annuite: formattedCabinets.filter(cabinet => cabinet.type === 'annuite')
+        });
+      } catch (err) {
+        console.error("Erreur lors du chargement des données de référence:", err);
+        setError("Erreur lors du chargement des données de référence");
+      }
+    };
+
+    fetchReferenceData();
   }, []);
 
-  // Récupération des contacts associés à un cabinet selon le type
-  const fetchContacts = (cabinetId, type) => {
-    console.log(`Récupération des contacts pour le cabinet ${cabinetId} (type: ${type})`);
-    fetch(`${API_BASE_URL}/api/contacts/cabinets/${cabinetId}`)
-      .then(response => response.json())
-      .then(data => {
-        console.log(`Contacts récupérés pour cabinet ${cabinetId} :`, data);
-        // Assurez-vous que contacts est toujours un tableau, même si data.data est undefined
-        let contacts = [];
-        if (Array.isArray(data)) {
-          contacts = data;
-        } else if (Array.isArray(data.data)) {
-          contacts = data.data;
-        }
-        console.log(`Contacts formatés pour cabinet ${cabinetId} :`, contacts);
-        if (type === 'procedure') {
-          setContactsProcedure(contacts);
-        } else {
-          setContactsAnnuite(contacts);
-        }
-      })
-      .catch((err) => {
-        console.error('Erreur lors de la récupération des contacts:', err);
-        setError('Erreur lors de la récupération des contacts');
-        // En cas d'erreur, définissez un tableau vide pour éviter les erreurs dans l'interface
-        if (type === 'procedure') {
-          setContactsProcedure([]);
-        } else {
-          setContactsAnnuite([]);
-        }
-      });
-  };
+  // Fonctions de gestion de formulaire simplifiées et uniformisées
 
+  // Gestion des champs simples au niveau racine
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    if (name.startsWith('pieces_jointes')) {
-      const filesArray = Array.from(files);
-      setFormData(prevData => ({
-        ...prevData,
-        pieces_jointes: [...prevData.pieces_jointes, ...filesArray]
+    
+    if (name === 'pieces_jointes' && files) {
+      setFormData(prev => ({
+        ...prev,
+        pieces_jointes: [...prev.pieces_jointes, ...Array.from(files)]
       }));
     } else {
-      setFormData(prevData => ({
-        ...prevData,
+      setFormData(prev => ({
+        ...prev,
         [name]: type === 'checkbox' ? checked : value
       }));
     }
   };
 
-  const handleDynamicChange = (e, index, field) => {
-    const { name, value, type, checked } = e.target;
-    // Conversion explicite pour certains champs numériques
-    let newValue;
-    
-    if (type === 'checkbox') {
-      newValue = checked ? 1 : 0;
-    } else if (name === 'id_client' || name === 'id_cabinet' || name === 'id_contact' || name === 'id_statuts' || name === 'id_pays') {
-      // S'assurer que ces IDs sont traités comme des nombres sauf s'ils sont vides
-      newValue = value === '' ? '' : parseInt(value, 10) || ''; // Utilisation de parseInt avec fallback
-    } else {
-      newValue = value;
-    }
-    
-    const updatedField = formData[field].map((item, idx) =>
-      idx === index ? { ...item, [name]: newValue } : item
-    );
-    console.log(`Mise à jour du champ ${field} à l'index ${index}:`, updatedField);
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: updatedField
+  // Gestion des fichiers
+  const handleRemoveFile = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      pieces_jointes: prev.pieces_jointes.filter((_, idx) => idx !== index)
     }));
   };
 
-  // Gestion des sous-champs "pays" dans les entités (inventeurs, titulaires, déposants)
-  const handleDynamicChangeForSubField = (e, parentIndex, field, subIndex, subField) => {
-    const { value, type, checked } = e.target;
-    // Pour "id_pays", on convertit en chaîne
-    let newValue;
-    if (type === 'checkbox') {
-      newValue = checked ? 1 : 0;
-    } else if (subField === 'id_pays') {
-      newValue = value.toString();
-    } else {
-      newValue = value;
-    }
-    const updatedParent = formData[field].map((item, idx) => {
-      if (idx === parentIndex) {
-        const updatedSubArray = item.pays.map((subItem, sIdx) =>
-          sIdx === subIndex ? { ...subItem, [subField]: newValue } : subItem
+  // NOUVELLE APPROCHE: Une seule fonction générique pour mettre à jour n'importe quelle partie du formulaire
+  const updateFormData = (path, value) => {
+    console.log(`Mise à jour du chemin: ${path} avec la valeur:`, value);
+    
+    // Fonction récursive pour mettre à jour une valeur imbriquée
+    const updateNestedValue = (obj, pathArray, val) => {
+      const [key, ...rest] = pathArray;
+      
+      if (rest.length === 0) {
+        // Dernier niveau, on met à jour la valeur
+        return { ...obj, [key]: val };
+      }
+      
+      const nextKey = rest[0];
+      
+      // Si le prochain élément est un indice de tableau
+      if (!isNaN(nextKey)) {
+        // On s'assure que l'objet actuel a une propriété qui est un tableau
+        const targetArray = Array.isArray(obj[key]) ? [...obj[key]] : [];
+        
+        // On met à jour l'élément spécifique dans le tableau
+        targetArray[nextKey] = updateNestedValue(
+          targetArray[nextKey] || {}, 
+          rest.slice(1), 
+          val
         );
-        return { ...item, pays: updatedSubArray };
+        
+        return { ...obj, [key]: targetArray };
       }
-      return item;
-    });
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: updatedParent
-    }));
+      
+      // Si c'est une propriété objet
+      return {
+        ...obj,
+        [key]: updateNestedValue(obj[key] || {}, rest, val)
+      };
+    };
+    
+    // Décompose le chemin en parties (ex: "inventeurs.0.pays.1.id_pays" => ["inventeurs", "0", "pays", "1", "id_pays"])
+    const pathParts = path.split('.');
+    
+    // Met à jour l'état avec la nouvelle valeur
+    setFormData(prevState => updateNestedValue(prevState, pathParts, value));
   };
 
-  const handleAddSubField = (parentIndex, field, subField) => {
-    const emptySubField = { id_pays: '', licence: false };
-    const updatedParent = formData[field].map((item, idx) => {
-      if (idx === parentIndex) {
-        return { ...item, [subField]: item[subField] ? [...item[subField], emptySubField] : [emptySubField] };
+  // Gestion des ajouts et suppressions d'éléments dans les tableaux
+  // Gestion des ajouts d'éléments dans les tableaux - version corrigée pour gérer les chemins imbriqués
+  const addArrayItem = (arrayPath, template = {}) => {
+    setFormData(prevState => {
+      // Traitement spécial pour les pays des inventeurs, titulaires et déposants
+      // Ces cas spécifiques sont traités différemment car ce sont des tableaux imbriqués
+      if (arrayPath.includes('.pays')) {
+        const [entityType, entityIndex, subFieldName] = arrayPath.split('.');
+        const entity = prevState[entityType][entityIndex];
+        
+        // Si pays n'existe pas ou n'est pas un tableau, initialiser comme tableau vide
+        const currentPays = Array.isArray(entity.pays) ? entity.pays : [];
+        const updatedPays = [...currentPays, template];
+        
+        // Mise à jour de l'entité spécifique avec la nouvelle liste de pays
+        const updatedEntities = prevState[entityType].map((item, idx) => 
+          idx === parseInt(entityIndex) ? { ...item, pays: updatedPays } : item
+        );
+        
+        // Retourner l'état mis à jour
+        return {
+          ...prevState,
+          [entityType]: updatedEntities
+        };
       }
-      return item;
-    });
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: updatedParent
-    }));
-  };
 
-  const handleRemoveSubField = (parentIndex, field, subIndex, subField) => {
-    const updatedParent = formData[field].map((item, idx) => {
-      if (idx === parentIndex) {
-        return { ...item, [subField]: item[subField].filter((_, sIdx) => sIdx !== subIndex) };
+      // Pour les autres types d'éléments (code original)
+      try {
+        const pathParts = arrayPath.split('.');
+        let currentObj = prevState;
+        let isValid = true;
+        
+        // Vérifier que le chemin est valide jusqu'au tableau cible
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          const part = pathParts[i];
+          if (currentObj[part] === undefined) {
+            isValid = false;
+            break;
+          }
+          currentObj = currentObj[part];
+        }
+        
+        // Si le chemin n'est pas valide, retourner l'état actuel sans modifications
+        if (!isValid) {
+          console.error(`Le chemin ${arrayPath} est invalide`);
+          return prevState;
+        }
+        
+        const finalPart = pathParts[pathParts.length - 1];
+        
+        // Vérifier que le dernier élément du chemin est bien un tableau
+        if (!Array.isArray(currentObj[finalPart])) {
+          console.error(`Le chemin ${arrayPath} ne mène pas à un tableau`);
+          return prevState;
+        }
+        
+        // Créer une version mise à jour de l'objet complet
+        const result = { ...prevState };
+        let pointer = result;
+        
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          const part = pathParts[i];
+          pointer[part] = { ...pointer[part] };
+          pointer = pointer[part];
+        }
+        
+        // Ajouter le nouvel élément au tableau cible
+        pointer[finalPart] = [...pointer[finalPart], template];
+        
+        return result;
+      } catch (err) {
+        console.error(`Erreur lors de l'ajout d'un élément au chemin ${arrayPath}:`, err);
+        return prevState;
       }
-      return item;
     });
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: updatedParent
-    }));
   };
 
-  const handleAddField = (field) => {
-    const emptyField = {
-      pays: { id_pays: '', numero_depot: '', numero_publication: '', id_statuts: '', date_depot: '', numero_delivrance: '', date_delivrance: '', licence: false },
-      inventeurs: { nom_inventeur: '', prenom_inventeur: '', email: '', telephone: '', pays: [{ id_pays: '', licence: false }] },
-      titulaires: { nom_titulaire: '', prenom_titulaire: '', email: '', telephone: '', part_pi: '', executant: false, client_correspondant: false, pays: [{ id_pays: '', licence: false }] },
-      deposants: { nom: '', prenom: '', email: '', telephone: '', pays: [{ id_pays: '', licence: false }] },
-      cabinets_procedure: {
-        id_cabinet: '',
-        id_contact: '',
-        reference: '',
-        dernier_intervenant: false,
-        numero_depot: '',
-        numero_publication: '',
-        numero_delivrance: '',
-        id_statuts: '',
-        date_depot: '',
-        date_delivrance: '',
-        licence: false
-      },
-      cabinets_annuite: {
-        id_cabinet: '',
-        id_contact: '',
-        reference: '',
-        dernier_intervenant: false,
-        numero_depot: '',
-        numero_publication: '',
-        numero_delivrance: '',
-        id_statuts: '',
-        date_depot: '',
-        date_delivrance: '',
-        licence: false
-      },
-      clients: { id_client: '' }
-    }[field];
-    console.log(`Ajout d'un nouveau champ pour ${field}`);
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: [...prevData[field], emptyField]
-    }));
+  // Gestion des suppressions d'éléments dans les tableaux - version corrigée pour gérer les chemins imbriqués
+  const removeArrayItem = (arrayPath, index) => {
+    setFormData(prevState => {
+      // Traitement spécial pour les pays des inventeurs, titulaires et déposants
+      if (arrayPath.includes('.pays')) {
+        const [entityType, entityIndex, subFieldName] = arrayPath.split('.');
+        const entity = prevState[entityType][entityIndex];
+        
+        // Si pays n'existe pas ou n'est pas un tableau, retourner l'état actuel
+        if (!Array.isArray(entity.pays)) {
+          console.error(`La propriété pays de ${entityType}[${entityIndex}] n'est pas un tableau`);
+          return prevState;
+        }
+        
+        // Filtrer pour retirer l'élément correspondant à l'index
+        const updatedPays = entity.pays.filter((_, idx) => idx !== index);
+        
+        // Mise à jour de l'entité spécifique avec la nouvelle liste de pays
+        const updatedEntities = prevState[entityType].map((item, idx) => 
+          idx === parseInt(entityIndex) ? { ...item, pays: updatedPays } : item
+        );
+        
+        // Retourner l'état mis à jour
+        return {
+          ...prevState,
+          [entityType]: updatedEntities
+        };
+      }
+
+      // Pour les autres types d'éléments (même approche avec des corrections)
+      try {
+        // ...existing code pour removeArrayItem...
+        const pathParts = arrayPath.split('.');
+        let currentObj = prevState;
+        let isValid = true;
+        
+        // Vérifier que le chemin est valide jusqu'au tableau cible
+        for (let i = 0; i < pathParts.length; i++) {
+          const part = pathParts[i];
+          if (currentObj[part] === undefined) {
+            isValid = false;
+            break;
+          }
+          currentObj = currentObj[part];
+        }
+        
+        // Si le chemin n'est pas valide, retourner l'état actuel sans modifications
+        if (!isValid || !Array.isArray(currentObj)) {
+          console.error(`Le chemin ${arrayPath} est invalide ou ne mène pas à un tableau`);
+          return prevState;
+        }
+        
+        // Créer une version mise à jour de l'objet complet
+        const result = { ...prevState };
+        let pointer = result;
+        
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          const part = pathParts[i];
+          pointer[part] = { ...pointer[part] };
+          pointer = pointer[part];
+        }
+        
+        const finalPart = pathParts[pathParts.length - 1];
+        // Filtrer pour retirer l'élément correspondant à l'index
+        pointer[finalPart] = pointer[finalPart].filter((_, idx) => idx !== index);
+        
+        return result;
+      } catch (err) {
+        console.error(`Erreur lors de la suppression d'un élément au chemin ${arrayPath}:`, err);
+        return prevState;
+      }
+    });
   };
 
-  const handleRemoveField = (index, field) => {
-    console.log(`Suppression du champ ${field} à l'index ${index}`);
-    const newDynamicFields = formData[field].filter((_, idx) => idx !== index);
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: newDynamicFields
-    }));
+  // Récupération des contacts par cabinet
+  const fetchContacts = async (cabinetId, type) => {
+    if (!cabinetId) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/contacts/cabinets/${cabinetId}`);
+      const data = await response.json();
+      
+      let contacts = [];
+      if (Array.isArray(data)) {
+        contacts = data;
+      } else if (Array.isArray(data.data)) {
+        contacts = data.data;
+      }
+      
+      // Formatage des contacts avec IDs en chaînes
+      const formattedContacts = contacts.map(contact => ({
+        ...contact,
+        id: String(contact.id)
+      }));
+      
+      if (type === 'procedure') {
+        setContactsProcedure(formattedContacts);
+      } else {
+        setContactsAnnuite(formattedContacts);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la récupération des contacts:', err);
+      if (type === 'procedure') {
+        setContactsProcedure([]);
+      } else {
+        setContactsAnnuite([]);
+      }
+    }
   };
 
+  // Soumission du formulaire
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     const dataToSubmit = new FormData();
-
+    
+    // Ajout des propriétés principales
     dataToSubmit.append('reference_famille', formData.reference_famille);
     dataToSubmit.append('titre', formData.titre);
-    dataToSubmit.append('commentaire', formData.commentaire);
-
-    if (formData.date_depot) {
-      dataToSubmit.append('date_depot', new Date(formData.date_depot).toISOString().split('T')[0]);
-    }
-    if (formData.date_delivrance) {
-      dataToSubmit.append('date_delivrance', new Date(formData.date_delivrance).toISOString().split('T')[0]);
-    }
-
-    formData.pays.forEach((pays, index) => {
-      if (pays.date_depot) {
-        pays.date_depot = new Date(pays.date_depot).toISOString().split('T')[0];
+    dataToSubmit.append('commentaire', formData.commentaire || '');
+    
+    // Fonction pour formater les dates
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toISOString().split('T')[0];
+      } catch (e) {
+        console.warn(`Erreur de formatage de date: ${dateString}`, e);
+        return '';
       }
-      if (pays.date_delivrance) {
-        pays.date_delivrance = new Date(pays.date_delivrance).toISOString().split('T')[0];
-      }
-    });
+    };
+    
+    // Formatage des données avec traitement des dates
+    const formatDataWithDates = (items) => {
+      return items.map(item => {
+        const formattedItem = { ...item };
+        if (formattedItem.date_depot) {
+          formattedItem.date_depot = formatDate(formattedItem.date_depot);
+        }
+        if (formattedItem.date_delivrance) {
+          formattedItem.date_delivrance = formatDate(formattedItem.date_delivrance);
+        }
+        return formattedItem;
+      });
+    };
+    
+    // Conversion et ajout des données complexes
+    const formattedInventeurs = formData.inventeurs.map(inventeur => ({
+      ...inventeur,
+      // Créer une structure compatible avec l'API
+      pays: inventeur.pays_associes?.map(id_pays => ({ id_pays, licence: false })) || []
+    }));
 
-    dataToSubmit.append('pays', JSON.stringify(formData.pays));
-    dataToSubmit.append('inventeurs', JSON.stringify(formData.inventeurs));
-    dataToSubmit.append('titulaires', JSON.stringify(formData.titulaires));
-    dataToSubmit.append('deposants', JSON.stringify(formData.deposants));
-    dataToSubmit.append('cabinets_procedure', JSON.stringify(formData.cabinets_procedure));
-    dataToSubmit.append('cabinets_annuite', JSON.stringify(formData.cabinets_annuite));
+    const formattedDeposants = formData.deposants.map(deposant => ({
+      ...deposant,
+      // Créer une structure compatible avec l'API
+      pays: deposant.pays_associes?.map(id_pays => ({ id_pays, licence: false })) || []
+    }));
+
+    const formattedTitulaires = formData.titulaires.map(titulaire => ({
+      ...titulaire,
+      // Créer une structure compatible avec l'API
+      pays: titulaire.pays_associes?.map(id_pays => ({ id_pays, licence: false })) || []
+    }));
+
+    // Mise à jour des données à soumettre
+    dataToSubmit.append('numeros_pays', JSON.stringify(formatDataWithDates(formData.numeros_pays)));
+    dataToSubmit.append('inventeurs', JSON.stringify(formattedInventeurs));
+    dataToSubmit.append('deposants', JSON.stringify(formattedDeposants));
+    dataToSubmit.append('titulaires', JSON.stringify(formattedTitulaires));
+    
+    // Adapter les données des cabinets pour l'API si nécessaire
+    const formattedCabinetsProcedure = formData.cabinets_procedure.map(cabinet => ({
+      ...cabinet,
+      // On garde la compatibilité avec l'API si elle attend toujours id_pays_associe
+      id_pays_associe: cabinet.pays_associes && cabinet.pays_associes.length > 0 ? 
+                      cabinet.pays_associes.join(',') : '',
+    }));
+
+    const formattedCabinetsAnnuite = formData.cabinets_annuite.map(cabinet => ({
+      ...cabinet,
+      id_pays_associe: cabinet.pays_associes && cabinet.pays_associes.length > 0 ? 
+                      cabinet.pays_associes.join(',') : '',
+    }));
+    
+    // Mise à jour de l'appel dataToSubmit avec les nouveaux formats
+    dataToSubmit.append('cabinets_procedure', JSON.stringify(formattedCabinetsProcedure));
+    dataToSubmit.append('cabinets_annuite', JSON.stringify(formattedCabinetsAnnuite));
+    
     dataToSubmit.append('clients', JSON.stringify(formData.clients));
-
-    if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
+    
+    // Ajout des pièces jointes
+    if (formData.pieces_jointes.length > 0) {
       formData.pieces_jointes.forEach((file, index) => {
         dataToSubmit.append(`pieces_jointes[${index}][nom_fichier]`, file.name);
         dataToSubmit.append(`pieces_jointes[${index}][type_fichier]`, file.type);
         dataToSubmit.append(`pieces_jointes[${index}][donnees]`, file);
       });
     }
-
+    
     try {
-      await fetch(`${API_BASE_URL}/api/brevets`, {
+      const response = await fetch(`${API_BASE_URL}/api/brevets`, {
         method: 'POST',
         body: dataToSubmit,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Brevet ajouté avec succès:', result);
       setConfirmationMessage('Le brevet a été ajouté avec succès.');
       setIsError(false);
     } catch (err) {
+      console.error("Erreur lors de l'ajout du brevet:", err);
       setConfirmationMessage("Une erreur est survenue lors de l'ajout du brevet.");
       setIsError(true);
-      console.error('Erreur lors de la création du brevet:', err);
     } finally {
       setLoading(false);
       setConfirmationModal(true);
@@ -395,28 +519,28 @@ const useAddBrevet = (handleClose) => {
 
   return {
     formData,
-    setFormData,
     clientsList,
     statuts,
     paysList,
+    selectedPays,
     cabinets,
     contactsProcedure,
     contactsAnnuite,
-    message,
-    error,
     loading,
+    error,
     confirmationModal,
     confirmationMessage,
     isError,
-    handleChange,
-    handleDynamicChange,
-    handleDynamicChangeForSubField,
-    handleAddSubField,
-     handleRemoveSubField,
-    handleAddField,
-    handleRemoveField,
+    setFormData,  // Pour les mises à jour directes si nécessaire
+    
+    // Nouvelles fonctions simplifiées
+    updateFormData,  // Fonction principale pour mettre à jour n'importe quel champ
+    addArrayItem,    // Ajouter un élément à un tableau
+    removeArrayItem, // Supprimer un élément d'un tableau
+    handleChange,    // Pour les champs simples du niveau racine
+    handleRemoveFile,// Pour supprimer un fichier
+    fetchContacts,   // Pour charger les contacts
     handleSubmit,
-    fetchContacts,
     handleCloseConfirmationModal
   };
 };
