@@ -15,15 +15,9 @@ import {
   CircularProgress,
   IconButton,
   Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
 } from '@mui/material';
 import { FaPlus, FaMinus, FaSave } from 'react-icons/fa';
 import CloseIcon from '@mui/icons-material/Close';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import DeleteIcon from '@mui/icons-material/Delete';
 import useAddBrevet from '../hooks/useAddBrevet';
 
 const AddBrevetModal = ({ show, handleClose }) => {
@@ -50,7 +44,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
     isError,
     confirmationModal,
     confirmationMessage,
-    handleCloseConfirmationModal,
+    handleCloseConfirmationModal
   } = useAddBrevet(handleClose);
 
   // Fonction d'aide pour déterminer quels pays afficher
@@ -58,18 +52,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
     // Si des pays ont été sélectionnés dans les informations de dépôt, on les utilise
     // Sinon, on affiche tous les pays disponibles
     return associatedCountries.length > 0 ? associatedCountries : paysList;
-  };
-
-  // Gestion des fichiers
-  const handleFilesChange = (e) => {
-    const files = Array.from(e.target.files);
-    // On met à jour la propriété pieces_jointes dans le state
-    handleChange({ target: { name: 'pieces_jointes', files } });
-  };
-
-  const handleRemoveFile = (index) => {
-    const newFiles = formData.pieces_jointes.filter((_, idx) => idx !== index);
-    handleChange({ target: { name: 'pieces_jointes', value: newFiles } });
   };
 
   return (
@@ -907,9 +889,9 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 </Button>
               </Card>
 
-              {/* Commentaire et Pièces Jointes */}
+              {/* Commentaire uniquement */}
               <Card sx={{ mb: 3, p: 2 }}>
-                <Typography variant="h5">Commentaire et Pièces Jointes</Typography>
+                <Typography variant="h5">Commentaire</Typography>
                 <Stack spacing={2} sx={{ mt: 2 }}>
                   <TextField
                     fullWidth
@@ -920,30 +902,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     multiline
                     rows={4}
                   />
-                  <Button variant="contained" component="label" startIcon={<AttachFileIcon />}>
-                    Ajouter des pièces jointes
-                    <input
-                      type="file"
-                      hidden
-                      name="pieces_jointes"
-                      multiple
-                      onChange={handleFilesChange}
-                    />
-                  </Button>
-                  {formData.pieces_jointes.length > 0 && (
-                    <List>
-                      {formData.pieces_jointes.map((file, index) => (
-                        <ListItem key={index} divider>
-                          <ListItemText primary={file.name} />
-                          <ListItemSecondaryAction>
-                            <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveFile(index)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </ListItemSecondaryAction>
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
                 </Stack>
               </Card>
 
@@ -954,6 +912,14 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 type="submit"
                 fullWidth
                 disabled={loading}
+                onClick={(e) => {
+                  // Validation stricte avant soumission
+                  if (!formData.reference_famille || !formData.titre) {
+                    e.preventDefault();
+                    alert('Erreur: La référence et le titre du brevet sont obligatoires.');
+                    return false;
+                  }
+                }}
                 startIcon={loading ? <CircularProgress size={20} /> : <FaSave />}
               >
                 {loading ? 'En cours...' : 'Ajouter'}

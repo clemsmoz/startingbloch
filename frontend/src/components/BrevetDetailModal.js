@@ -1,21 +1,34 @@
 // components/BrevetDetailModal.js
 
-import React, { useState, useEffect } from 'react';
-import { Modal as BootstrapModal, Button as BootstrapButton, Table, Container } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Modal as BootstrapModal, Button as BootstrapButton, Container } from 'react-bootstrap';
 import Flag from 'react-world-flags';
 
-import { Modal, Box, Typography, IconButton, Button } from '@mui/material';
+import { 
+  Modal, Box, Typography, IconButton, Button, Card, CardContent, CardHeader,
+  Grid, Divider, Chip, List, ListItem, ListItemText, Paper
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Document, Page, pdfjs } from 'react-pdf';
+import EventIcon from '@mui/icons-material/Event';
+import FlagIcon from '@mui/icons-material/Flag';
+import PersonIcon from '@mui/icons-material/Person';
+import BusinessIcon from '@mui/icons-material/Business';
+import CommentIcon from '@mui/icons-material/Comment';
 import useBrevetData from '../hooks/useBrevetData';
 import { API_BASE_URL } from '../config';
 
-// Configurer le worker pour react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = null }) => {
+  // Logs pour le débogage
+  console.log("BrevetDetailModal - Props:", { show, handleClose, brevetId });
+  
+  // États locaux - TOUJOURS DÉCLARER AU DÉBUT
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [entityType, setEntityType] = useState('');
+  const [openEntityModal, setOpenEntityModal] = useState(false);
+  const [shouldRender, setShouldRender] = useState(true);
 
-const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
+  // Hook useBrevetData - TOUJOURS APPELÉ, même si brevetId est null
   const {
     brevet,
     procedureCabinets,
@@ -29,388 +42,481 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
     pays,
     statut, 
     statutsList,
-    piecesJointes,
     generatePDF,
+    loading,
+    error
   } = useBrevetData(brevetId);
 
-  const [selectedEntity, setSelectedEntity] = useState(null);
-  const [entityType, setEntityType] = useState('');
-  const [openEntityModal, setOpenEntityModal] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [numPages, setNumPages] = useState(null);
-  const [textContent, setTextContent] = useState('');
+  // Fonction pour formater les dates - TOUJOURS DÉFINIE
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Date invalide';
+      }
+      return date.toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Erreur lors du formatage de la date:', error);
+      return 'N/A';
+    }
+  }, []);
 
-  const handleOpenEntityModal = (entity, type) => {
+  // Gestionnaires d'événements - TOUJOURS DÉFINIS
+  const handleOpenEntityModal = useCallback((entity, type) => {
     setSelectedEntity(entity);
     setEntityType(type);
     setOpenEntityModal(true);
-  };
+  }, []);
 
-  const handleCloseEntityModal = () => {
+  const handleCloseEntityModal = useCallback(() => {
     setOpenEntityModal(false);
     setSelectedEntity(null);
     setEntityType('');
-  };
+  }, []);
 
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
-  };
-
-  const handlePreview = (pieceJointe) => {
-    setShowPreview(pieceJointe);
-  };
-
+  // Vérification de rendu APRÈS les hooks
   useEffect(() => {
-    if (showPreview && showPreview.type_fichier.includes('text')) {
-      const filePath = `${API_BASE_URL}/api/brevets/${brevet.id_brevet}/piece-jointe`;
-      fetch(filePath)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.text();
-        })
-        .then((data) => setTextContent(data))
-        .catch((err) => console.error('Erreur lors du chargement du fichier texte:', err));
-    }
-  }, [showPreview, brevet]);
+    // Vérifier si on doit rendre le modal ou non
+    setShouldRender(show && brevetId !== null);
+    
+    console.log("BrevetDetailModal - État des données:", { 
+      loading, 
+      error, 
+      brevet: brevet ? "Brevet chargé" : "Aucun brevet", 
+      brevetId,
+      shouldShow: show && brevetId !== null
+    });
+  }, [show, brevetId, brevet, loading, error]);
 
-  if (!brevet) {
+  // Si les conditions ne sont pas remplies, retourner null mais APRÈS avoir appelé tous les hooks
+  if (!shouldRender) {
+    console.log("BrevetDetailModal: Modal non affichée ou brevet non défini", { show, brevetId });
     return null;
   }
 
-  // Fonction pour rendre l'aperçu en fonction du type de fichier
-  const renderPreview = () => {
-    const fileType = showPreview.type_fichier;
-    const fileData = `data:${showPreview.type_fichier};base64,${showPreview.donnees.toString('base64')}`;
+  // Si en cours de chargement, afficher un message
+  if (loading) {
+    return (
+      <BootstrapModal show={show} onHide={handleClose} centered>
+        <BootstrapModal.Header closeButton>
+          <BootstrapModal.Title>Chargement des détails du brevet</BootstrapModal.Title>
+        </BootstrapModal.Header>
+        <BootstrapModal.Body>
+          <Typography>Chargement des données en cours...</Typography>
+        </BootstrapModal.Body>
+      </BootstrapModal>
+    );
+  }
 
-    if (fileType.includes('pdf')) {
-      return (
-        <Document file={fileData} onLoadSuccess={onDocumentLoadSuccess}>
-          {Array.from(new Array(numPages), (el, index) => (
-            <Page key={`page_${index + 1}`} pageNumber={index + 1} />
-          ))}
-        </Document>
-      );
-    } else if (fileType.startsWith('image/')) {
-      return <img src={fileData} alt="Aperçu" style={{ maxWidth: '100%', height: 'auto' }} />;
-    } else if (fileType.includes('text')) {
-      return <pre>{textContent || 'Chargement...'}</pre>;
-    } else {
-      return <Typography>Aperçu non disponible pour ce type de fichier.</Typography>;
-    }
-  };
+  // Si erreur, afficher un message d'erreur
+  if (error) {
+    return (
+      <BootstrapModal show={show} onHide={handleClose} centered>
+        <BootstrapModal.Header closeButton>
+          <BootstrapModal.Title>Erreur</BootstrapModal.Title>
+        </BootstrapModal.Header>
+        <BootstrapModal.Body>
+          <Typography color="error">
+            Une erreur s'est produite lors du chargement des détails du brevet: {error}
+          </Typography>
+        </BootstrapModal.Body>
+        <BootstrapModal.Footer>
+          <BootstrapButton variant="secondary" onClick={handleClose}>
+            Fermer
+          </BootstrapButton>
+        </BootstrapModal.Footer>
+      </BootstrapModal>
+    );
+  }
 
+  // Si aucune donnée de brevet, afficher un message
+  if (!brevet) {
+    return (
+      <BootstrapModal show={show} onHide={handleClose} centered>
+        <BootstrapModal.Header closeButton>
+          <BootstrapModal.Title>Aucune donnée</BootstrapModal.Title>
+        </BootstrapModal.Header>
+        <BootstrapModal.Body>
+          <Typography>Aucune donnée trouvée pour ce brevet.</Typography>
+        </BootstrapModal.Body>
+        <BootstrapModal.Footer>
+          <BootstrapButton variant="secondary" onClick={handleClose}>
+            Fermer
+          </BootstrapButton>
+        </BootstrapModal.Footer>
+      </BootstrapModal>
+    );
+  }
+
+  // Calcul des longueurs avec sécurité
+  const clientsLength = Array.isArray(clients) ? clients.length : 0;
+  const invLength = Array.isArray(inventeurs) ? inventeurs.length : 0;
+  const depLength = Array.isArray(deposants) ? deposants.length : 0;
+  const titLength = Array.isArray(titulaires) ? titulaires.length : 0;
+  const procCabLength = Array.isArray(procedureCabinets) ? procedureCabinets.length : 0;
+  const annuiteCabLength = Array.isArray(annuiteCabinets) ? annuiteCabinets.length : 0;
+  const paysLength = Array.isArray(pays) ? pays.length : 0;
+
+  // Contenu principal si tout est bien chargé
   return (
     <>
       <BootstrapModal show={show} onHide={handleClose} fullscreen>
         <BootstrapModal.Header closeButton>
           <BootstrapModal.Title style={{ fontWeight: 'bold', fontSize: '1.5rem', color: '#007bff', fontFamily: 'Roboto, sans-serif' }}>
-            Détails du Brevet
-            <button onClick={generatePDF}>Exporter en PDF</button>
+            Détails du Brevet: {brevet?.titre || 'Sans titre'}
+            {typeof generatePDF === 'function' && (
+              <Button 
+                variant="contained" 
+                onClick={generatePDF} 
+                startIcon={<DownloadIcon />}
+                sx={{ ml: 2 }}
+              >
+                Exporter en PDF
+              </Button>
+            )}
           </BootstrapModal.Title>
         </BootstrapModal.Header>
         <BootstrapModal.Body style={{ backgroundColor: '#f0f2f5', padding: '30px' }}>
           <Container fluid>
-            <Table
-              bordered
-              hover
-              responsive
-              className="table-modern"
-              style={{
-                border: '2px solid #007bff',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                width: '100%',
-              }}
-            >
-              <thead
-                style={{
-                  backgroundColor: '#007bff',
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  fontFamily: 'Roboto, sans-serif',
-                }}
-              >
-                <tr>
-                  <th>Informations Générales</th>
-                  <th>Clients</th>
-                  <th>Inventeurs</th>
-                  <th>Déposants</th>
-                  <th>Titulaires</th>
-                  <th>Cabinets de Procédure</th>
-                  <th>Cabinets d'Annuité</th>
-                  <th>Pays et Statut</th>
-                  <th>Commentaire et Pièce Jointe</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {/* Informations Générales */}
-                  <td>
-                    <div>
-                      <strong>Référence Famille:</strong> {brevet.reference_famille || 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Titre:</strong> {brevet.titre || 'N/A'}
-                    </div>
-                  </td>
+            <Grid container spacing={3}>
+              {/* Informations Générales */}
+              <Grid item xs={12}>
+                <Card elevation={3}>
+                  <CardHeader
+                    title="Informations Générales" 
+                    sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
+                  />
+                  <CardContent>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={4}>
+                        <Typography variant="subtitle1" fontWeight="bold">Référence famille:</Typography>
+                        <Typography variant="body1">{brevet?.reference_famille || 'N/A'}</Typography>
+                      </Grid>
+                      <Grid item xs={12} md={8}>
+                        <Typography variant="subtitle1" fontWeight="bold">Titre:</Typography>
+                        <Typography variant="body1">{brevet?.titre || 'N/A'}</Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
 
-                  {/* Clients */}
-                  <td>
-                    {clients && clients.length > 0 ? (
-                      clients.map((client, index) => (
-                        <div
-                          key={index}
-                          className="text-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEntityModal(client, 'client');
-                          }}
-                        >
-                          {client.nom_client} {client.prenom_client}
-                          {index < clients.length - 1 && <hr style={{ margin: '10px 0' }} />}
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucun client associé</p>
-                    )}
-                  </td>
+              {/* Personnes liées - Ne montrer que si des données sont disponibles */}
+              {(clientsLength > 0 || invLength > 0 || depLength > 0 || titLength > 0) && (
+                <Grid item xs={12}>
+                  <Card elevation={3}>
+                    <CardHeader
+                      title="Personnes Liées" 
+                      sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
+                    />
+                    <CardContent>
+                      <Grid container spacing={3}>
+                        {/* Clients */}
+                        {clientsLength > 0 && (
+                          <Grid item xs={12} md={3}>
+                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                                <BusinessIcon sx={{ mr: 1 }} /> Clients
+                              </Typography>
+                              <Divider sx={{ mb: 2 }} />
+                              <List dense>
+                                {clients.map((client, index) => (
+                                  <ListItem 
+                                    key={index}
+                                    button
+                                    onClick={() => handleOpenEntityModal(client, 'client')}
+                                    divider={index < clientsLength - 1}
+                                  >
+                                    <ListItemText 
+                                      primary={`${client?.nom_client || ''} ${client?.prenom_client || ''}`}
+                                      secondary={client?.email_client || 'Aucun email'}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Paper>
+                          </Grid>
+                        )}
 
-                  {/* Inventeurs */}
-                  <td>
-                    {inventeurs && inventeurs.length > 0 ? (
-                      inventeurs.map((inventeur, index) => (
-                        <div
-                          key={index}
-                          className="text-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEntityModal(inventeur, 'inventeur');
-                          }}
-                        >
-                          {inventeur.nom} {inventeur.prenom}
-                          {index < inventeurs.length - 1 && <hr style={{ margin: '10px 0' }} />}
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucun inventeur</p>
-                    )}
-                  </td>
+                        {/* Inventeurs */}
+                        {invLength > 0 && (
+                          <Grid item xs={12} md={3}>
+                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                                <PersonIcon sx={{ mr: 1 }} /> Inventeurs
+                              </Typography>
+                              <Divider sx={{ mb: 2 }} />
+                              <List dense>
+                                {inventeurs.map((inventeur, index) => (
+                                  <ListItem 
+                                    key={index}
+                                    button
+                                    onClick={() => handleOpenEntityModal(inventeur, 'inventeur')}
+                                    divider={index < invLength - 1}
+                                  >
+                                    <ListItemText 
+                                      primary={`${inventeur?.nom || inventeur?.nom_inventeur || ''} ${inventeur?.prenom || inventeur?.prenom_inventeur || ''}`}
+                                      secondary={inventeur?.email || inventeur?.email_inventeur || 'Aucun email'}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Paper>
+                          </Grid>
+                        )}
 
-                  {/* Déposants */}
-                  <td>
-                    {deposants && deposants.length > 0 ? (
-                      deposants.map((deposant, index) => (
-                        <div
-                          key={index}
-                          className="text-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEntityModal(deposant, 'deposant');
-                          }}
-                        >
-                          {deposant.nom} {deposant.prenom}
-                          {index < deposants.length - 1 && <hr style={{ margin: '10px 0' }} />}
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucun déposant</p>
-                    )}
-                  </td>
+                        {/* Déposants */}
+                        {depLength > 0 && (
+                          <Grid item xs={12} md={3}>
+                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                                <BusinessIcon sx={{ mr: 1 }} /> Déposants
+                              </Typography>
+                              <Divider sx={{ mb: 2 }} />
+                              <List dense>
+                                {deposants.map((deposant, index) => (
+                                  <ListItem 
+                                    key={index}
+                                    button
+                                    onClick={() => handleOpenEntityModal(deposant, 'deposant')}
+                                    divider={index < depLength - 1}
+                                  >
+                                    <ListItemText 
+                                      primary={`${deposant?.nom || deposant?.nom_deposant || ''} ${deposant?.prenom || deposant?.prenom_deposant || ''}`}
+                                      secondary={deposant?.email || deposant?.email_deposant || 'Aucun email'}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Paper>
+                          </Grid>
+                        )}
 
-                  {/* Titulaires */}
-                  <td>
-                    {titulaires && titulaires.length > 0 ? (
-                      titulaires.map((titulaire, index) => (
-                        <div
-                          key={index}
-                          className="text-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEntityModal(titulaire, 'titulaire');
-                          }}
-                        >
-                          {titulaire.nom} {titulaire.prenom}
-                          {index < titulaires.length - 1 && <hr style={{ margin: '10px 0' }} />}
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucun titulaire</p>
-                    )}
-                  </td>
+                        {/* Titulaires */}
+                        {titLength > 0 && (
+                          <Grid item xs={12} md={3}>
+                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
+                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                                <BusinessIcon sx={{ mr: 1 }} /> Titulaires
+                              </Typography>
+                              <Divider sx={{ mb: 2 }} />
+                              <List dense>
+                                {titulaires.map((titulaire, index) => (
+                                  <ListItem 
+                                    key={index}
+                                    button
+                                    onClick={() => handleOpenEntityModal(titulaire, 'titulaire')}
+                                    divider={index < titLength - 1}
+                                  >
+                                    <ListItemText 
+                                      primary={`${titulaire?.nom || titulaire?.nom_titulaire || ''} ${titulaire?.prenom || titulaire?.prenom_titulaire || ''}`}
+                                      secondary={titulaire?.email || titulaire?.email_titulaire || 'Aucun email'}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </Paper>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
 
-                  {/* Cabinets de Procédure */}
-                  <td>
-                    {procedureCabinets && procedureCabinets.length > 0 ? (
-                      procedureCabinets.map((cabinet, index) => (
-                        <div
-                          key={index}
-                          className="text-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEntityModal(cabinet, 'cabinet');
-                          }}
-                        >
-                          {cabinet.nom_cabinet}
-                          
-                          <div>
-                            <strong>Contacts:</strong>
-                          </div>
-                          <ul>
-                            {contactsProcedure
-                              .filter((contact) => contact.id_cabinet === cabinet.id_cabinet)
-                              .map((contact, idx) => (
-                                <li
-                                  key={idx}
-                                  className="text-link"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenEntityModal(contact, 'contact');
-                                  }}
-                                >
-                                  {contact.nom} {contact.prenom}
-                                </li>
-                              ))}
-                          </ul>
-                          {index < procedureCabinets.length - 1 && <hr style={{ margin: '10px 0' }} />}
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucun cabinet de procédure</p>
-                    )}
-                  </td>
+              {/* Cabinets - Ne montrer que si des données sont disponibles */}
+              {(procCabLength > 0 || annuiteCabLength > 0) && (
+                <Grid item xs={12}>
+                  <Card elevation={3}>
+                    <CardHeader
+                      title="Cabinets" 
+                      sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
+                    />
+                    <CardContent>
+                      <Grid container spacing={3}>
+                        {/* Cabinets de Procédure */}
+                        <Grid item xs={12} md={6}>
+                          <Paper elevation={2} sx={{ p: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                              <BusinessIcon sx={{ mr: 1 }} /> Cabinets de Procédure
+                            </Typography>
+                            <Divider sx={{ mb: 2 }} />
+                            {procedureCabinets && procCabLength > 0 ? (
+                              procedureCabinets.map((cabinet, index) => (
+                                <Box key={index} sx={{ mb: 2 }}>
+                                  <Typography 
+                                    variant="subtitle1" 
+                                    fontWeight="bold" 
+                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                  >
+                                    {cabinet?.nom_cabinet || 'N/A'}
+                                  </Typography>
+                                  <Typography variant="subtitle2" sx={{ mt: 1 }}>Contacts:</Typography>
+                                  {contactsProcedure && Array.isArray(contactsProcedure) ? 
+                                    contactsProcedure
+                                      .filter(contact => contact && contact.id_cabinet === cabinet?.id_cabinet)
+                                      .map((contact, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={`${contact?.nom || ''} ${contact?.prenom || ''}`}
+                                          onClick={() => handleOpenEntityModal(contact, 'contact')}
+                                          sx={{ mr: 1, mt: 1 }}
+                                          color="primary"
+                                          variant="outlined"
+                                        />
+                                      ))
+                                    : null}
+                                  {index < procCabLength - 1 && <Divider sx={{ my: 2 }} />}
+                                </Box>
+                              ))
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">Aucun cabinet de procédure</Typography>
+                            )}
+                          </Paper>
+                        </Grid>
 
-                  {/* Cabinets d'Annuité */}
-                  <td>
-                    {annuiteCabinets && annuiteCabinets.length > 0 ? (
-                      annuiteCabinets.map((cabinet, index) => (
-                        <div
-                          key={index}
-                          className="text-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEntityModal(cabinet, 'cabinet');
-                          }}
-                        >
-                          {cabinet.nom_cabinet}
-                          <div>
-                            <strong>Contacts:</strong>
-                          </div>
-                          <ul>
-                            {contactsAnnuite
-                              .filter((contact) => contact.id_cabinet === cabinet.id_cabinet)
-                              .map((contact, idx) => (
-                                <li
-                                  key={idx}
-                                  className="text-link"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenEntityModal(contact, 'contact');
-                                  }}
-                                >
-                                  {contact.nom} {contact.prenom}
-                                </li>
-                              ))}
-                          </ul>
-                          {index < annuiteCabinets.length - 1 && <hr style={{ margin: '10px 0' }} />}
-                        </div>
-                      ))
-                    ) : (
-                      <p>Aucun cabinet d'annuité</p>
-                    )}
-                  </td>
+                        {/* Cabinets d'Annuité */}
+                        <Grid item xs={12} md={6}>
+                          <Paper elevation={2} sx={{ p: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                              <BusinessIcon sx={{ mr: 1 }} /> Cabinets d'Annuité
+                            </Typography>
+                            <Divider sx={{ mb: 2 }} />
+                            {annuiteCabinets && annuiteCabLength > 0 ? (
+                              annuiteCabinets.map((cabinet, index) => (
+                                <Box key={index} sx={{ mb: 2 }}>
+                                  <Typography 
+                                    variant="subtitle1" 
+                                    fontWeight="bold" 
+                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                  >
+                                    {cabinet?.nom_cabinet || 'N/A'}
+                                  </Typography>
+                                  <Typography variant="subtitle2" sx={{ mt: 1 }}>Contacts:</Typography>
+                                  {contactsAnnuite && Array.isArray(contactsAnnuite) ? 
+                                    contactsAnnuite
+                                      .filter(contact => contact && contact.id_cabinet === cabinet?.id_cabinet)
+                                      .map((contact, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={`${contact?.nom || ''} ${contact?.prenom || ''}`}
+                                          onClick={() => handleOpenEntityModal(contact, 'contact')}
+                                          sx={{ mr: 1, mt: 1 }}
+                                          color="primary"
+                                          variant="outlined"
+                                        />
+                                      ))
+                                    : null}
+                                  {index < annuiteCabLength - 1 && <Divider sx={{ my: 2 }} />}
+                                </Box>
+                              ))
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">Aucun cabinet d'annuité</Typography>
+                            )}
+                          </Paper>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
 
-                 {/* Pays et Statut */}
-<td>
-  {pays && pays.length > 0 ? (
-    pays.map((p, index) => {
-      const matchingStatut = statutsList.find((st) => st.id_statuts === p.id_statuts);
-      return (
-        <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
-          {/* Affichage du drapeau */}
-          <Flag code={p.alpha2} width="32" style={{ marginRight: '8px' }} />
-          <div>
-            <strong>Pays:</strong> {p.nom_fr_fr || 'N/A'}
-            <br />
-            <strong>Numéro de Dépôt:</strong> {p.numero_depot || 'N/A'}
-            <br />
-            <strong>Numéro de Publication:</strong> {p.numero_publication || 'N/A'}
-            <br />
-            <strong>Statut:</strong> {matchingStatut ? matchingStatut.valeur : 'N/A'}
-            <br />
-            <strong>Date Dépôt:</strong>{' '}
-            {p.date_depot ? new Date(p.date_depot).toLocaleDateString() : 'N/A'}
-            <br />
-            <strong>Date Délivrance:</strong>{' '}
-            {p.date_delivrance ? new Date(p.date_delivrance).toLocaleDateString() : 'N/A'}
-            <br />
-            <strong>Numéro Délivrance:</strong> {p.numero_delivrance || 'N/A'}
-            <br />
-            <strong>Licence:</strong> {p.licence ? 'Oui' : 'Non'}
-          </div>
-          {index < pays.length - 1 && <hr style={{ margin: '10px 0' }} />}
-        </div>
-      );
-    })
-  ) : (
-    <p>Aucun pays trouvé</p>
-  )}
-</td>
+              {/* Pays et Statut - Ne montrer que si des données sont disponibles */}
+              {paysLength > 0 && (
+                <Grid item xs={12}>
+                  <Card elevation={3}>
+                    <CardHeader
+                      title="Pays et Statut" 
+                      sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
+                    />
+                    <CardContent>
+                      <Grid container spacing={2}>
+                        {pays && Array.isArray(pays) && paysLength > 0 ? pays.map((p, index) => {
+                          if (!p) return null; // Vérification supplémentaire pour les pays undefined
+                          const matchingStatut = statutsList && Array.isArray(statutsList) ? 
+                            statutsList.find(st => st && p && st.id_statuts === p.id_statuts) : null;
+                          return (
+                            <Grid item xs={12} md={6} lg={4} key={index}>
+                              <Paper elevation={2} sx={{ p: 2 }}>
+                                <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+                                  {p.alpha2 && (
+                                    <Flag code={p.alpha2} width="32" style={{ marginRight: '12px' }} />
+                                  )}
+                                  <Typography variant="h6">{p?.nom_fr_fr || 'N/A'}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 1, mb: 1 }}>
+                                  <Typography variant="body2" fontWeight="bold">Statut:</Typography>
+                                  <Chip 
+                                    label={matchingStatut ? matchingStatut.valeur : 'N/A'} 
+                                    color="primary" 
+                                    size="small"
+                                  />
+                                  
+                                  <Typography variant="body2" fontWeight="bold">N° Dépôt:</Typography>
+                                  <Typography variant="body2">{p?.numero_depot || 'N/A'}</Typography>
+                                  
+                                  <Typography variant="body2" fontWeight="bold">Date Dépôt:</Typography>
+                                  <Typography variant="body2">{formatDate(p?.date_depot)}</Typography>
+                                  
+                                  <Typography variant="body2" fontWeight="bold">N° Publication:</Typography>
+                                  <Typography variant="body2">{p?.numero_publication || 'N/A'}</Typography>
+                                  
+                                  <Typography variant="body2" fontWeight="bold">N° Délivrance:</Typography>
+                                  <Typography variant="body2">{p?.numero_delivrance || 'N/A'}</Typography>
+                                  
+                                  <Typography variant="body2" fontWeight="bold">Date Délivrance:</Typography>
+                                  <Typography variant="body2">{formatDate(p?.date_delivrance)}</Typography>
+                                  
+                                  <Typography variant="body2" fontWeight="bold">Licence:</Typography>
+                                  <Typography variant="body2">{p?.licence ? 'Oui' : 'Non'}</Typography>
+                                </Box>
+                              </Paper>
+                            </Grid>
+                          );
+                        }) : (
+                          <Grid item xs={12}>
+                            <Typography variant="body2" color="text.secondary">Aucun pays trouvé</Typography>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
 
-
-
-
-
-
-                  {/* Commentaire et Pièce Jointe */}
-                  <td>
-  <div>
-    <strong>Commentaire:</strong> {brevet.commentaire || 'Aucun commentaire'}
-  </div>
-  {piecesJointes && piecesJointes.length > 0 ? (
-    piecesJointes.map((piece, index) => (
-      <div
-        key={index}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '10px',
-        }}
-      >
-        <h4 style={{ marginRight: '10px' }}>{piece.nom_fichier}</h4>
-
-        {/* Bouton de téléchargement */}
-        <IconButton
-          href={`data:${piece.type_fichier};base64,${piece.donnees}`}
-          download={piece.nom_fichier}
-          color="primary"
-          style={{ marginRight: '10px' }}
-        >
-          <DownloadIcon />
-        </IconButton>
-
-        {/* Bouton de prévisualisation */}
-        <IconButton
-          onClick={() => {
-            setShowPreview(piece);
-          }}
-          color="primary"
-        >
-          <VisibilityIcon />
-        </IconButton>
-      </div>
-    ))
-  ) : (
-    <p>Aucune pièce jointe disponible</p>
-  )}
-</td>
-
-                </tr>
-              </tbody>
-            </Table>
+              {/* Commentaire uniquement - sans les pièces jointes */}
+              <Grid item xs={12}>
+                <Card elevation={3}>
+                  <CardHeader
+                    title="Commentaire" 
+                    sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
+                  />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      {/* Commentaire - Toujours visible, pleine largeur */}
+                      <Grid item xs={12}>
+                        <Paper elevation={2} sx={{ p: 2 }}>
+                          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                            <CommentIcon sx={{ mr: 1 }} /> Commentaire
+                          </Typography>
+                          <Divider sx={{ mb: 2 }} />
+                          <Typography variant="body1">
+                            {brevet?.commentaire || 'Aucun commentaire'}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
           </Container>
         </BootstrapModal.Body>
         <BootstrapModal.Footer>
@@ -450,24 +556,35 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
           >
             <CloseIcon />
           </IconButton>
-          {selectedEntity && (
+          {selectedEntity ? (
             <div>
               <Typography
                 variant="h5"
                 gutterBottom
                 style={{ fontWeight: 'bold', color: '#007bff', fontFamily: 'Roboto, sans-serif' }}
               >
-                Information du {entityType.charAt(0).toUpperCase() + entityType.slice(1)} :{' '}
-                {selectedEntity.nom || selectedEntity.nom_client}{' '}
-                {selectedEntity.prenom || selectedEntity.prenom_client} {selectedEntity.nom_cabinet}
+                Information du {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
               </Typography>
-              {selectedEntity.email && <Typography>Email: {selectedEntity.email}</Typography>}
-              {selectedEntity.telephone && <Typography>Téléphone: {selectedEntity.telephone}</Typography>}
-              {selectedEntity.adresse_client && (
+              <Typography variant="h6">
+                {selectedEntity?.nom || selectedEntity?.nom_client || selectedEntity?.nom_cabinet || ''}
+                {' '}
+                {selectedEntity?.prenom || selectedEntity?.prenom_client || ''}
+              </Typography>
+              {(selectedEntity?.email || selectedEntity?.email_client) && (
+                <Typography>Email: {selectedEntity?.email || selectedEntity?.email_client}</Typography>
+              )}
+              {(selectedEntity?.telephone || selectedEntity?.telephone_client) && (
+                <Typography>Téléphone: {selectedEntity?.telephone || selectedEntity?.telephone_client}</Typography>
+              )}
+              {selectedEntity?.adresse_client && (
                 <Typography>Adresse: {selectedEntity.adresse_client}</Typography>
               )}
-              {selectedEntity.reference && <Typography>Référence: {selectedEntity.reference}</Typography>}
+              {selectedEntity?.reference && (
+                <Typography>Référence: {selectedEntity.reference}</Typography>
+              )}
             </div>
+          ) : (
+            <Typography color="error">Aucune information disponible</Typography>
           )}
           <Button
             variant="contained"
@@ -478,68 +595,6 @@ const BrevetDetailModal = ({ show, handleClose, brevetId }) => {
           </Button>
         </Box>
       </Modal>
-
-      {/* Modal de prévisualisation */}
-      {showPreview && (
-        <Modal open={Boolean(showPreview)} onClose={() => setShowPreview(false)}>
-          <Box
-            sx={{
-              p: 4,
-              bgcolor: 'background.paper',
-              width: '80%',
-              maxWidth: '600px',
-              margin: 'auto',
-              boxShadow: 24,
-              borderRadius: 4,
-              outline: 'none',
-              textAlign: 'center',
-            }}
-          >
-            <IconButton
-              aria-label="close"
-              onClick={() => setShowPreview(false)}
-              sx={{ position: 'absolute', right: 8, top: 8, color: '#333' }}
-            >
-              <CloseIcon />
-            </IconButton>
-
-            <Typography variant="h5" gutterBottom>
-              Aperçu de {showPreview?.nom_fichier || 'Inconnu'}
-            </Typography>
-
-            {/* Vérification de la présence de type de fichier avant l'affichage */}
-            {showPreview?.type_fichier ? (
-              showPreview.type_fichier.includes('pdf') ? (
-                <Document
-                  file={`data:${showPreview.type_fichier};base64,${showPreview.donnees.toString('base64')}`}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={(error) => console.error('Error loading PDF:', error)}
-                >
-                  {numPages
-                    ? Array.from(new Array(numPages), (el, index) => (
-                        <Page key={`page_${index + 1}`} pageNumber={index + 1} />
-                      ))
-                    : 'Chargement du PDF...'}
-                </Document>
-              ) : showPreview.type_fichier.startsWith('image/') ? (
-                <img
-                  src={`data:${showPreview.type_fichier};base64,${showPreview.donnees.toString('base64')}`}
-                  alt="Aperçu"
-                  style={{ maxWidth: '100%', height: 'auto' }}
-                />
-              ) : (
-                <Typography variant="body2" color="textSecondary">
-                  Aperçu non disponible pour ce type de fichier.
-                </Typography>
-              )
-            ) : (
-              <Typography variant="body2" color="textSecondary">
-                Type de fichier non disponible.
-              </Typography>
-            )}
-          </Box>
-        </Modal>
-      )}
     </>
   );
 };

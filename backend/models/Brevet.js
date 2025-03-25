@@ -2,19 +2,16 @@ module.exports = (sequelize, DataTypes) => {
   const Brevet = sequelize.define('Brevet', {
     reference_famille: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false  // Changement ici pour rendre le champ obligatoire
     },
     titre: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false  // Changement ici pour rendre le champ obligatoire
     },
     commentaire: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    pieces_jointes: {
-      type: DataTypes.JSON,
-      allowNull: true
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null
     }
   }, {
     tableName: 'brevet',
@@ -22,14 +19,28 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Brevet.associate = (models) => {
-    Brevet.belongsToMany(models.Client, { through: 'BrevetClients' });
-    Brevet.belongsToMany(models.Titulaire, { through: 'BrevetTitulaires' });
-    Brevet.belongsToMany(models.Deposant, { through: 'BrevetDeposants' });
-    Brevet.belongsToMany(models.Inventeur, { through: 'BrevetInventeurs' });
-    Brevet.belongsToMany(models.Cabinet, { through: 'BrevetCabinets' });
+    Brevet.belongsToMany(models.Client, { 
+      through: 'BrevetClients',
+      foreignKey: 'BrevetId'
+    });
+    Brevet.belongsToMany(models.Titulaire, { 
+      through: 'BrevetTitulaires',
+      foreignKey: 'BrevetId'
+    });
+    Brevet.belongsToMany(models.Deposant, { 
+      through: 'BrevetDeposants',
+      foreignKey: 'BrevetId'
+    });
+    Brevet.belongsToMany(models.Inventeur, { 
+      through: 'BrevetInventeurs',
+      foreignKey: 'BrevetId'
+    });
+    Brevet.belongsToMany(models.Cabinet, { 
+      through: 'BrevetCabinets',
+      foreignKey: 'BrevetId'
+    });
     Brevet.hasMany(models.NumeroPays, { foreignKey: 'id_brevet' });
   };
 
-  // Remarque : Assurez-vous de synchroniser ce modèle avec la base (ex. via migration ou sequelize.sync({ alter: true }))
   return Brevet;
 };

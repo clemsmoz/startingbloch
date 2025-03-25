@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
+import axios from 'axios';
 
 const useAddBrevet = (handleClose) => {
   const [formData, setFormData] = useState({
@@ -74,7 +75,6 @@ const useAddBrevet = (handleClose) => {
       pays: [{ id_pays: '' }] // Modification pour permettre plusieurs pays
     }],
     commentaire: '',
-    pieces_jointes: [],
     clients: [{
       id_client: ''
     }]
@@ -164,7 +164,7 @@ const useAddBrevet = (handleClose) => {
     if (uniqueCountries.length > 0) {
       const countriesData = uniqueCountries.map(id => {
         const country = paysList.find(p => p.id === parseInt(id) || p.id === id);
-        return country ? country : { id: id, nom_fr_fr: "Pays inconnu" };
+        return country || { id: id, nom_fr_fr: "Pays inconnu" };
       });
       setAssociatedCountries(countriesData);
     } else {
@@ -206,19 +206,11 @@ const useAddBrevet = (handleClose) => {
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
-    if (name.startsWith('pieces_jointes')) {
-      const filesArray = Array.from(files);
-      setFormData(prevData => ({
-        ...prevData,
-        pieces_jointes: [...prevData.pieces_jointes, ...filesArray]
-      }));
-    } else {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    }
+    const { name, value, type, checked } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   const handleDynamicChange = (e, index, field) => {
@@ -343,72 +335,74 @@ const useAddBrevet = (handleClose) => {
     setLoading(true);
     setError(null);
 
-    const dataToSubmit = new FormData();
-
-    dataToSubmit.append('reference_famille', formData.reference_famille);
-    dataToSubmit.append('titre', formData.titre);
-    dataToSubmit.append('commentaire', formData.commentaire);
-
-    if (formData.date_depot) {
-      dataToSubmit.append('date_depot', new Date(formData.date_depot).toISOString().split('T')[0]);
-    }
-    if (formData.date_delivrance) {
-      dataToSubmit.append('date_delivrance', new Date(formData.date_delivrance).toISOString().split('T')[0]);
-    }
-
-    // Traiter les dates pour informations_depot
-    formData.informations_depot.forEach((info, index) => {
-      if (info.date_depot) {
-        info.date_depot = new Date(info.date_depot).toISOString().split('T')[0];
-      }
-      if (info.date_delivrance) {
-        info.date_delivrance = new Date(info.date_delivrance).toISOString().split('T')[0];
-      }
-      if (info.date_publication) {
-        info.date_publication = new Date(info.date_publication).toISOString().split('T')[0];
-      }
-    });
-
-    formData.pays.forEach((pays, index) => {
-      if (pays.date_depot) {
-        pays.date_depot = new Date(pays.date_depot).toISOString().split('T')[0];
-      }
-      if (pays.date_delivrance) {
-        pays.date_delivrance = new Date(pays.date_delivrance).toISOString().split('T')[0];
-      }
-    });
-
-    dataToSubmit.append('informations_depot', JSON.stringify(formData.informations_depot));
-    dataToSubmit.append('pays', JSON.stringify(formData.pays));
-    dataToSubmit.append('inventeurs', JSON.stringify(formData.inventeurs));
-    dataToSubmit.append('titulaires', JSON.stringify(formData.titulaires));
-    dataToSubmit.append('deposants', JSON.stringify(formData.deposants));
-    dataToSubmit.append('cabinets_procedure', JSON.stringify(formData.cabinets_procedure));
-    dataToSubmit.append('cabinets_annuite', JSON.stringify(formData.cabinets_annuite));
-    dataToSubmit.append('clients', JSON.stringify(formData.clients));
-
-    if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
-      formData.pieces_jointes.forEach((file, index) => {
-        dataToSubmit.append(`pieces_jointes[${index}][nom_fichier]`, file.name);
-        dataToSubmit.append(`pieces_jointes[${index}][type_fichier]`, file.type);
-        dataToSubmit.append(`pieces_jointes[${index}][donnees]`, file);
-      });
-    }
-
     try {
-      await fetch(`${API_BASE_URL}/api/brevets`, {
-        method: 'POST',
-        body: dataToSubmit,
+      console.log("Préparation de l'envoi des données...");
+      
+      // Vérification des données obligatoires
+      if (!formData.reference_famille || !formData.titre) {
+        throw new Error("La référence et le titre du brevet sont obligatoires");
+      }
+      
+      // Préparation des données pour l'envoi - sans FormData car pas de fichiers
+      const dataToSend = {
+        reference_famille: formData.reference_famille,
+        titre: formData.titre,
+        commentaire: formData.commentaire || '',
+        clients: formData.clients || [],
+        informations_depot: formData.informations_depot || [],
+        inventeurs: formData.inventeurs || [],
+        titulaires: formData.titulaires || [],
+        deposants: formData.deposants || [],
+        cabinets_procedure: formData.cabinets_procedure || [],
+        cabinets_annuite: formData.cabinets_annuite || []
+      };
+      
+      // Log des données avant envoi
+      console.log("=== DONNÉES À ENVOYER ===", dataToSend);
+      
+      // Configuration et envoi avec axios
+      console.log("Envoi de la requête...");
+      
+      const response = await axios({
+        method: 'post',
+        url: `${API_BASE_URL}/api/brevets`,
+        data: dataToSend,
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000 // 30 secondes
       });
+      
+      console.log('Réponse du serveur:', response.data);
+      
       setConfirmationMessage('Le brevet a été ajouté avec succès.');
       setIsError(false);
+      setConfirmationModal(true);
     } catch (err) {
-      setConfirmationMessage("Une erreur est survenue lors de l'ajout du brevet.");
+      console.error("=== ERREUR DANS USEADDBREVET ===");
+      
+      let errorMessage = "Une erreur est survenue lors de l'ajout du brevet";
+      
+      if (err.response) {
+        console.error('Réponse d\'erreur du serveur:', err.response);
+        console.error('Status:', err.response.status);
+        console.error('Headers:', err.response.headers);
+        console.error('Data:', err.response.data);
+        
+        errorMessage += `: ${err.response.status} - ${err.response.data?.error || err.response.data?.details || err.message}`;
+      } else if (err.request) {
+        console.error('Erreur de requête (pas de réponse):', err.request);
+        errorMessage += ": Pas de réponse du serveur";
+      } else {
+        console.error('Erreur:', err.message);
+        errorMessage += `: ${err.message}`;
+      }
+      
+      setConfirmationMessage(errorMessage);
       setIsError(true);
-      console.error('Erreur lors de la création du brevet:', err);
+      setConfirmationModal(true);
     } finally {
       setLoading(false);
-      setConfirmationModal(true);
     }
   };
 
@@ -425,7 +419,7 @@ const useAddBrevet = (handleClose) => {
     clientsList,
     statuts,
     paysList,
-    associatedCountries, // Ajout de l'état des pays associés
+    associatedCountries,
     cabinets,
     contactsProcedure,
     contactsAnnuite,

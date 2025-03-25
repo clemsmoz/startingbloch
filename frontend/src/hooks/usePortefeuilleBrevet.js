@@ -16,10 +16,18 @@ const usePortefeuilleBrevet = () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/brevets`);
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setBrevets(data.data);
+      // Vérifier si les données sont dans une propriété "data" ou directement dans la réponse
+      const brevetsData = data.data || data;
+      setBrevets(brevetsData);
       setError(null);
     } catch (error) {
+      console.error("Erreur lors de la récupération des brevets:", error);
       setError('Erreur lors de la récupération des brevets');
     } finally {
       setLoading(false);
@@ -113,6 +121,18 @@ const usePortefeuilleBrevet = () => {
 
   const handleCloseEditModal = () => setShowEditModal(false);
 
+  // Fonction utilitaire pour gérer les chaînes potentiellement nulles
+  const safeString = (str) => {
+    return str !== null && str !== undefined ? String(str) : '';
+  };
+  
+  // Fonction utilitaire pour rechercher de manière sécurisée
+  const safeSearch = (text, searchTerm) => {
+    if (searchTerm === null || searchTerm === undefined || searchTerm === '') return true;
+    if (text === null || text === undefined) return false;
+    return String(text).toLowerCase().includes(searchTerm.toLowerCase());
+  };
+
   useEffect(() => {
     fetchBrevets();
   }, []);
@@ -137,6 +157,8 @@ const usePortefeuilleBrevet = () => {
     handleCloseDetailModal,
     handleShowEditModal,
     handleCloseEditModal,
+    safeString, // Export de la fonction utilitaire pour les chaînes sécurisées
+    safeSearch, // Export de la fonction utilitaire pour les recherches sécurisées
   };
 };
 

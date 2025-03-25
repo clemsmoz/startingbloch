@@ -81,6 +81,67 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
     }));
   };
 
+  if (loading) {
+    return (
+      <Modal open={show} onClose={handleClose}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+          }}
+        >
+          <Card
+            sx={{
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              width: '80%',
+              p: 4,
+              position: 'relative',
+            }}
+          >
+            <Typography variant="h5">Chargement des données...</Typography>
+            <CircularProgress />
+          </Card>
+        </Box>
+      </Modal>
+    );
+  }
+
+  if (isError || !formData) {
+    return (
+      <Modal open={show} onClose={handleClose}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+          }}
+        >
+          <Card
+            sx={{
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              width: '80%',
+              p: 4,
+              position: 'relative',
+            }}
+          >
+            <Typography variant="h5">Erreur</Typography>
+            <Typography variant="body1">
+              {isError || "Impossible de charger les données du brevet"}
+            </Typography>
+            <Button variant="contained" color="primary" onClick={handleClose}>
+              Fermer
+            </Button>
+          </Card>
+        </Box>
+      </Modal>
+    );
+  }
+
   return (
     <>
       <Modal open={show} onClose={handleClose}>
@@ -121,7 +182,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
               {/* Clients */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Clients</Typography>
-                {formData.clients && formData.clients.map((client, index) => (
+                {formData.clients && (formData.clients || []).map((client, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
                     <FormControl fullWidth>
                       <InputLabel>Client</InputLabel>
@@ -224,7 +285,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
               {/* Pays, Numéro de Dépôt et Numéro de Publication + Statut */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Pays, Numéro de Dépôt, Numéro de Publication et Statut</Typography>
-                {formData.pays.map((item, index) => (
+                {(formData.pays || []).map((item, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
                    <FormControl fullWidth>
   <InputLabel>Pays</InputLabel>
@@ -297,7 +358,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
               {/* Inventeurs */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Inventeurs</Typography>
-                {formData.inventeurs && formData.inventeurs.map((item, index) => (
+                {formData.inventeurs && (formData.inventeurs || []).map((item, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
                     <TextField
                       fullWidth
@@ -353,7 +414,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
               {/* Déposants */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Déposants</Typography>
-                {formData.deposants && formData.deposants.map((item, index) => (
+                {formData.deposants && (formData.deposants || []).map((item, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
                     <TextField
                       fullWidth
@@ -409,7 +470,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
               {/* Titulaires */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Titulaires</Typography>
-                {formData.titulaires && formData.titulaires.map((item, index) => (
+                {formData.titulaires && (formData.titulaires || []).map((item, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
                     <TextField
                       fullWidth
@@ -487,7 +548,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
 {/* Cabinets de Procédure */}
 <Card sx={{ mb: 3, p: 2 }}>
   <Typography variant="h5">Cabinets de Procédure</Typography>
-  {formData.cabinets_procedure && formData.cabinets_procedure.length > 0 ? (
+  {formData.cabinets_procedure && (formData.cabinets_procedure || []).length > 0 ? (
     formData.cabinets_procedure.map((item, index) => (
       <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
         <FormControl fullWidth>
@@ -573,7 +634,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
 {/* Cabinets d'Annuité */}
 <Card sx={{ mb: 3, p: 2 }}>
   <Typography variant="h5">Cabinets d'Annuité</Typography>
-  {formData.cabinets_annuite && formData.cabinets_annuite.length > 0 ? (
+  {formData.cabinets_annuite && (formData.cabinets_annuite || []).length > 0 ? (
     formData.cabinets_annuite.map((item, index) => (
       <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
         <FormControl fullWidth>
@@ -682,7 +743,7 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                       onChange={handleFilesChange}
                     />
                   </Button>
-                  {formData.pieces_jointes.length > 0 && (
+                  {(formData.pieces_jointes || []).length > 0 && (
                     <List>
                       {formData.pieces_jointes && formData.pieces_jointes.map((file, index) => (
                         <ListItem key={index} divider>

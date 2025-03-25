@@ -44,6 +44,8 @@ const PortefeuilleBrevetPage = () => {
     handleShowEditModal,
     handleCloseEditModal,
     handleDeleteBrevet,
+    safeString,
+    safeSearch,
   } = usePortefeuilleBrevet();
 
   // États pour la recherche et la pagination
@@ -52,21 +54,25 @@ const PortefeuilleBrevetPage = () => {
   const [page, setPage] = React.useState(1);
   const [rowsPerPage, setRowsPerPage] = React.useState(8);
 
-  const normalizeString = (str) => str.trim().toLowerCase();
+  // Version sécurisée de normalizeString qui évite les erreurs avec null/undefined
+  const normalizeString = (str) => {
+    return safeString(str).toLowerCase();
+  };
+  
   const normalizedSearchTerm = normalizeString(searchTerm);
 
   const filteredBrevets = brevets.filter((brevet) => {
     if (searchFilter === 'titre') {
-      return normalizeString(brevet.titre)?.includes(normalizedSearchTerm);
+      return safeSearch(brevet.titre, normalizedSearchTerm);
     } else if (searchFilter === 'reference_famille') {
-      return normalizeString(brevet.reference_famille)?.includes(normalizedSearchTerm);
+      return safeSearch(brevet.reference_famille, normalizedSearchTerm);
     } else if (searchFilter === 'reference_cabinet') {
-      return brevets.some((ref) => normalizeString(ref.reference_cabinet)?.includes(normalizedSearchTerm));
+      return brevets.some((ref) => safeSearch(ref.reference_cabinet, normalizedSearchTerm));
     } else if (searchFilter === 'client') {
       return (
         brevet.clients &&
         brevet.clients.some((client) =>
-          normalizeString(client.nom_client)?.includes(normalizedSearchTerm)
+          safeSearch(client.nom_client, normalizedSearchTerm)
         )
       );
     }
