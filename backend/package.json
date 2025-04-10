@@ -14,6 +14,7 @@
   "dependencies": {
     "async": "^3.2.5",
     "body-parser": "^1.20.2",
+    "caniuse-lite": "^1.0.30001713",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "express": "^4.19.2",

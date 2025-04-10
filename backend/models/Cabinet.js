@@ -12,22 +12,25 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Cabinet.associate = (models) => {
-    Cabinet.belongsToMany(models.Brevet, { through: 'BrevetCabinets' });
-    Cabinet.belongsToMany(models.Pays, { 
+    Cabinet.belongsToMany(models.Brevet, { 
       through: {
-        model: 'CabinetPays',
-        unique: false
+        model: 'BrevetCabinets',
+        unique: false // Désactiver la contrainte d'unicité
       },
-      foreignKey: {
-        name: 'CabinetId',
-        unique: false
-      },
-      otherKey: {
-        name: 'PaysId',
-        unique: false
-      }
+      foreignKey: 'CabinetId',
+      otherKey: 'BrevetId'
     });
+    
     Cabinet.hasMany(models.Contact, { foreignKey: 'cabinet_id' });
+    
+    // Correction de l'association avec les pays
+    Cabinet.belongsToMany(models.Pays, {
+      through: 'CabinetPays',
+      foreignKey: 'CabinetId',
+      otherKey: 'PaysId',
+      uniqueKey: false,
+      timestamps: true
+    });
   };
 
   return Cabinet;

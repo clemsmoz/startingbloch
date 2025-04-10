@@ -155,7 +155,7 @@ const useAddBrevet = (handleClose) => {
   // Effet pour mettre à jour la liste des pays associés lorsque informations_depot change
   useEffect(() => {
     // Extraire les pays sélectionnés dans les informations de dépôt
-    const selectedCountries = formData.informations_depot
+    const selectedCountries = (formData.informations_depot || [])
       .map(info => info.id_pays)
       .filter(id => id !== '' && id !== undefined);
     

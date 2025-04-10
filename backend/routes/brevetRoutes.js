@@ -9,9 +9,6 @@ router.get('/brevets/:id', brevetController.getBrevetById);
 router.get('/brevets/client/:id', brevetController.getByClientId);
 router.put('/brevets/:id', brevetController.updateBrevet);
 router.delete('/brevets/:id', brevetController.deleteBrevet);
-// La ligne suivante fait référence à une fonction qui n'existe pas dans le contrôleur
-// Commenter ou supprimer cette ligne pour résoudre l'erreur
-// router.get('/brevets/:id/piece-jointe', brevetController.getPiecesJointesByBrevetId);
 
 // Routes supplémentaires
 router.get('/brevets-with-relations', brevetController.getAllBrevetsWithRelations);
@@ -19,5 +16,15 @@ router.get('/brevets/:id/with-relations', brevetController.getBrevetByIdWithRela
 router.post('/brevets/:brevetId/titulaires', brevetController.addTitulaire);
 router.post('/brevets/:brevetId/inventeurs', brevetController.addInventeur);
 router.post('/brevets/:brevetId/deposants', brevetController.addDeposant);
+
+// Nouvelle route pour récupérer les clients d'un brevet
+router.get('/brevets/:id/clients', brevetController.getClientsByBrevetId);
+
+// Nouvelles routes pour récupérer les entités associées à un brevet
+router.get('/brevets/:id/statuts', brevetController.getStatutsByBrevetId);
+router.get('/brevets/:id/inventeurs', brevetController.getInventeursByBrevetId);
+router.get('/brevets/:id/titulaires', brevetController.getTitulairesByBrevetId);
+router.get('/brevets/:id/deposants', brevetController.getDeposantsByBrevetId);
+router.get('/brevets/:id/cabinets', brevetController.getAllCabinetsByBrevetId);
 
 module.exports = router;

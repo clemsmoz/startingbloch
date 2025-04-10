@@ -74,6 +74,20 @@ const BrevetClientPage = () => {
   const handleShowAddModal = () => setShowAddModal(true);
   const handleCloseAddModal = () => setShowAddModal(false);
 
+  const handleDeleteBrevet = async (brevetId, event) => {
+    event.stopPropagation(); // Empêcher la propagation de l'événement
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce brevet ?")) {
+      try {
+        await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
+          method: 'DELETE',
+        });
+        refreshBrevets(); // Actualiser la liste des brevets après suppression
+      } catch (error) {
+        console.error('Erreur lors de la suppression du brevet', error);
+      }
+    }
+  };
+
   // Fonction de normalisation pour la recherche
   const normalizeString = (str) => {
     return str.trim().toLowerCase();
@@ -213,7 +227,7 @@ const BrevetClientPage = () => {
                   <IconButton color="warning" onClick={(event) => handleShowEditModal(brevet, event)}>
                     <FaEdit size={24} />
                   </IconButton>
-                  <IconButton color="error">
+                  <IconButton color="error" onClick={(event) => handleDeleteBrevet(brevet.id_brevet, event)}>
                     <FaTrash size={24} />
                   </IconButton>
                 </Box>

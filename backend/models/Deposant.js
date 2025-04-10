@@ -22,9 +22,21 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Deposant.associate = (models) => {
-    Deposant.belongsToMany(models.Brevet, { through: 'BrevetDeposants' });
-    // La table pivot DeposantPays doit inclure un champ "licence" en plus de l'id_pays.
-    Deposant.belongsToMany(models.Pays, { through: 'DeposantPays' });
+    Deposant.belongsToMany(models.Brevet, { 
+      through: 'BrevetDeposants',
+      foreignKey: 'DeposantId',
+      otherKey: 'BrevetId',
+      uniqueKey: false // Désactiver la contrainte d'unicité
+    });
+    
+    // Relation avec les pays - explicitement désactiver l'unicité
+    Deposant.belongsToMany(models.Pays, { 
+      through: 'DeposantPays',
+      foreignKey: 'DeposantId',
+      otherKey: 'PaysId',
+      unique: false, // Désactiver l'unicité (nouvelle façon)
+      uniqueKey: false // Ancienne façon de désactiver l'unicité
+    });
   };
 
   return Deposant;

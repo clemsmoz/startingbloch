@@ -22,9 +22,21 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Titulaire.associate = (models) => {
-    Titulaire.belongsToMany(models.Brevet, { through: 'BrevetTitulaires' });
-    // La table pivot TitulairePays doit inclure le champ "licence".
-    Titulaire.belongsToMany(models.Pays, { through: 'TitulairePays' });
+    Titulaire.belongsToMany(models.Brevet, { 
+      through: 'BrevetTitulaires',
+      foreignKey: 'TitulaireId',
+      otherKey: 'BrevetId',
+      uniqueKey: false // Désactiver la contrainte d'unicité
+    });
+    
+    // Relation avec les pays - explicitement désactiver l'unicité
+    Titulaire.belongsToMany(models.Pays, { 
+      through: 'TitulairePays',
+      foreignKey: 'TitulaireId',
+      otherKey: 'PaysId',
+      unique: false, // Désactiver l'unicité (nouvelle façon)
+      uniqueKey: false // Ancienne façon de désactiver l'unicité
+    });
   };
 
   return Titulaire;

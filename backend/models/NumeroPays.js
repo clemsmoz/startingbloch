@@ -1,71 +1,61 @@
 module.exports = (sequelize, DataTypes) => {
-
   const NumeroPays = sequelize.define('NumeroPays', {
-    
-    id_brevet: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
+      autoIncrement: true
+    },
+    id_brevet: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'brevet', // Supposant l'existence d'une table 'pays'
-        key: 'id'
-      }
-    },
-    numero_depot: {
-      type: DataTypes.STRING(255),
-      allowNull: true
-    },
-    numero_publication: {
-      type: DataTypes.STRING(255),
-      allowNull: true
+      unique: false // Pas de contrainte d'unicité ici
     },
     id_pays: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'pays', // Supposant l'existence d'une table 'pays'
-        key: 'id'
-      }
+      allowNull: false
     },
-    alpha2: {
-      type: DataTypes.STRING(2),
+    numero_depot: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    numero_publication: {
+      type: DataTypes.STRING,
       allowNull: true
     },
     id_statuts: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'statuts', // Supposant l'existence d'une table 'statuts'
-        key: 'id'
-      }
+      allowNull: true
     },
     date_depot: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    date_delivrance: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    numero_delivrance: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.DATE,
       allowNull: true
     },
     date_publication: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    date_delivrance: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    numero_delivrance: {
+      type: DataTypes.STRING,
       allowNull: true
     },
     licence: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    nom_fr_fr: {
-      type: DataTypes.STRING(50),
-      allowNull: true
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     }
   }, {
     tableName: 'numero_pays',
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      // Créer un index composite mais pas unique
+      {
+        fields: ['id_brevet', 'id_pays'],
+        name: 'brevet_pays_idx'
+      }
+    ]
   });
 
   NumeroPays.associate = (models) => {

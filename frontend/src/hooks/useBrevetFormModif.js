@@ -28,11 +28,15 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
 
   useEffect(() => {
     if (brevetId) {
-      fetch(`${API_BASE_URL}/api/brevets/${brevetId}`)
+      // Récupérer les données du brevet avec relations
+      fetch(`${API_BASE_URL}/api/brevets/${brevetId}/with-relations`)
         .then(response => response.json())
         .then(data => {
           const brevetData = data.data;
-          setFormData({
+          console.log("Données complètes du brevet récupérées:", brevetData);
+          
+          // Construire un objet de formulaire à partir des données récupérées
+          const formattedData = {
             reference_famille: brevetData.reference_famille || '',
             titre: brevetData.titre || '',
             date_depot: brevetData.date_depot ? new Date(brevetData.date_depot).toISOString().split('T')[0] : '',
@@ -40,20 +44,92 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
             date_delivrance: brevetData.date_delivrance ? new Date(brevetData.date_delivrance).toISOString().split('T')[0] : '',
             licence: brevetData.licence || false,
             id_statut: brevetData.id_statut || '',
-            pays: Array.isArray(brevetData.pays) && brevetData.pays.length ? brevetData.pays : [{ id_pays: '', numero_depot: '', numero_publication: '' }],
-            inventeurs: brevetData.inventeurs || [{ nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' }],
-            titulaires: brevetData.titulaires || [{ nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false }],
-            deposants: brevetData.deposants || [{ nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' }],
-            cabinets_procedure: brevetData.cabinets_procedure || [{ id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' }],
-            cabinets_annuite: brevetData.cabinets_annuite || [{ id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }],
+            
+            // Traitement des données de pays
+            pays: Array.isArray(brevetData.NumeroPays) && brevetData.NumeroPays.length 
+              ? brevetData.NumeroPays.map(p => ({
+                  id_pays: p.id_pays || '',
+                  numero_depot: p.numero_depot || '',
+                  numero_publication: p.numero_publication || '',
+                  id_statuts: p.id_statuts || '',
+                  date_depot: p.date_depot ? new Date(p.date_depot).toISOString().split('T')[0] : '',
+                  date_delivrance: p.date_delivrance ? new Date(p.date_delivrance).toISOString().split('T')[0] : '',
+                  numero_delivrance: p.numero_delivrance || '',
+                  licence: p.licence || false
+                }))
+              : [{ id_pays: '', numero_depot: '', numero_publication: '' }],
+              
+            // Traitement des inventeurs
+            inventeurs: Array.isArray(brevetData.Inventeurs) && brevetData.Inventeurs.length
+              ? brevetData.Inventeurs.map(i => ({
+                  nom_inventeur: i.nom_inventeur || '',
+                  prenom_inventeur: i.prenom_inventeur || '',
+                  email_inventeur: i.email_inventeur || '',
+                  telephone_inventeur: i.telephone_inventeur || ''
+                }))
+              : [{ nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' }],
+              
+            // Traitement des titulaires
+            titulaires: Array.isArray(brevetData.Titulaires) && brevetData.Titulaires.length
+              ? brevetData.Titulaires.map(t => ({
+                  nom_titulaire: t.nom_titulaire || '',
+                  prenom_titulaire: t.prenom_titulaire || '',
+                  email_titulaire: t.email_titulaire || '',
+                  telephone_titulaire: t.telephone_titulaire || '',
+                  part_pi: t.part_pi || '',
+                  executant: t.executant || false,
+                  client_correspondant: t.client_correspondant || false
+                }))
+              : [{ nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false }],
+                
+            // Traitement des déposants
+            deposants: Array.isArray(brevetData.Deposants) && brevetData.Deposants.length
+              ? brevetData.Deposants.map(d => ({
+                  nom_deposant: d.nom_deposant || '',
+                  prenom_deposant: d.prenom_deposant || '',
+                  email_deposant: d.email_deposant || '',
+                  telephone_deposant: d.telephone_deposant || ''
+                }))
+              : [{ nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' }],
+                
+            // Traitement des cabinets de procédure
+            cabinets_procedure: Array.isArray(brevetData.Cabinets) 
+              ? brevetData.Cabinets
+                .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'procedure')
+                .map(c => ({
+                  id_cabinet_procedure: c.id || '',
+                  reference: c.BrevetCabinets?.reference || '',
+                  dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
+                  id_contact_procedure: c.BrevetCabinets?.contact_id || ''
+                }))
+              : [{ id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' }],
+                
+            // Traitement des cabinets d'annuité
+            cabinets_annuite: Array.isArray(brevetData.Cabinets)
+              ? brevetData.Cabinets
+                .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'annuite')
+                .map(c => ({
+                  id_cabinet_annuite: c.id || '',
+                  reference: c.BrevetCabinets?.reference || '',
+                  dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
+                  id_contact_annuite: c.BrevetCabinets?.contact_id || ''
+                }))
+              : [{ id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }],
+                
             commentaire: brevetData.commentaire || '',
             piece_jointe: null,
-            clients: brevetData.clients || [{ id_client: '' }]
-          });
+            clients: Array.isArray(brevetData.Clients) && brevetData.Clients.length
+              ? brevetData.Clients.map(c => ({ id_client: c.id || '' }))
+              : [{ id_client: '' }]
+          };
+          
+          console.log("Données formatées pour le formulaire:", formattedData);
+          setFormData(formattedData);
         })
         .catch(error => console.error('Erreur lors du chargement des données du brevet:', error));
     }
 
+    // Récupération des données de référence (clients, statuts, pays, cabinets)
     fetch(`${API_BASE_URL}/api/clients`)
       .then(response => response.json())
       .then(data => setClients(data.data || []))
@@ -78,7 +154,7 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
         });
       })
       .catch(error => console.error('Erreur lors de la récupération des cabinets:', error));
-  }, [brevetId]);
+  }, [brevetId, API_BASE_URL]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   Button,
@@ -9,8 +9,6 @@ import {
   MenuItem,
   Typography,
   Box,
-  Checkbox,
-  ListItemText,
 } from '@mui/material';
 import { API_BASE_URL } from '../config';
 
@@ -22,41 +20,15 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
     reference_cabinet: '',
     email_cabinet: '',
     telephone_cabinet: '',
-    pays: [], // Champ pour stocker les IDs des pays sélectionnés
+    // Suppression du champ pays
   });
   const [errorMessage, setErrorMessage] = useState('');
-  const [paysList, setPaysList] = useState([]); // Liste des pays récupérés
-
-  // Charger la liste des pays depuis l'API
-  useEffect(() => {
-    const fetchPays = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/pays`);
-        const data = await response.json();
-        setPaysList(data.data); // Assurez-vous que la structure des données correspond
-      } catch (error) {
-        console.error('Erreur lors de la récupération des pays:', error);
-      }
-    };
-
-    fetchPays();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-    }));
-  };
-
-  const handlePaysChange = (event) => {
-    const {
-      target: { value },
-    } = event;
-    setFormData((prevData) => ({
-      ...prevData,
-      pays: typeof value === 'string' ? value.split(',') : value, // Gestion multiple
     }));
   };
 
@@ -114,8 +86,8 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Nom"
-              name="nom_cabinet"  // Modifié ici
-              value={formData.nom_cabinet}  // Modifié ici
+              name="nom_cabinet"
+              value={formData.nom_cabinet}
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -124,8 +96,8 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Référence"
-              name="reference_cabinet"  // Modifié ici
-              value={formData.reference_cabinet}  // Modifié ici
+              name="reference_cabinet"
+              value={formData.reference_cabinet}
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -134,9 +106,9 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Email"
-              name="email_cabinet"  // Modifié ici
+              name="email_cabinet"
               type="email"
-              value={formData.email_cabinet}  // Modifié ici
+              value={formData.email_cabinet}
               onChange={handleChange}
               fullWidth
               variant="outlined"
@@ -145,53 +117,14 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
           <Box sx={{ mb: 2 }}>
             <TextField
               label="Téléphone"
-              name="telephone_cabinet"  // Modifié ici
-              value={formData.telephone_cabinet}  // Modifié ici
+              name="telephone_cabinet"
+              value={formData.telephone_cabinet}
               onChange={handleChange}
               fullWidth
               variant="outlined"
             />
           </Box>
-          <Box sx={{ mb: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Pays</InputLabel>
-              <Select
-                name="pays"
-                multiple
-                value={formData.pays}
-                onChange={handlePaysChange}
-                renderValue={(selected) => {
-                  const selectedPaysNames = paysList
-                    .filter((pays) => selected.includes(pays.id))
-                    .map((pays) => pays.nom_fr_fr)
-                    .join(', ');
-                  return selectedPaysNames;
-                }}
-              >
-                {paysList.map((pays) => (
-                  <MenuItem key={pays.id} value={pays.id}>
-                    <Checkbox checked={formData.pays.includes(pays.id)} />
-                    <ListItemText primary={pays.nom_fr_fr} />
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" color="textSecondary">
-                <strong>Pays sélectionnés :</strong>
-              </Typography>
-              <Box sx={{ mt: 1 }}>
-                <ul>
-                  {formData.pays.map((paysId) => {
-                    const pays = paysList.find((p) => p.id === paysId);
-                    return pays ? (
-                      <li key={pays.id}>{pays.nom_fr_fr}</li>
-                    ) : null;
-                  })}
-                </ul>
-              </Box>
-            </Box>
-          </Box>
+          {/* Section pays supprimée */}
           <Button
             variant="contained"
             type="submit"

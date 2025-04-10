@@ -67,11 +67,14 @@ const PortefeuilleBrevetPage = () => {
     } else if (searchFilter === 'reference_famille') {
       return safeSearch(brevet.reference_famille, normalizedSearchTerm);
     } else if (searchFilter === 'reference_cabinet') {
-      return brevets.some((ref) => safeSearch(ref.reference_cabinet, normalizedSearchTerm));
+      // Rechercher dans les cabinets associés au brevet
+      return brevet.Cabinets && brevet.Cabinets.some(cabinet => 
+        cabinet.BrevetCabinets && safeSearch(cabinet.BrevetCabinets.reference, normalizedSearchTerm)
+      );
     } else if (searchFilter === 'client') {
       return (
-        brevet.clients &&
-        brevet.clients.some((client) =>
+        brevet.Clients &&
+        brevet.Clients.some((client) =>
           safeSearch(client.nom_client, normalizedSearchTerm)
         )
       );
@@ -90,6 +93,19 @@ const PortefeuilleBrevetPage = () => {
   };
 
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Améliorer la fonction handleShowDetailModal avec des logs de débogage
+  const handleDetailClick = (brevetId) => {
+    console.log('Ouverture du détail pour le brevet ID:', brevetId);
+    handleShowDetailModal(brevetId);
+    // Vérification que l'état a bien été mis à jour
+    setTimeout(() => {
+      console.log('État après clic sur détail:', {
+        selectedId: selectedBrevetId,
+        modalVisible: showDetailModal
+      });
+    }, 100);
+  };
 
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
@@ -120,6 +136,7 @@ const PortefeuilleBrevetPage = () => {
             <MenuItem value="titre">Rechercher par Titre</MenuItem>
             <MenuItem value="reference_famille">Rechercher par Référence Famille</MenuItem>
             <MenuItem value="reference_cabinet">Rechercher par Référence Cabinet</MenuItem>
+            <MenuItem value="client">Rechercher par Client</MenuItem>
           </Select>
         </Box>
 
@@ -148,41 +165,51 @@ const PortefeuilleBrevetPage = () => {
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {currentBrevets.length > 0 ? (
-            currentBrevets.map((brevet) => (
-              <Paper
-                key={brevet.id_brevet}
-                elevation={6}
-                sx={{
-                  width: '300px',
-                  padding: 3,
-                  borderRadius: 3,
-                  transition: 'transform 0.3s',
-                  '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
-                }}
-              >
-                <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold">
-                      {brevet.titre}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Référence Famille: {brevet.reference_famille}
-                    </Typography>
+            currentBrevets.map((brevet) => {
+              // S'assurer que l'ID est correctement extrait
+              const brevetId = brevet.id || brevet.id_brevet;
+              console.log('Rendu de la carte brevet:', { brevetId, titre: brevet.titre });
+              
+              return (
+                <Paper
+                  key={brevetId}
+                  elevation={6}
+                  sx={{
+                    width: '300px',
+                    padding: 3,
+                    borderRadius: 3,
+                    transition: 'transform 0.3s',
+                    '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+                    <Box>
+                      <Typography variant="h6" fontWeight="bold">
+                        {brevet.titre}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Référence Famille: {brevet.reference_famille}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-                <Box display="flex" justifyContent="space-between">
-                  <IconButton color="info" onClick={() => handleShowDetailModal(brevet.id_brevet)}>
-                    <FaInfoCircle size={24} />
-                  </IconButton>
-                  <IconButton color="warning" onClick={() => handleShowEditModal(brevet.id_brevet)}>
-                    <FaEdit size={24} />
-                  </IconButton>
-                  <IconButton color="error" onClick={() => handleDeleteBrevet(brevet.id_brevet)}>
-                    <FaTrash size={24} />
-                  </IconButton>
-                </Box>
-              </Paper>
-            ))
+                  <Box display="flex" justifyContent="space-between">
+                    <IconButton 
+                      color="info" 
+                      onClick={() => handleDetailClick(brevetId)}
+                      aria-label="Voir les détails"
+                    >
+                      <FaInfoCircle size={24} />
+                    </IconButton>
+                    <IconButton color="warning" onClick={() => handleShowEditModal(brevet.id_brevet)}>
+                      <FaEdit size={24} />
+                    </IconButton>
+                    <IconButton color="error" onClick={() => handleDeleteBrevet(brevet.id_brevet)}>
+                      <FaTrash size={24} />
+                    </IconButton>
+                  </Box>
+                </Paper>
+              );
+            })
           ) : (
             <Typography>Aucun brevet disponible.</Typography>
           )}
@@ -201,9 +228,14 @@ const PortefeuilleBrevetPage = () => {
 
         <AddBrevetModal show={showAddModal} handleClose={handleCloseAddModal} />
 
-        {selectedBrevetId && (
-          <BrevetDetailModal show={showDetailModal} handleClose={handleCloseDetailModal} brevetId={selectedBrevetId} />
-        )}
+        {selectedBrevetId ? (
+          <BrevetDetailModal 
+            show={showDetailModal} 
+            handleClose={handleCloseDetailModal} 
+            brevetId={selectedBrevetId} 
+            onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
+          />
+        ) : null}
 
         {selectedBrevetId && (
           <EditBrevetModal show={showEditModal} handleClose={handleCloseEditModal} brevetId={selectedBrevetId} />

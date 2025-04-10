@@ -1,20 +1,13 @@
-const { Cabinet, Pays, sequelize } = require('../models');
+const { Cabinet, Pays, Brevet, sequelize } = require('../models');
 
 const cabinetController = {
   createCabinet: async (req, res) => {
     try {
-      // Extraction des données du cabinet et de la liste des pays à associer
+      // Ignorer les données de pays et utiliser uniquement les données du cabinet
       const { pays, ...cabinetData } = req.body;
       
       // Création du cabinet dans la table 'cabinet'
       const cabinet = await Cabinet.create(cabinetData);
-      
-      // Si des pays sont fournis, on associe ces pays au cabinet via l'association many-to-many
-      if (pays && pays.length > 0) {
-        await cabinet.setPays(pays); // 'pays' est un tableau d'IDs
-        // Recharger le cabinet pour inclure les Pays associés dans la réponse
-        await cabinet.reload({ include: [{ model: Pays }] });
-      }
       
       console.log('Cabinet créé', cabinet);
       res.status(201).json({ message: 'Cabinet créé avec succès', data: cabinet });
@@ -24,12 +17,10 @@ const cabinetController = {
     }
   },
 
-  // Récupère tous les cabinets, en incluant les pays associés depuis la table de jointure
+  // Récupère tous les cabinets
   getAllCabinets: async (req, res) => {
     try {
-      const cabinets = await Cabinet.findAll({
-        include: [{ model: Pays }]
-      });
+      const cabinets = await Cabinet.findAll();
       res.status(200).json({ data: cabinets });
     } catch (error) {
       console.error('Erreur récupération cabinets:', error);
@@ -37,12 +28,10 @@ const cabinetController = {
     }
   },
 
-  // Récupère un cabinet par son ID, en incluant les pays associés
+  // Récupère un cabinet par son ID
   getCabinetById: async (req, res) => {
     try {
-      const cabinet = await Cabinet.findByPk(req.params.id, {
-        include: [{ model: Pays }]
-      });
+      const cabinet = await Cabinet.findByPk(req.params.id);
       if (cabinet) {
         res.status(200).json({ data: cabinet });
       } else {
@@ -83,14 +72,23 @@ const cabinetController = {
   getCabinetsByBrevetId: async (req, res) => {
     try {
       const brevetId = req.query.id_brevet;
+      
       if (!brevetId) {
-        return res.status(400).json({ message: 'id_brevet manquant' });
+        return res.status(400).json({ error: 'Paramètre id_brevet requis' });
       }
-      const results = await Cabinet.findAll({ where: { brevetId } });
-      res.status(200).json({ data: results });
+      
+      const cabinets = await Cabinet.findAll({
+        include: [{
+          model: Brevet,
+          where: { id: brevetId },
+          attributes: [] // Don't include brevet data, just filter by it
+        }]
+      });
+      
+      res.status(200).json(cabinets);
     } catch (error) {
-      console.error('Erreur récupération cabinets par brevet ID:', error);
-      res.status(500).json({ error: 'Erreur lors de la récupération des cabinets' });
+      console.error('Erreur récupération cabinets par brevet:', error);
+      res.status(500).json({ error: error.message });
     }
   },
   getAllCabinetReferences: async (req, res) => {
@@ -100,48 +98,6 @@ const cabinetController = {
     } catch (error) {
       console.error('Erreur récupération références cabinets:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des références de cabinets' });
-    }
-  },
-  
-  // Ajouter un pays à un cabinet
-  addPays: async (req, res) => {
-    try {
-      const cabinetId = req.params.cabinetId;
-      const paysId = req.body.paysId;
-      
-      await sequelize.models.CabinetPays.create({
-        CabinetId: cabinetId,
-        PaysId: paysId
-      });
-      
-      res.status(200).json({ message: "Pays ajouté au cabinet avec succès!" });
-    } catch (error) {
-      console.error('Erreur ajout pays au cabinet:', error);
-      res.status(500).json({ error: 'Erreur lors de l\'ajout du pays au cabinet' });
-    }
-  },
-
-  // Supprimer un pays d'un cabinet
-  removePays: async (req, res) => {
-    try {
-      const cabinetId = req.params.cabinetId;
-      const paysId = req.params.paysId;
-      
-      const deleted = await sequelize.models.CabinetPays.destroy({
-        where: {
-          CabinetId: cabinetId,
-          PaysId: paysId
-        }
-      });
-      
-      if (deleted) {
-        res.status(200).json({ message: "Pays retiré du cabinet avec succès!" });
-      } else {
-        res.status(404).json({ message: `Impossible de retirer le pays id=${paysId} du cabinet id=${cabinetId}. Peut-être que la relation n'existe pas!` });
-      }
-    } catch (error) {
-      console.error('Erreur suppression pays du cabinet:', error);
-      res.status(500).json({ error: 'Erreur lors de la suppression du pays du cabinet' });
     }
   }
 };

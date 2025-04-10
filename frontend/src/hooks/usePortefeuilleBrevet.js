@@ -96,7 +96,7 @@ const usePortefeuilleBrevet = () => {
         await fetch(`${API_BASE_URL}/api/brevets/${id}`, {
           method: 'DELETE',
         });
-        // refreshBrevets(); // Actualiser la liste des brevets après suppression
+        fetchBrevets(); // Actualiser la liste des brevets après suppression
       } catch (error) {
         console.error('Erreur lors de la suppression du brevet', error);
       }

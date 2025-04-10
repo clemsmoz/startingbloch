@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
+import axios from 'axios';
 import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 import logo from '../assets/startigbloch_transparent_corrected.png';
 
@@ -23,7 +24,14 @@ const useBrevetData = (brevetId) => {
   const fetchApi = useCallback(async (url, errorMessage = "Erreur lors de la récupération des données") => {
     try {
       console.log(`Tentative de récupération de données depuis: ${url}`);
-      const response = await fetch(url);
+      
+      // Ajout d'un timeout de 10 secondes pour éviter les requêtes bloquées indéfiniment
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         console.warn(`Réponse HTTP non OK: ${response.status} pour ${url}`);
         // Ne pas lever d'erreur, mais retourner des données vides pour continuer
@@ -34,17 +42,137 @@ const useBrevetData = (brevetId) => {
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         console.warn(`La réponse n'est pas du JSON: ${contentType} pour ${url}`);
+        // Retourner un objet avec des données vides plutôt que de tenter de parser du HTML ou autre
         return { data: [] };
       }
       
-      const data = await response.json();
-      return data;
+      try {
+        const data = await response.json();
+        return data;
+      } catch (parseError) {
+        console.error(`Erreur lors du parsing JSON pour ${url}:`, parseError);
+        return { data: [] };
+      }
     } catch (error) {
-      console.error(`${errorMessage}:`, error);
+      // Gestion des erreurs d'abort
+      if (error.name === 'AbortError') {
+        console.warn(`La requête a dépassé le délai d'attente: ${url}`);
+      } else {
+        console.error(`${errorMessage}:`, error);
+      }
+      
       // Ne pas définir d'erreur globale pour permettre l'affichage partiel des données
       return { data: [] };
     }
   }, []);
+
+  const fetchData = useCallback(async () => {
+    if (!brevetId) {
+      console.log("useBrevetData: Aucun ID de brevet fourni");
+      return;
+    }
+  
+    setLoading(true);
+    setError(null);
+  
+    try {
+      // Charger les données du brevet avec toutes ses relations
+      const brevetResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/relations`);
+      setBrevet(brevetResponse.data.data);
+  
+      console.log("Données du brevet chargées:", brevetResponse.data.data);
+  
+      // Charger les données spécifiques pour chaque type d'entité liée
+      const clientsResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/clients`);
+      setClients(clientsResponse.data || []);
+  
+      const invResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/inventeurs`);
+      setInventeurs(invResponse.data || []);
+  
+      const depResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/deposants`);
+      setDeposants(depResponse.data || []);
+  
+      const titResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/titulaires`);
+      setTitulaires(titResponse.data || []);
+  
+      // Récupérer tous les cabinets associés au brevet et leurs relations
+      const cabinetsResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/cabinets`);
+      
+      // Log détaillé pour déboguer les relations avec les cabinets
+      console.log("Données cabinets brutes:", cabinetsResponse.data);
+      
+      // Stocker tous les cabinets
+      if (cabinetsResponse.data.data && Array.isArray(cabinetsResponse.data.data)) {
+        const allCabinets = cabinetsResponse.data.data;
+        
+        // Amélioration du tri entre cabinets procédure et annuité
+        const procedureCabs = [];
+        const annuiteCabs = [];
+        
+        allCabinets.forEach(cabinet => {
+          // Vérifier si c'est un cabinet d'annuité ou de procédure
+          let isAnnuite = false;
+          let isProcedure = false;
+          
+          // Vérifier le type du cabinet lui-même
+          if (cabinet.type) {
+            const cabinetType = cabinet.type.toLowerCase();
+            isAnnuite = cabinetType === 'annuite' || cabinetType.includes('annuit');
+            isProcedure = cabinetType === 'procedure' || cabinetType.includes('proced');
+          }
+          
+          // Vérifier également dans la relation BrevetCabinets
+          if (cabinet.BrevetCabinets && cabinet.BrevetCabinets.type) {
+            const relationType = cabinet.BrevetCabinets.type.toLowerCase();
+            if (relationType === 'annuite' || relationType.includes('annuit')) {
+              isAnnuite = true;
+            } else if (relationType === 'procedure' || relationType.includes('proced')) {
+              isProcedure = true;
+            }
+          }
+          
+          // Classer le cabinet selon son type
+          if (isAnnuite) {
+            annuiteCabs.push(cabinet);
+          }
+          if (isProcedure) {
+            procedureCabs.push(cabinet);
+          }
+          
+          // Si aucun type n'est trouvé, regarder le dernier recours - la relation directe
+          if (!isAnnuite && !isProcedure && brevetResponse.data.data?.BrevetCabinets) {
+            const matchingRelation = brevetResponse.data.data.BrevetCabinets.find(
+              rel => rel.CabinetId === cabinet.id
+            );
+            
+            if (matchingRelation && matchingRelation.type) {
+              const relType = matchingRelation.type.toLowerCase();
+              if (relType === 'annuite' || relType.includes('annuit')) {
+                annuiteCabs.push({...cabinet, BrevetCabinets: matchingRelation});
+              } else if (relType === 'procedure' || relType.includes('proced')) {
+                procedureCabs.push({...cabinet, BrevetCabinets: matchingRelation});
+              }
+            }
+          }
+        });
+        
+        console.log(`Cabinets triés: ${procedureCabs.length} procédure, ${annuiteCabs.length} annuité`);
+        setProcedureCabinets(procedureCabs);
+        setAnnuiteCabinets(annuiteCabs);
+      } else {
+        console.warn("Format de réponse des cabinets inattendu:", cabinetsResponse.data);
+        setProcedureCabinets([]);
+        setAnnuiteCabinets([]);
+      }
+  
+      // ...existing code...
+    } catch (error) {
+      console.error('Erreur lors du chargement des données du brevet:', error);
+      setError(error.message || 'Erreur lors du chargement des données');
+    } finally {
+      setLoading(false);
+    }
+  }, [brevetId]);
 
   useEffect(() => {
     // Éviter les appels inutiles si brevetId est null
@@ -79,128 +207,153 @@ const useBrevetData = (brevetId) => {
 
           // Récupérer les autres données en parallèle pour améliorer les performances
           const fetchPromises = [
-            // Statuts
+            // Statuts - utiliser la nouvelle route API
             fetchApi(`${API_BASE_URL}/api/statuts`, "Erreur lors de la récupération des statuts")
               .then(statutsData => {
                 setStatutsList(statutsData.data || []);
                 return statutsData.data || [];
               }),
             
-            // Clients - gestion spéciale des erreurs 500
+            // Clients - utiliser la route dédiée
             fetchApi(`${API_BASE_URL}/api/brevets/${brevetId}/clients`, "Erreur lors de la récupération des clients")
               .then(clientsData => {
-                setClients(clientsData.data || []);
-              })
-              .catch(() => {
-                console.log("Échec de la récupération des clients, utilisation d'un tableau vide");
-                setClients([]);
+                console.log("Clients récupérés:", clientsData);
+                setClients(Array.isArray(clientsData) ? clientsData : (clientsData.data || []));
               }),
             
-            // Pays - gestion spéciale des erreurs de format
+            // Inventeurs - nouvelle route API
+            fetchApi(`${API_BASE_URL}/api/brevets/${brevetId}/inventeurs`, "Erreur lors de la récupération des inventeurs")
+              .then(invData => {
+                console.log("Inventeurs récupérés:", invData);
+                setInventeurs(Array.isArray(invData) ? invData : (invData.data || []));
+              }),
+              
+            // Déposants - nouvelle route API
+            fetchApi(`${API_BASE_URL}/api/brevets/${brevetId}/deposants`, "Erreur lors de la récupération des déposants")
+              .then(depData => {
+                console.log("Déposants récupérés:", depData);
+                setDeposants(Array.isArray(depData) ? depData : (depData.data || []));
+              }),
+              
+            // Titulaires - nouvelle route API
+            fetchApi(`${API_BASE_URL}/api/brevets/${brevetId}/titulaires`, "Erreur lors de la récupération des titulaires")
+              .then(titData => {
+                console.log("Titulaires récupérés:", titData);
+                setTitulaires(Array.isArray(titData) ? titData : (titData.data || []));
+              }),
+            
+            // Pays - utiliser la route existante
             fetchApi(`${API_BASE_URL}/api/numeros_pays?id_brevet=${brevetId}`, "Erreur lors de la récupération des pays")
               .then(paysData => {
                 setPays(paysData.data || []);
+              }),
+              
+            // Cabinets - nouvelle route API 
+            fetchApi(`${API_BASE_URL}/api/brevets/${brevetId}/cabinets`, "Erreur lors de la récupération des cabinets")
+              .then(cabinetsData => {
+                if (!cabinetsData) {
+                  setProcedureCabinets([]);
+                  setAnnuiteCabinets([]);
+                  return;
+                }
+                
+                console.log("Données cabinets reçues:", cabinetsData);
+                
+                let procCabs = [];
+                let annuiteCabs = [];
+                
+                // Vérifier si cabinetsData a une structure avec des arrays 'procedure' et 'annuite'
+                if (cabinetsData.procedure && Array.isArray(cabinetsData.procedure)) {
+                  procCabs = cabinetsData.procedure;
+                  setProcedureCabinets(cabinetsData.procedure);
+                  console.log("Cabinets procédure:", cabinetsData.procedure.length);
+                } 
+                
+                if (cabinetsData.annuite && Array.isArray(cabinetsData.annuite)) {
+                  annuiteCabs = cabinetsData.annuite;
+                  setAnnuiteCabinets(cabinetsData.annuite);
+                  console.log("Cabinets annuité:", cabinetsData.annuite.length);
+                }
+                
+                // Si aucune donnée n'est disponible dans les formats ci-dessus, essayons de filtrer les données nous-mêmes
+                if ((!procCabs.length || !annuiteCabs.length) && cabinetsData.data && Array.isArray(cabinetsData.data)) {
+                  const procedureCabs = cabinetsData.data.filter(cab => 
+                    (cab.type === 'procedure' || cab.BrevetCabinets?.type === 'procedure'));
+                  const annuiteCabs = cabinetsData.data.filter(cab => 
+                    (cab.type === 'annuite' || cab.BrevetCabinets?.type === 'annuite'));
+                  
+                  if (procedureCabs.length > 0 && !procCabs.length) {
+                    procCabs = procedureCabs;
+                    setProcedureCabinets(procedureCabs);
+                  }
+                    
+                  if (annuiteCabs.length > 0 && !annuiteCabs.length) {
+                    annuiteCabs = annuiteCabs;
+                    setAnnuiteCabinets(annuiteCabs);
+                  }
+                  
+                  console.log("Classification manuelle - Procédure:", procedureCabs.length, "Annuité:", annuiteCabs.length);
+                }
+                
+                // Récupérer les contacts pour les cabinets immédiatement après avoir identifié les cabinets
+                return { procCabs, annuiteCabs };
               })
-              .catch(() => {
-                console.log("Échec de la récupération des pays, utilisation d'un tableau vide");
-                setPays([]);
+              .then(async ({ procCabs, annuiteCabs }) => {
+                console.log("Récupération des contacts pour les cabinets - Procédure:", procCabs?.length, "Annuité:", annuiteCabs?.length);
+                
+                // Récupération des contacts pour les cabinets de procédure
+                if (procCabs && procCabs.length > 0) {
+                  const contactPromises = procCabs.map(cabinet => 
+                    fetchApi(`${API_BASE_URL}/api/contacts/cabinets/${cabinet.id}`, 
+                            `Erreur lors de la récupération des contacts pour le cabinet ${cabinet.id}`)
+                  );
+                  
+                  try {
+                    const contacts = await Promise.all(contactPromises);
+                    const allContacts = contacts
+                      .filter(c => c && (c.data || Array.isArray(c)))
+                      .map(c => Array.isArray(c) ? c : c.data)
+                      .flat();
+                    
+                    console.log(`Contacts procédure trouvés: ${allContacts.length}`);
+                    setContactsProcedure(allContacts);
+                  } catch (error) {
+                    console.error("Erreur lors de la récupération des contacts de procédure:", error);
+                    setContactsProcedure([]);
+                  }
+                }
+                
+                // Récupération des contacts pour les cabinets d'annuité
+                if (annuiteCabs && annuiteCabs.length > 0) {
+                  const contactPromises = annuiteCabs.map(cabinet => 
+                    fetchApi(`${API_BASE_URL}/api/contacts/cabinets/${cabinet.id}`, 
+                            `Erreur lors de la récupération des contacts pour le cabinet ${cabinet.id}`)
+                  );
+                  
+                  try {
+                    const contacts = await Promise.all(contactPromises);
+                    const allContacts = contacts
+                      .filter(c => c && (c.data || Array.isArray(c)))
+                      .map(c => Array.isArray(c) ? c : c.data)
+                      .flat();
+                    
+                    console.log(`Contacts annuité trouvés: ${allContacts.length}`);
+                    setContactsAnnuite(allContacts);
+                  } catch (error) {
+                    console.error("Erreur lors de la récupération des contacts d'annuité:", error);
+                    setContactsAnnuite([]);
+                  }
+                }
+              })
+              .catch((error) => {
+                console.error("Erreur détaillée lors de la récupération des cabinets:", error);
+                setProcedureCabinets([]);
+                setAnnuiteCabinets([]);
               }),
           ];
           
           // Attendre que toutes les requêtes principales soient terminées
           await Promise.allSettled(fetchPromises);
-
-          // Récupérer les données supplémentaires uniquement si disponibles
-          if (brevetData.data.inventeurs && brevetData.data.inventeurs.length > 0) {
-            try {
-              const inventeurIds = brevetData.data.inventeurs.map(inv => inv.id_inventeur);
-              const inventeursData = await fetchApi(
-                `${API_BASE_URL}/api/inventeur?id_inventeurs=${inventeurIds.join('&id_inventeurs=')}`,
-                "Erreur lors de la récupération des inventeurs"
-              );
-              setInventeurs(inventeursData.data || []);
-            } catch (err) {
-              console.log("Échec de la récupération des inventeurs", err);
-              setInventeurs([]);
-            }
-          }
-
-          // Récupération des déposants
-          if (brevetData.data && brevetData.data.deposants && brevetData.data.deposants.length > 0) {
-            const deposantIds = brevetData.data.deposants.map(dep => dep.id_deposant);
-            const deposantsData = await fetchApi(
-              `${API_BASE_URL}/api/deposant?id_deposants=${deposantIds.join('&id_deposants=')}`,
-              "Erreur lors de la récupération des déposants"
-            );
-            setDeposants(deposantsData.data || []);
-          }
-
-          // Récupération des titulaires
-          if (brevetData.data && brevetData.data.titulaires && brevetData.data.titulaires.length > 0) {
-            const titulaireIds = brevetData.data.titulaires.map(tit => tit.id_titulaire);
-            const titulairesData = await fetchApi(
-              `${API_BASE_URL}/api/titulaire?id_titulaires=${titulaireIds.join('&id_titulaires=')}`,
-              "Erreur lors de la récupération des titulaires"
-            );
-            setTitulaires(titulairesData.data || []);
-          }
-
-          // Récupération des pays
-          const paysData = await fetchApi(
-            `${API_BASE_URL}/api/numeros_pays?id_brevet=${brevetId}`,
-            "Erreur lors de la récupération des pays"
-          );
-          setPays(paysData.data || []);
-
-          // Récupération des cabinets
-          const cabinetsData = await fetchApi(
-            `${API_BASE_URL}/api/cabinets?id_brevet=${brevetId}`,
-            "Erreur lors de la récupération des cabinets"
-          );
-          
-          if (cabinetsData.data && cabinetsData.data.length > 0) {
-            const cabinetDetailsPromises = cabinetsData.data.map(cabinet =>
-              fetchApi(
-                `${API_BASE_URL}/cabinet/${cabinet.id_cabinet}`,
-                `Erreur lors de la récupération du cabinet ${cabinet.id_cabinet}`
-              )
-            );
-            
-            const cabinetsDetails = await Promise.all(cabinetDetailsPromises);
-            const completeCabinetsData = cabinetsDetails
-              .filter(res => res && res.data)
-              .map(res => res.data);
-
-            const procedureCabinetsData = completeCabinetsData.filter(cabinet => cabinet && cabinet.type === 'procedure');
-            const annuiteCabinetsData = completeCabinetsData.filter(cabinet => cabinet && cabinet.type === 'annuite');
-
-            setProcedureCabinets(procedureCabinetsData);
-            setAnnuiteCabinets(annuiteCabinetsData);
-
-            // Récupération des contacts des cabinets de procédure
-            if (procedureCabinetsData.length > 0) {
-              const contactsProcedurePromises = procedureCabinetsData.map(cabinet =>
-                fetchApi(
-                  `${API_BASE_URL}/api/contacts/cabinets/${cabinet.id_cabinet}`,
-                  `Erreur lors de la récupération des contacts du cabinet ${cabinet.id_cabinet}`
-                )
-              );
-              const contactsProcedureResults = await Promise.all(contactsProcedurePromises);
-              setContactsProcedure(contactsProcedureResults.flatMap(result => result.data || []));
-            }
-
-            // Récupération des contacts des cabinets d'annuité
-            if (annuiteCabinetsData.length > 0) {
-              const contactsAnnuitePromises = annuiteCabinetsData.map(cabinet =>
-                fetchApi(
-                  `${API_BASE_URL}/api/contacts/cabinets/${cabinet.id_cabinet}`,
-                  `Erreur lors de la récupération des contacts du cabinet ${cabinet.id_cabinet}`
-                )
-              );
-              const contactsAnnuiteResults = await Promise.all(contactsAnnuitePromises);
-              setContactsAnnuite(contactsAnnuiteResults.flatMap(result => result.data || []));
-            }
-          }
 
           setError(null);
         } catch (error) {

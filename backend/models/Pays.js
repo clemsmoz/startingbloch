@@ -14,14 +14,39 @@ module.exports = (sequelize, DataTypes) => {
 
   Pays.associate = (models) => {
     Pays.hasMany(models.NumeroPays, { foreignKey: 'id_pays' });
-    Pays.belongsToMany(models.Titulaire, { through: 'TitulairePays' });
-    Pays.belongsToMany(models.Deposant, { through: 'DeposantPays' });
-    Pays.belongsToMany(models.Inventeur, { through: 'InventeurPays' });
+    
+    // Correction des associations avec les clés étrangères correctes et sans unicité
+    Pays.belongsToMany(models.Titulaire, { 
+      through: 'TitulairePays',
+      foreignKey: 'PaysId',
+      otherKey: 'TitulaireId',
+      unique: false,
+      uniqueKey: false
+    });
+    
+    Pays.belongsToMany(models.Deposant, { 
+      through: 'DeposantPays',
+      foreignKey: 'PaysId',
+      otherKey: 'DeposantId',
+      unique: false,
+      uniqueKey: false
+    });
+    
+    Pays.belongsToMany(models.Inventeur, { 
+      through: 'InventeurPays',
+      foreignKey: 'PaysId',
+      otherKey: 'InventeurId',
+      unique: false,
+      uniqueKey: false
+    });
+    
     Pays.belongsToMany(models.Statuts, { through: 'PaysStatuts' });
+    
     Pays.belongsToMany(models.Cabinet, {
       through: 'CabinetPays',
       foreignKey: 'PaysId',
-      otherKey: 'CabinetId'
+      otherKey: 'CabinetId',
+      uniqueKey: false
     });
   };
 

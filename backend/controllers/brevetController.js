@@ -113,7 +113,7 @@ const brevetController = {
         console.error("Erreur lors du traitement des informations de dépôt:", depotError);
       }
       
-      // 4.3 Inventeurs avec meilleure gestion des erreurs
+      // 4.3 Inventeurs avec gestion unique de la colonne PaysId
       try {
         const inventeurs = parseJSONSafely(req.body.inventeurs);
         console.log("Inventeurs à créer (après parsing):", inventeurs);
@@ -133,7 +133,7 @@ const brevetController = {
                 InventeurId: nouvelInventeur.id
               }, { transaction: t });
               
-              // Associer les pays à l'inventeur
+              // Associer les pays à l'inventeur - Correction de la relation
               const pays = parseJSONSafely(inventeur.pays);
               if (pays && pays.length > 0) {
                 for (const pays_item of pays) {
@@ -141,7 +141,7 @@ const brevetController = {
                     const paysId = isNaN(parseInt(pays_item.id_pays, 10)) ? pays_item.id_pays : parseInt(pays_item.id_pays, 10);
                     await sequelize.models.InventeurPays.create({
                       InventeurId: nouvelInventeur.id,
-                      PaysId: paysId,
+                      PaysId: paysId, // Utiliser PaysId et non PayId
                       licence: pays_item.licence === '1' || pays_item.licence === 1 || pays_item.licence === true
                     }, { transaction: t });
                   }
@@ -154,7 +154,7 @@ const brevetController = {
         console.error("Erreur lors du traitement des inventeurs:", inventeurError);
       }
       
-      // 4.4 Titulaires avec meilleure gestion des erreurs
+      // 4.4 Titulaires avec gestion unique de la colonne PaysId
       try {
         const titulaires = parseJSONSafely(req.body.titulaires);
         console.log("Titulaires à créer (après parsing):", titulaires);
@@ -185,7 +185,7 @@ const brevetController = {
                     const paysId = isNaN(parseInt(pays_item.id_pays, 10)) ? pays_item.id_pays : parseInt(pays_item.id_pays, 10);
                     await sequelize.models.TitulairePays.create({
                       TitulaireId: nouveauTitulaire.id,
-                      PaysId: paysId,
+                      PaysId: paysId, // Utiliser PaysId et non PayId
                       licence: pays_item.licence === '1' || pays_item.licence === 1 || pays_item.licence === true
                     }, { transaction: t });
                   }
@@ -198,7 +198,7 @@ const brevetController = {
         console.error("Erreur lors du traitement des titulaires:", titulaireError);
       }
       
-      // 4.5 Déposants avec meilleure gestion des erreurs
+      // 4.5 Déposants avec gestion unique de la colonne PaysId
       try {
         const deposants = parseJSONSafely(req.body.deposants);
         console.log("Déposants à créer (après parsing):", deposants);
@@ -226,7 +226,7 @@ const brevetController = {
                     const paysId = isNaN(parseInt(pays_item.id_pays, 10)) ? pays_item.id_pays : parseInt(pays_item.id_pays, 10);
                     await sequelize.models.DeposantPays.create({
                       DeposantId: nouveauDeposant.id,
-                      PaysId: paysId,
+                      PaysId: paysId, // Utiliser PaysId et non PayId
                       licence: pays_item.licence === '1' || pays_item.licence === 1 || pays_item.licence === true
                     }, { transaction: t });
                   }
@@ -359,8 +359,6 @@ const brevetController = {
       res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
     }
   },
-
-
 
   // Méthode corrigée pour récupérer les brevets d'un client via la table de jointure
   getByClientId: async (req, res) => {
@@ -528,6 +526,232 @@ const brevetController = {
     } catch (error) {
       console.error('Erreur ajout déposant:', error);
       res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout du déposant au brevet' });
+    }
+  },
+
+  getClientsByBrevetId: async (req, res) => {
+    try {
+      const brevetId = req.params.id;
+      console.log(`Recherche des clients pour le brevet ID: ${brevetId}`);
+      
+      const brevet = await Brevet.findByPk(brevetId, {
+        include: [{
+          model: Client
+        }]
+      });
+      
+      if (!brevet) {
+        return res.status(404).json({ error: 'Brevet non trouvé' });
+      }
+      
+      console.log(`Nombre de clients trouvés pour le brevet ${brevetId}: ${brevet.Clients?.length || 0}`);
+      res.status(200).json(brevet.Clients || []);
+    } catch (error) {
+      console.error('Erreur récupération clients par brevet:', error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Nouvelle méthode pour récupérer les statuts d'un brevet
+  getStatutsByBrevetId: async (req, res) => {
+    try {
+      const brevetId = req.params.id;
+      console.log(`Recherche des statuts pour le brevet ID: ${brevetId}`);
+      
+      const numeros = await NumeroPays.findAll({
+        where: { id_brevet: brevetId },
+        include: [{
+          model: Statuts
+        }]
+      });
+      
+      // On extrait juste les statuts des numéros
+      const statuts = numeros
+        .filter(numero => numero.Statut)
+        .map(numero => numero.Statut);
+      
+      console.log(`Nombre de statuts trouvés pour le brevet ${brevetId}: ${statuts.length}`);
+      res.status(200).json(statuts);
+    } catch (error) {
+      console.error('Erreur récupération statuts par brevet:', error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Nouvelle méthode pour récupérer les inventeurs d'un brevet
+  getInventeursByBrevetId: async (req, res) => {
+    try {
+      const brevetId = req.params.id;
+      console.log(`Recherche des inventeurs pour le brevet ID: ${brevetId}`);
+      
+      const brevet = await Brevet.findByPk(brevetId, {
+        include: [{
+          model: Inventeur,
+          include: [{ model: Pays }] // Inclure les pays associés aux inventeurs
+        }]
+      });
+      
+      if (!brevet) {
+        return res.status(404).json({ error: 'Brevet non trouvé' });
+      }
+      
+      console.log(`Nombre d'inventeurs trouvés pour le brevet ${brevetId}: ${brevet.Inventeurs?.length || 0}`);
+      res.status(200).json(brevet.Inventeurs || []);
+    } catch (error) {
+      console.error('Erreur récupération inventeurs par brevet:', error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Nouvelle méthode pour récupérer les titulaires d'un brevet
+  getTitulairesByBrevetId: async (req, res) => {
+    try {
+      const brevetId = req.params.id;
+      console.log(`Recherche des titulaires pour le brevet ID: ${brevetId}`);
+      
+      const brevet = await Brevet.findByPk(brevetId, {
+        include: [{
+          model: Titulaire,
+          include: [{ model: Pays }] // Inclure les pays associés aux titulaires
+        }]
+      });
+      
+      if (!brevet) {
+        return res.status(404).json({ error: 'Brevet non trouvé' });
+      }
+      
+      console.log(`Nombre de titulaires trouvés pour le brevet ${brevetId}: ${brevet.Titulaires?.length || 0}`);
+      res.status(200).json(brevet.Titulaires || []);
+    } catch (error) {
+      console.error('Erreur récupération titulaires par brevet:', error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Nouvelle méthode pour récupérer les déposants d'un brevet
+  getDeposantsByBrevetId: async (req, res) => {
+    try {
+      const brevetId = req.params.id;
+      console.log(`Recherche des déposants pour le brevet ID: ${brevetId}`);
+      
+      const brevet = await Brevet.findByPk(brevetId, {
+        include: [{
+          model: Deposant,
+          include: [{ model: Pays }] // Inclure les pays associés aux déposants
+        }]
+      });
+      
+      if (!brevet) {
+        return res.status(404).json({ error: 'Brevet non trouvé' });
+      }
+      
+      console.log(`Nombre de déposants trouvés pour le brevet ${brevetId}: ${brevet.Deposants?.length || 0}`);
+      res.status(200).json(brevet.Deposants || []);
+    } catch (error) {
+      console.error('Erreur récupération déposants par brevet:', error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // Méthode améliorée pour récupérer tous les cabinets d'un brevet
+  getAllCabinetsByBrevetId: async (req, res) => {
+    try {
+      const brevetId = req.params.id;
+      console.log(`Recherche de tous les cabinets pour le brevet ID: ${brevetId}`);
+      
+      // Récupérer d'abord les relations BrevetCabinets
+      const brevetCabinets = await sequelize.models.BrevetCabinets.findAll({
+        where: { BrevetId: brevetId },
+        raw: true
+      });
+      
+      if (!brevetCabinets || brevetCabinets.length === 0) {
+        console.log(`Aucune relation cabinet trouvée pour le brevet ${brevetId}`);
+        return res.status(200).json({ 
+          data: [], 
+          procedure: [], 
+          annuite: [] 
+        });
+      }
+      
+      // Log détaillé des relations trouvées
+      console.log(`Relations cabinet trouvées: ${brevetCabinets.length}`);
+      console.log("Types trouvés:", [...new Set(brevetCabinets.map(rel => rel.type))]);
+      
+      // Récupérer les cabinets complets
+      const cabinetIds = brevetCabinets.map(rel => rel.CabinetId);
+      const cabinets = await Cabinet.findAll({
+        where: { id: { [Op.in]: cabinetIds } },
+        include: [{ model: Pays }]
+      });
+      
+      console.log(`Cabinets récupérés: ${cabinets.length}`);
+      
+      // Enrichir les cabinets avec les données de la relation
+      const enrichedCabinets = cabinets.map(cabinet => {
+        // Trouver la relation correspondant à ce cabinet
+        const relation = brevetCabinets.find(rel => rel.CabinetId === cabinet.id);
+        
+        // Récupérer les données du cabinet
+        const cabinetData = cabinet.toJSON();
+        
+        // Si une relation a été trouvée, l'ajouter au cabinet
+        if (relation) {
+          // Filtrer les champs de métadonnées
+          const relationData = {};
+          Object.keys(relation).forEach(key => {
+            if (!['BrevetId', 'CabinetId', 'createdAt', 'updatedAt'].includes(key)) {
+              relationData[key] = relation[key];
+            }
+          });
+          
+          // Ajouter la relation au cabinet
+          cabinetData.BrevetCabinets = relationData;
+        }
+        
+        return cabinetData;
+      });
+      
+      // Séparer les cabinets par type en se basant sur le type dans la relation BrevetCabinets
+      const procedureCabinets = enrichedCabinets.filter(cab => {
+        // Vérifier d'abord la relation
+        if (cab.BrevetCabinets && cab.BrevetCabinets.type) {
+          return cab.BrevetCabinets.type.toLowerCase() === 'procedure';
+        }
+        // Puis le type direct du cabinet
+        return cab.type && cab.type.toLowerCase() === 'procedure';
+      });
+      
+      const annuiteCabinets = enrichedCabinets.filter(cab => {
+        // Vérifier d'abord la relation
+        if (cab.BrevetCabinets && cab.BrevetCabinets.type) {
+          return cab.BrevetCabinets.type.toLowerCase() === 'annuite';
+        }
+        // Puis le type direct du cabinet
+        return cab.type && cab.type.toLowerCase() === 'annuite';
+      });
+      
+      console.log(`Cabinets classés - Total: ${enrichedCabinets.length}, Procédure: ${procedureCabinets.length}, Annuité: ${annuiteCabinets.length}`);
+      
+      // Renvoyer toutes les données avec des logs clairs
+      res.status(200).json({ 
+        data: enrichedCabinets,
+        procedure: procedureCabinets,
+        annuite: annuiteCabinets,
+        debug: {
+          relations: brevetCabinets.length,
+          typesRelations: brevetCabinets.map(rel => rel.type),
+          cabinetsIds: cabinets.map(cab => cab.id),
+          cabinetTypes: cabinets.map(cab => cab.type)
+        }
+      });
+    } catch (error) {
+      console.error('Erreur récupération cabinets par brevet:', error);
+      res.status(500).json({ 
+        error: 'Erreur lors de la récupération des cabinets', 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   }
 };

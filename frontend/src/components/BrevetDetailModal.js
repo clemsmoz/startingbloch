@@ -66,6 +66,46 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
     }
   }, []);
 
+  // Ajouter une fonction utilitaire pour afficher les pays associés à une personne
+  const renderPaysChips = useCallback((paysArray) => {
+    if (!paysArray || !Array.isArray(paysArray) || paysArray.length === 0) return null;
+    
+    console.log("Pays data to render:", paysArray); // Debug log
+    
+    return (
+      <Box mt={1} display="flex" flexWrap="wrap">
+        {paysArray.map((p, i) => {
+          // Structure plus robuste pour extraire le nom et le code du pays
+          const paysInfo = p || {};
+          
+          // Essayer différentes structures possibles
+          const countryName = 
+            paysInfo.nom_fr_fr || 
+            (paysInfo.Pay && paysInfo.Pay.nom_fr_fr) || 
+            (paysInfo.pays && paysInfo.pays.nom_fr_fr) ||
+            paysInfo.code || 
+            'Pays';
+          
+          const countryCode = 
+            paysInfo.alpha2 || 
+            (paysInfo.Pay && paysInfo.Pay.alpha2) || 
+            (paysInfo.pays && paysInfo.pays.alpha2);
+          
+          return (
+            <Chip
+              key={i}
+              size="small"
+              label={countryName}
+              variant="outlined" 
+              sx={{ mr: 0.5, mt: 0.5 }}
+              icon={countryCode && <Flag code={countryCode} width="14" height="14" />}
+            />
+          );
+        })}
+      </Box>
+    );
+  }, []);
+
   // Gestionnaires d'événements - TOUJOURS DÉFINIS
   const handleOpenEntityModal = useCallback((entity, type) => {
     setSelectedEntity(entity);
@@ -92,6 +132,81 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
       shouldShow: show && brevetId !== null
     });
   }, [show, brevetId, brevet, loading, error]);
+
+  // Ajouter des logs pour déboguer les cabinets et contacts
+  useEffect(() => {
+    console.log("BrevetDetailModal - État des cabinets:", { 
+      procedureCabinets: procedureCabinets?.length || 0, 
+      annuiteCabinets: annuiteCabinets?.length || 0,
+      brevetCabinets: brevet?.BrevetCabinets?.length || 0
+    });
+    
+    // Vérifier mieux la structure des données des cabinets
+    if (brevet?.BrevetCabinets?.length > 0) {
+      console.log("Relations BrevetCabinets disponibles:", brevet.BrevetCabinets);
+    }
+    
+    // Vérifier la structure des personnes et leurs pays associés
+    if (inventeurs?.length > 0) {
+      console.log("Premier inventeur et ses pays:", {
+        inventeur: inventeurs[0],
+        pays: inventeurs[0]?.Pays || []
+      });
+    }
+    
+    if (pays?.length > 0) {
+      console.log("Premier pays (structure complète):", JSON.stringify(pays[0], null, 2));
+    }
+  }, [procedureCabinets, annuiteCabinets, contactsProcedure, contactsAnnuite, pays, brevet, inventeurs]);
+
+  // Ajouter cette fonction de vérification de type avant useEffect
+  const isCabinetType = useCallback((cabinet, typeToCheck) => {
+    if (!cabinet) return false;
+    
+    // Vérifier d'abord le type direct du cabinet
+    if (cabinet.type && cabinet.type.toLowerCase() === typeToCheck.toLowerCase()) {
+      return true;
+    }
+    
+    // Vérifier ensuite dans la relation BrevetCabinets
+    if (cabinet.BrevetCabinets && cabinet.BrevetCabinets.type && 
+        cabinet.BrevetCabinets.type.toLowerCase() === typeToCheck.toLowerCase()) {
+      return true;
+    }
+    
+    return false;
+  }, []);
+
+  // Ajouter cet effet de débogage après les autres useEffect
+  useEffect(() => {
+    if (brevet?.BrevetCabinets?.length > 0 || (brevet?.Cabinets?.length > 0)) {
+      console.log("DÉTAIL DES CABINETS :");
+      
+      // Afficher toutes les relations BrevetCabinets
+      if (brevet.BrevetCabinets?.length > 0) {
+        console.log("Relations BrevetCabinets:", brevet.BrevetCabinets);
+        
+        // Compter et afficher les types trouvés
+        const types = brevet.BrevetCabinets.map(rel => rel.type);
+        console.log("Types de cabinets dans BrevetCabinets:", [...new Set(types)]);
+        
+        // Spécifiquement pour annuité
+        const annuiteRels = brevet.BrevetCabinets.filter(rel => 
+          rel.type && rel.type.toLowerCase().includes('annuit')
+        );
+        console.log(`Relations BrevetCabinets annuité trouvées: ${annuiteRels.length}`, annuiteRels);
+      }
+      
+      // Vérifier les cabinets directs
+      if (brevet.Cabinets?.length > 0) {
+        console.log("Cabinets directs:", brevet.Cabinets);
+        
+        // Compter les types de cabinets
+        const cabinetTypes = brevet.Cabinets.map(cab => cab.type);
+        console.log("Types de cabinets directs:", [...new Set(cabinetTypes)]);
+      }
+    }
+  }, [brevet]);
 
   // Si les conditions ne sont pas remplies, retourner null mais APRÈS avoir appelé tous les hooks
   if (!shouldRender) {
@@ -225,19 +340,27 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                               </Typography>
                               <Divider sx={{ mb: 2 }} />
                               <List dense>
-                                {clients.map((client, index) => (
-                                  <ListItem 
-                                    key={index}
-                                    button
-                                    onClick={() => handleOpenEntityModal(client, 'client')}
-                                    divider={index < clientsLength - 1}
-                                  >
-                                    <ListItemText 
-                                      primary={`${client?.nom_client || ''} ${client?.prenom_client || ''}`}
-                                      secondary={client?.email_client || 'Aucun email'}
-                                    />
-                                  </ListItem>
-                                ))}
+                                {clients.map((client, index) => {
+                                  const paysAssocies = client?.Pays || [];
+                                  return (
+                                    <ListItem 
+                                      key={index}
+                                      button
+                                      onClick={() => handleOpenEntityModal(client, 'client')}
+                                      divider={index < clientsLength - 1}
+                                    >
+                                      <ListItemText 
+                                        primary={`${client?.nom_client || ''} ${client?.prenom_client || ''}`}
+                                        secondary={
+                                          <>
+                                            <Typography variant="body2" component="span">{client?.email_client || 'Aucun email'}</Typography>
+                                            {renderPaysChips(paysAssocies)}
+                                          </>
+                                        }
+                                      />
+                                    </ListItem>
+                                  );
+                                })}
                               </List>
                             </Paper>
                           </Grid>
@@ -252,19 +375,50 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                               </Typography>
                               <Divider sx={{ mb: 2 }} />
                               <List dense>
-                                {inventeurs.map((inventeur, index) => (
-                                  <ListItem 
-                                    key={index}
-                                    button
-                                    onClick={() => handleOpenEntityModal(inventeur, 'inventeur')}
-                                    divider={index < invLength - 1}
-                                  >
-                                    <ListItemText 
-                                      primary={`${inventeur?.nom || inventeur?.nom_inventeur || ''} ${inventeur?.prenom || inventeur?.prenom_inventeur || ''}`}
-                                      secondary={inventeur?.email || inventeur?.email_inventeur || 'Aucun email'}
-                                    />
-                                  </ListItem>
-                                ))}
+                                {Array.isArray(inventeurs) && inventeurs.map((inventeur, index) => {
+                                  // Vérification supplémentaire que l'inventeur existe
+                                  if (!inventeur) return null;
+                                  
+                                  // Extraction sécurisée des propriétés
+                                  const nom = inventeur?.nom || inventeur?.nom_inventeur || '';
+                                  const prenom = inventeur?.prenom || inventeur?.prenom_inventeur || '';
+                                  const email = inventeur?.email || inventeur?.email_inventeur || 'Aucun email';
+                                  
+                                  // Récupérer les pays associés à l'inventeur
+                                  const paysAssocies = inventeur?.Pays || [];
+                                  
+                                  return (
+                                    <ListItem 
+                                      key={index}
+                                      button
+                                      onClick={() => handleOpenEntityModal(inventeur, 'inventeur')}
+                                      divider={index < invLength - 1}
+                                    >
+                                      <ListItemText 
+                                        primary={`${nom} ${prenom}`}
+                                        secondary={
+                                          <>
+                                            <Typography variant="body2" component="span">{email}</Typography>
+                                            {paysAssocies.length > 0 && (
+                                              <Box mt={1}>
+                                                {paysAssocies.map((p, i) => (
+                                                  <Chip
+                                                    key={i}
+                                                    size="small"
+                                                    label={p.nom_fr_fr || p.code}
+                                                    variant="outlined"
+                                                    sx={{ mr: 0.5, mt: 0.5 }}
+                                                    icon={p.alpha2 && <Flag code={p.alpha2} width="14" height="14" />}
+                                                  />
+                                                ))}
+                                              </Box>
+                                            )}
+                                          </>
+                                        }
+                                      />
+                                    </ListItem>
+                                  );
+                                })}
                               </List>
                             </Paper>
                           </Grid>
@@ -279,19 +433,27 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                               </Typography>
                               <Divider sx={{ mb: 2 }} />
                               <List dense>
-                                {deposants.map((deposant, index) => (
-                                  <ListItem 
-                                    key={index}
-                                    button
-                                    onClick={() => handleOpenEntityModal(deposant, 'deposant')}
-                                    divider={index < depLength - 1}
-                                  >
-                                    <ListItemText 
-                                      primary={`${deposant?.nom || deposant?.nom_deposant || ''} ${deposant?.prenom || deposant?.prenom_deposant || ''}`}
-                                      secondary={deposant?.email || deposant?.email_deposant || 'Aucun email'}
-                                    />
-                                  </ListItem>
-                                ))}
+                                {deposants.map((deposant, index) => {
+                                  const paysAssocies = deposant?.Pays || [];
+                                  return (
+                                    <ListItem 
+                                      key={index}
+                                      button
+                                      onClick={() => handleOpenEntityModal(deposant, 'deposant')}
+                                      divider={index < depLength - 1}
+                                    >
+                                      <ListItemText 
+                                        primary={`${deposant?.nom || deposant?.nom_deposant || ''} ${deposant?.prenom || deposant?.prenom_deposant || ''}`}
+                                        secondary={
+                                          <>
+                                            <Typography variant="body2" component="span">{deposant?.email || deposant?.email_deposant || 'Aucun email'}</Typography>
+                                            {renderPaysChips(paysAssocies)}
+                                          </>
+                                        }
+                                      />
+                                    </ListItem>
+                                  );
+                                })}
                               </List>
                             </Paper>
                           </Grid>
@@ -306,19 +468,27 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                               </Typography>
                               <Divider sx={{ mb: 2 }} />
                               <List dense>
-                                {titulaires.map((titulaire, index) => (
-                                  <ListItem 
-                                    key={index}
-                                    button
-                                    onClick={() => handleOpenEntityModal(titulaire, 'titulaire')}
-                                    divider={index < titLength - 1}
-                                  >
-                                    <ListItemText 
-                                      primary={`${titulaire?.nom || titulaire?.nom_titulaire || ''} ${titulaire?.prenom || titulaire?.prenom_titulaire || ''}`}
-                                      secondary={titulaire?.email || titulaire?.email_titulaire || 'Aucun email'}
-                                    />
-                                  </ListItem>
-                                ))}
+                                {titulaires.map((titulaire, index) => {
+                                  const paysAssocies = titulaire?.Pays || [];
+                                  return (
+                                    <ListItem 
+                                      key={index}
+                                      button
+                                      onClick={() => handleOpenEntityModal(titulaire, 'titulaire')}
+                                      divider={index < titLength - 1}
+                                    >
+                                      <ListItemText 
+                                        primary={`${titulaire?.nom || titulaire?.nom_titulaire || ''} ${titulaire?.prenom || titulaire?.prenom_titulaire || ''}`}
+                                        secondary={
+                                          <>
+                                            <Typography variant="body2" component="span">{titulaire?.email || titulaire?.email_titulaire || 'Aucun email'}</Typography>
+                                            {renderPaysChips(paysAssocies)}
+                                          </>
+                                        }
+                                      />
+                                    </ListItem>
+                                  );
+                                })}
                               </List>
                             </Paper>
                           </Grid>
@@ -330,24 +500,57 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
               )}
 
               {/* Cabinets - Ne montrer que si des données sont disponibles */}
-              {(procCabLength > 0 || annuiteCabLength > 0) && (
-                <Grid item xs={12}>
-                  <Card elevation={3}>
-                    <CardHeader
-                      title="Cabinets" 
-                      sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
-                    />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        {/* Cabinets de Procédure */}
-                        <Grid item xs={12} md={6}>
-                          <Paper elevation={2} sx={{ p: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                              <BusinessIcon sx={{ mr: 1 }} /> Cabinets de Procédure
-                            </Typography>
-                            <Divider sx={{ mb: 2 }} />
-                            {procedureCabinets && procCabLength > 0 ? (
-                              procedureCabinets.map((cabinet, index) => (
+              <Grid item xs={12}>
+                <Card elevation={3}>
+                  <CardHeader
+                    title="Cabinets" 
+                    sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
+                  />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      {/* Cabinets de Procédure */}
+                      <Grid item xs={12} md={6}>
+                        <Paper elevation={2} sx={{ p: 2 }}>
+                          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                            <BusinessIcon sx={{ mr: 1 }} /> Cabinets de Procédure
+                          </Typography>
+                          <Divider sx={{ mb: 2 }} />
+                          {(() => {
+                            // Tenter d'accéder aux cabinets via 3 sources différentes
+                            
+                            // 1. Chercher d'abord dans les relations BrevetCabinets du brevet
+                            const procedureRelations = brevet?.BrevetCabinets?.filter(rel => rel.type === 'procedure') || [];
+                            
+                            // 2. Vérifier aussi procedureCabinets provenant du hook
+                            const procCabinets = procedureCabinets || [];
+                            
+                            // 3. Vérifier si des cabinets sont présents directement dans le brevet (au cas où)
+                            const brevetCabinets = brevet?.Cabinets?.filter(cab => cab.type === 'procedure') || [];
+                            
+                            // Si nous avons des données dans l'une des sources, les afficher
+                            if (procedureRelations.length > 0) {
+                              return procedureRelations.map((relation, index) => {
+                                // Essayer de trouver le cabinet complet correspondant
+                                const matchingCabinet = procCabinets.find(cab => cab.id === relation.CabinetId || cab.id_cabinet === relation.CabinetId);
+                                
+                                return (
+                                  <Box key={index} sx={{ mb: 2 }}>
+                                    <Typography 
+                                      variant="subtitle1" 
+                                      fontWeight="bold" 
+                                      sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                    >
+                                      {matchingCabinet ? (matchingCabinet.nom_cabinet || matchingCabinet.nom) : `Cabinet ID: ${relation.CabinetId}`}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Référence: {relation.reference || 'Pas de référence'}
+                                    </Typography>
+                                    {index < procedureRelations.length - 1 && <Divider sx={{ my: 2 }} />}
+                                  </Box>
+                                );
+                              });
+                            } else if (procCabinets.length > 0) {
+                              return procCabinets.map((cabinet, index) => (
                                 <Box key={index} sx={{ mb: 2 }}>
                                   <Typography 
                                     variant="subtitle1" 
@@ -355,41 +558,16 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                                     sx={{ cursor: 'pointer', color: 'primary.main' }}
                                     onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
                                   >
-                                    {cabinet?.nom_cabinet || 'N/A'}
+                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
                                   </Typography>
-                                  <Typography variant="subtitle2" sx={{ mt: 1 }}>Contacts:</Typography>
-                                  {contactsProcedure && Array.isArray(contactsProcedure) ? 
-                                    contactsProcedure
-                                      .filter(contact => contact && contact.id_cabinet === cabinet?.id_cabinet)
-                                      .map((contact, idx) => (
-                                        <Chip
-                                          key={idx}
-                                          label={`${contact?.nom || ''} ${contact?.prenom || ''}`}
-                                          onClick={() => handleOpenEntityModal(contact, 'contact')}
-                                          sx={{ mr: 1, mt: 1 }}
-                                          color="primary"
-                                          variant="outlined"
-                                        />
-                                      ))
-                                    : null}
-                                  {index < procCabLength - 1 && <Divider sx={{ my: 2 }} />}
+                                  <Typography variant="body2" color="text.secondary">
+                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
+                                  </Typography>
+                                  {index < procCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
                                 </Box>
-                              ))
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">Aucun cabinet de procédure</Typography>
-                            )}
-                          </Paper>
-                        </Grid>
-
-                        {/* Cabinets d'Annuité */}
-                        <Grid item xs={12} md={6}>
-                          <Paper elevation={2} sx={{ p: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                              <BusinessIcon sx={{ mr: 1 }} /> Cabinets d'Annuité
-                            </Typography>
-                            <Divider sx={{ mb: 2 }} />
-                            {annuiteCabinets && annuiteCabLength > 0 ? (
-                              annuiteCabinets.map((cabinet, index) => (
+                              ));
+                            } else if (brevetCabinets.length > 0) {
+                              return brevetCabinets.map((cabinet, index) => (
                                 <Box key={index} sx={{ mb: 2 }}>
                                   <Typography 
                                     variant="subtitle1" 
@@ -397,36 +575,180 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                                     sx={{ cursor: 'pointer', color: 'primary.main' }}
                                     onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
                                   >
-                                    {cabinet?.nom_cabinet || 'N/A'}
+                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
                                   </Typography>
-                                  <Typography variant="subtitle2" sx={{ mt: 1 }}>Contacts:</Typography>
-                                  {contactsAnnuite && Array.isArray(contactsAnnuite) ? 
-                                    contactsAnnuite
-                                      .filter(contact => contact && contact.id_cabinet === cabinet?.id_cabinet)
-                                      .map((contact, idx) => (
-                                        <Chip
-                                          key={idx}
-                                          label={`${contact?.nom || ''} ${contact?.prenom || ''}`}
-                                          onClick={() => handleOpenEntityModal(contact, 'contact')}
-                                          sx={{ mr: 1, mt: 1 }}
-                                          color="primary"
-                                          variant="outlined"
-                                        />
-                                      ))
-                                    : null}
-                                  {index < annuiteCabLength - 1 && <Divider sx={{ my: 2 }} />}
+                                  <Typography variant="body2" color="text.secondary">
+                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
+                                  </Typography>
+                                  {index < brevetCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
                                 </Box>
-                              ))
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">Aucun cabinet d'annuité</Typography>
-                            )}
-                          </Paper>
-                        </Grid>
+                              ));
+                            } else {
+                              // Dernière tentative - afficher une liste des relations brutes
+                              if (brevet?.BrevetCabinets && brevet.BrevetCabinets.length > 0) {
+                                return (
+                                  <Box>
+                                    <Typography variant="subtitle1" fontWeight="bold">Relations cabinet trouvées:</Typography>
+                                    <List dense>
+                                      {brevet.BrevetCabinets.map((rel, idx) => (
+                                        <ListItem key={idx} divider>
+                                          <ListItemText 
+                                            primary={`Cabinet ID: ${rel.CabinetId}`}
+                                            secondary={`Type: ${rel.type}, Référence: ${rel.reference || 'N/A'}`}
+                                          />
+                                        </ListItem>
+                                      ))}
+                                    </List>
+                                  </Box>
+                                );
+                              } else {
+                                return <Typography variant="body2" color="text.secondary">Aucun cabinet de procédure</Typography>;
+                              }
+                            }
+                          })()}
+                        </Paper>
                       </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              )}
+
+                      {/* Cabinets d'Annuité */}
+                      <Grid item xs={12} md={6}>
+                        <Paper elevation={2} sx={{ p: 2 }}>
+                          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                            <BusinessIcon sx={{ mr: 1 }} /> Cabinets d'Annuité
+                          </Typography>
+                          <Divider sx={{ mb: 2 }} />
+                          {(() => {
+                            // Rechercher les cabinets d'annuité à partir de 3 sources possibles
+                            
+                            // Préparation des sources pour être toujours traitables comme des tableaux
+                            const brevetCabinetRelations = brevet?.BrevetCabinets || [];
+                            const annuiteCabs = annuiteCabinets || [];
+                            const brevetDirectCabinets = brevet?.Cabinets || [];
+                            
+                            // 1. Identifier correctement les relations de type annuité (avec meilleure tolérance)
+                            const annuiteRelations = brevetCabinetRelations.filter(rel => 
+                              rel.type && 
+                              (rel.type.toLowerCase() === 'annuite' || 
+                               rel.type.toLowerCase().includes('annuit'))
+                            );
+                            
+                            // 2. Identifier les cabinets directs de type annuité (avec meilleure tolérance)
+                            const brevetAnnuiteCabinets = brevetDirectCabinets.filter(cab => 
+                              cab.type && 
+                              (cab.type.toLowerCase() === 'annuite' || 
+                               cab.type.toLowerCase().includes('annuit'))
+                            );
+                            
+                            // Journaliser ce que nous avons trouvé pour déboguer
+                            console.log(`Cabinets d'annuité trouvés - Relations: ${annuiteRelations.length}, Hook: ${annuiteCabs.length}, Directs: ${brevetAnnuiteCabinets.length}`);
+                            
+                            // Commence par vérifier les relations (source la plus fiable)
+                            if (annuiteRelations.length > 0) {
+                              return annuiteRelations.map((relation, index) => {
+                                // Essayer de trouver le cabinet complet correspondant
+                                const matchingCabinet = [...annuiteCabs, ...brevetDirectCabinets].find(
+                                  cab => cab.id === relation.CabinetId || cab.id_cabinet === relation.CabinetId
+                                );
+                                
+                                return (
+                                  <Box key={index} sx={{ mb: 2 }}>
+                                    <Typography 
+                                      variant="subtitle1" 
+                                      fontWeight="bold" 
+                                      sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                      onClick={() => matchingCabinet && handleOpenEntityModal(matchingCabinet, 'cabinet')}
+                                    >
+                                      {matchingCabinet ? (matchingCabinet.nom_cabinet || matchingCabinet.nom) : `Cabinet ID: ${relation.CabinetId}`}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Référence: {relation.reference || 'Pas de référence'}
+                                    </Typography>
+                                    {index < annuiteRelations.length - 1 && <Divider sx={{ my: 2 }} />}
+                                  </Box>
+                                );
+                              });
+                            } 
+                            // Ensuite, vérifier les cabinets du hook
+                            else if (annuiteCabs.length > 0) {
+                              return annuiteCabs.map((cabinet, index) => (
+                                <Box key={index} sx={{ mb: 2 }}>
+                                  <Typography 
+                                    variant="subtitle1" 
+                                    fontWeight="bold" 
+                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                  >
+                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Type: {cabinet?.type || 'Non spécifié'}
+                                  </Typography>
+                                  {index < annuiteCabs.length - 1 && <Divider sx={{ my: 2 }} />}
+                                </Box>
+                              ));
+                            } 
+                            // Enfin, vérifier les cabinets directs
+                            else if (brevetAnnuiteCabinets.length > 0) {
+                              return brevetAnnuiteCabinets.map((cabinet, index) => (
+                                <Box key={index} sx={{ mb: 2 }}>
+                                  <Typography 
+                                    variant="subtitle1" 
+                                    fontWeight="bold" 
+                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                  >
+                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Type: {cabinet?.type || 'Non spécifié'}
+                                  </Typography>
+                                  {index < brevetAnnuiteCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
+                                </Box>
+                              ));
+                            } 
+                            else {
+                              // Dernier recours: chercher tous les cabinets et filtrer
+                              const allCabinets = [...brevetDirectCabinets, ...annuiteCabs];
+                              const potentialAnnuiteCabinets = allCabinets.filter(cab => 
+                                cab && cab.type && (
+                                  cab.type.toLowerCase() === 'annuite' || 
+                                  cab.type.toLowerCase().includes('annuit')
+                                )
+                              );
+                              
+                              if (potentialAnnuiteCabinets.length > 0) {
+                                return potentialAnnuiteCabinets.map((cabinet, index) => (
+                                  <Box key={index} sx={{ mb: 2 }}>
+                                    <Typography 
+                                      variant="subtitle1" 
+                                      fontWeight="bold" 
+                                      sx={{ cursor: 'pointer', color: 'primary.main' }}
+                                      onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                    >
+                                      {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id}` || 'N/A'}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Type: {cabinet.type || 'Non spécifié'}
+                                    </Typography>
+                                    {index < potentialAnnuiteCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
+                                  </Box>
+                                ));
+                              }
+                              
+                              return <Typography variant="body2" color="text.secondary">Aucun cabinet d'annuité trouvé</Typography>;
+                            }
+                          })()}
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
 
               {/* Pays et Statut - Ne montrer que si des données sont disponibles */}
               {paysLength > 0 && (
@@ -440,21 +762,35 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                       <Grid container spacing={2}>
                         {pays && Array.isArray(pays) && paysLength > 0 ? pays.map((p, index) => {
                           if (!p) return null; // Vérification supplémentaire pour les pays undefined
-                          const matchingStatut = statutsList && Array.isArray(statutsList) ? 
-                            statutsList.find(st => st && p && st.id_statuts === p.id_statuts) : null;
+                          
+                          // Amélioration de la recherche du statut
+                          let matchingStatut = null;
+                          if (statutsList && Array.isArray(statutsList)) {
+                            // Chercher d'abord dans la relation Statut directe
+                            if (p.Statut) {
+                              matchingStatut = p.Statut;
+                            } else if (p.id_statuts) {
+                              matchingStatut = statutsList.find(st => st && st.id === p.id_statuts);
+                            }
+                          }
+                          
+                          // Correction pour accéder aux données du pays - chercher dans les deux structures possibles
+                          const nomPays = p?.nom_fr_fr || p?.Pay?.nom_fr_fr || p?.nom || p?.Pay?.nom || 'N/A';
+                          const alpha2 = p?.alpha2 || p?.Pay?.alpha2;
+                          
                           return (
                             <Grid item xs={12} md={6} lg={4} key={index}>
                               <Paper elevation={2} sx={{ p: 2 }}>
                                 <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                                  {p.alpha2 && (
-                                    <Flag code={p.alpha2} width="32" style={{ marginRight: '12px' }} />
+                                  {alpha2 && (
+                                    <Flag code={alpha2} width="32" style={{ marginRight: '12px' }} />
                                   )}
-                                  <Typography variant="h6">{p?.nom_fr_fr || 'N/A'}</Typography>
+                                  <Typography variant="h6">{nomPays}</Typography>
                                 </Box>
                                 <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 1, mb: 1 }}>
                                   <Typography variant="body2" fontWeight="bold">Statut:</Typography>
                                   <Chip 
-                                    label={matchingStatut ? matchingStatut.valeur : 'N/A'} 
+                                    label={matchingStatut ? (matchingStatut.valeur || matchingStatut.statuts) : 'N/A'} 
                                     color="primary" 
                                     size="small"
                                   />
