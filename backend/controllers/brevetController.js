@@ -681,59 +681,63 @@ const brevetController = {
       // Récupérer les cabinets complets
       const cabinetIds = brevetCabinets.map(rel => rel.CabinetId);
       const cabinets = await Cabinet.findAll({
-        where: { id: { [Op.in]: cabinetIds } },
-        include: [{ model: Pays }]
+        where: { id: { [Op.in]: cabinetIds } }
       });
       
-      console.log(`Cabinets récupérés: ${cabinets.length}`);
+      // Récupérer séparément les relations CabinetPays pour éviter l'erreur d'eager loading
+      const cabinetPaysRelations = await sequelize.query(
+        `SELECT cp.*, p.* FROM CabinetPays cp
+         JOIN pays p ON cp.PaysId = p.id
+         WHERE cp.CabinetId IN (${cabinetIds.join(',')})`,
+        { 
+          type: sequelize.QueryTypes.SELECT,
+          nest: true
+        }
+      );
       
-      // Enrichir les cabinets avec les données de la relation
+      console.log(`Cabinets récupérés: ${cabinets.length}, relations pays: ${cabinetPaysRelations.length}`);
+      
+      // Enrichir les cabinets avec les données de la relation et les pays
       const enrichedCabinets = cabinets.map(cabinet => {
+        const cabinetObj = cabinet.toJSON();
+        
         // Trouver la relation correspondant à ce cabinet
         const relation = brevetCabinets.find(rel => rel.CabinetId === cabinet.id);
         
-        // Récupérer les données du cabinet
-        const cabinetData = cabinet.toJSON();
-        
         // Si une relation a été trouvée, l'ajouter au cabinet
         if (relation) {
-          // Filtrer les champs de métadonnées
-          const relationData = {};
-          Object.keys(relation).forEach(key => {
-            if (!['BrevetId', 'CabinetId', 'createdAt', 'updatedAt'].includes(key)) {
-              relationData[key] = relation[key];
-            }
-          });
-          
-          // Ajouter la relation au cabinet
-          cabinetData.BrevetCabinets = relationData;
+          cabinetObj.BrevetCabinets = relation;
         }
         
-        return cabinetData;
+        // Ajouter les pays associés à ce cabinet
+        const cabinetPays = cabinetPaysRelations.filter(cp => cp.CabinetId === cabinet.id);
+        if (cabinetPays && cabinetPays.length > 0) {
+          cabinetObj.Pays = cabinetPays.map(cp => cp.p || cp);
+        } else {
+          cabinetObj.Pays = [];
+        }
+        
+        return cabinetObj;
       });
       
       // Séparer les cabinets par type en se basant sur le type dans la relation BrevetCabinets
       const procedureCabinets = enrichedCabinets.filter(cab => {
-        // Vérifier d'abord la relation
-        if (cab.BrevetCabinets && cab.BrevetCabinets.type) {
-          return cab.BrevetCabinets.type.toLowerCase() === 'procedure';
-        }
-        // Puis le type direct du cabinet
-        return cab.type && cab.type.toLowerCase() === 'procedure';
+        return cab.BrevetCabinets && 
+               cab.BrevetCabinets.type && 
+               (cab.BrevetCabinets.type === 'procedure' || 
+                cab.BrevetCabinets.type.toLowerCase().includes('proced'));
       });
       
       const annuiteCabinets = enrichedCabinets.filter(cab => {
-        // Vérifier d'abord la relation
-        if (cab.BrevetCabinets && cab.BrevetCabinets.type) {
-          return cab.BrevetCabinets.type.toLowerCase() === 'annuite';
-        }
-        // Puis le type direct du cabinet
-        return cab.type && cab.type.toLowerCase() === 'annuite';
+        return cab.BrevetCabinets && 
+               cab.BrevetCabinets.type && 
+               (cab.BrevetCabinets.type === 'annuite' || 
+                cab.BrevetCabinets.type.toLowerCase().includes('annuit'));
       });
       
       console.log(`Cabinets classés - Total: ${enrichedCabinets.length}, Procédure: ${procedureCabinets.length}, Annuité: ${annuiteCabinets.length}`);
       
-      // Renvoyer toutes les données avec des logs clairs
+      // Renvoyer toutes les données
       res.status(200).json({ 
         data: enrichedCabinets,
         procedure: procedureCabinets,
@@ -752,6 +756,28 @@ const brevetController = {
         details: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
+    }
+  },
+
+  // Nouvelle méthode pour récupérer la dernière date de mise à jour
+  getLastUpdate: async (req, res) => {
+    try {
+      // Récupérer le brevet le plus récemment mis à jour
+      const lastUpdated = await Brevet.findOne({
+        order: [['updatedAt', 'DESC']],
+        attributes: ['updatedAt']
+      });
+      
+      // Si aucun brevet n'est trouvé, renvoyer la date actuelle
+      const lastUpdate = lastUpdated ? lastUpdated.updatedAt : new Date();
+      
+      res.status(200).json({ 
+        lastUpdate: lastUpdate.toISOString(),
+        timestamp: lastUpdate.getTime()
+      });
+    } catch (error) {
+      console.error('Erreur récupération date de dernière mise à jour:', error);
+      res.status(500).json({ error: 'Erreur lors de la récupération de la date de dernière mise à jour' });
     }
   }
 };

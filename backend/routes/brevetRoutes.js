@@ -27,4 +27,7 @@ router.get('/brevets/:id/titulaires', brevetController.getTitulairesByBrevetId);
 router.get('/brevets/:id/deposants', brevetController.getDeposantsByBrevetId);
 router.get('/brevets/:id/cabinets', brevetController.getAllCabinetsByBrevetId);
 
+// Ajouter cette route
+router.get('/last-update', brevetController.getLastUpdate);
+
 module.exports = router;

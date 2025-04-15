@@ -6,8 +6,10 @@ import Flag from 'react-world-flags';
 
 import { 
   Modal, Box, Typography, IconButton, Button, Card, CardContent, CardHeader,
-  Grid, Divider, Chip, List, ListItem, ListItemText, Paper
+  Grid, Divider, Chip, List, ListItem, ListItemText, Paper, Avatar, Fade, 
+  useTheme, alpha, ListItemAvatar
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
 import EventIcon from '@mui/icons-material/Event';
@@ -15,8 +17,71 @@ import FlagIcon from '@mui/icons-material/Flag';
 import PersonIcon from '@mui/icons-material/Person';
 import BusinessIcon from '@mui/icons-material/Business';
 import CommentIcon from '@mui/icons-material/Comment';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import WorkIcon from '@mui/icons-material/Work';
 import useBrevetData from '../hooks/useBrevetData';
 import { API_BASE_URL } from '../config';
+
+// Composants stylisés pour un design plus moderne
+const StyledCard = styled(Card)(({ theme }) => ({
+  borderRadius: 16,
+  transition: 'transform 0.3s, box-shadow 0.3s',
+  overflow: 'hidden',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: theme.shadows[10],
+  },
+}));
+
+const StyledCardHeader = styled(CardHeader)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+  color: 'white',
+  padding: '16px 24px',
+}));
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  borderRadius: 12,
+  padding: theme.spacing(2.5),
+  height: '100%',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    boxShadow: '0 6px 25px rgba(0,0,0,0.12)',
+  },
+}));
+
+const StyledListItem = styled(ListItem)(({ theme, index }) => ({
+  borderRadius: 8,
+  marginBottom: theme.spacing(1),
+  transition: 'background-color 0.2s',
+  backgroundColor: index % 2 === 0 ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  },
+}));
+
+const FlagChip = styled(Chip)(({ theme }) => ({
+  margin: theme.spacing(0.5),
+  borderRadius: 16,
+  fontWeight: 500,
+  '& .MuiChip-avatar': {
+    width: 18,
+    height: 18,
+  },
+}));
+
+const CountryFlag = ({ code, size = 18 }) => {
+  return code ? (
+    <Avatar sx={{ width: size, height: size, p: 0 }}>
+      <Flag code={code} width={size} height={size} />
+    </Avatar>
+  ) : (
+    <FlagIcon sx={{ width: size, height: size }} />
+  );
+};
 
 const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = null }) => {
   // Logs pour le débogage
@@ -46,6 +111,44 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
     loading,
     error
   } = useBrevetData(brevetId);
+
+  // Ajouter ces logs pour le débogage juste après l'appel de useBrevetData
+  console.log("BrevetDetailModal - generatePDF function:", {
+    isFunction: typeof generatePDF === 'function',
+    function: generatePDF
+  });
+
+  // Version renforcée de la fonction d'exportation PDF avec plus de détails de débogage
+  const handleExportPDF = useCallback(() => {
+    console.log("[PDF-Modal] Clic sur le bouton d'exportation PDF");
+    
+    // Vérification complète de generatePDF
+    console.log("[PDF-Modal] Type de generatePDF:", typeof generatePDF);
+    console.log("[PDF-Modal] generatePDF est une fonction?", typeof generatePDF === 'function');
+    console.log("[PDF-Modal] Contenu de generatePDF:", generatePDF);
+    
+    try {
+      // Simulation simple pour vérifier l'accès à la fonction
+      console.log("[PDF-Modal] Accès à la fonction test:", typeof (() => {}));
+      
+      if (typeof generatePDF !== 'function') {
+        console.error("[PDF-Modal] ERREUR: generatePDF n'est pas une fonction!", generatePDF);
+        alert("La fonction d'exportation PDF n'est pas disponible. Veuillez rafraîchir la page.");
+        return;
+      }
+      
+      console.log("[PDF-Modal] Tentative d'exécution de generatePDF...");
+      
+      // Version alternative d'appel de fonction pour contourner d'éventuels problèmes
+      const result = (0, generatePDF)();
+      
+      console.log("[PDF-Modal] Résultat de generatePDF:", result);
+    } catch (error) {
+      console.error("[PDF-Modal] ERREUR GRAVE lors de l'appel à generatePDF:", error);
+      console.error("[PDF-Modal] Stack trace:", error.stack);
+      alert(`Erreur lors de l'exportation: ${error.message || "Erreur inconnue"}`);
+    }
+  }, [generatePDF]);
 
   // Fonction pour formater les dates - TOUJOURS DÉFINIE
   const formatDate = useCallback((dateString) => {
@@ -82,6 +185,7 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
           const countryName = 
             paysInfo.nom_fr_fr || 
             (paysInfo.Pay && paysInfo.Pay.nom_fr_fr) || 
+            (paysInfo.p && paysInfo.p.nom_fr_fr) ||
             (paysInfo.pays && paysInfo.pays.nom_fr_fr) ||
             paysInfo.code || 
             'Pays';
@@ -89,16 +193,16 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
           const countryCode = 
             paysInfo.alpha2 || 
             (paysInfo.Pay && paysInfo.Pay.alpha2) || 
+            (paysInfo.p && paysInfo.p.alpha2) ||
             (paysInfo.pays && paysInfo.pays.alpha2);
           
           return (
-            <Chip
+            <FlagChip
               key={i}
               size="small"
               label={countryName}
               variant="outlined" 
-              sx={{ mr: 0.5, mt: 0.5 }}
-              icon={countryCode && <Flag code={countryCode} width="14" height="14" />}
+              avatar={countryCode && <CountryFlag code={countryCode} />}
             />
           );
         })}
@@ -281,655 +385,1106 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
   return (
     <>
       <BootstrapModal show={show} onHide={handleClose} fullscreen>
-        <BootstrapModal.Header closeButton>
-          <BootstrapModal.Title style={{ fontWeight: 'bold', fontSize: '1.5rem', color: '#007bff', fontFamily: 'Roboto, sans-serif' }}>
-            Détails du Brevet: {brevet?.titre || 'Sans titre'}
-            {typeof generatePDF === 'function' && (
-              <Button 
-                variant="contained" 
-                onClick={generatePDF} 
-                startIcon={<DownloadIcon />}
-                sx={{ ml: 2 }}
-              >
-                Exporter en PDF
-              </Button>
-            )}
-          </BootstrapModal.Title>
+        <BootstrapModal.Header closeButton style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', padding: '16px 24px' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: '"Poppins", "Roboto", sans-serif' }}>
+              {brevet?.titre || 'Sans titre'}
+            </Typography>
+            {/* Remplacer le onClick par notre fonction wrapper */}
+            <Button 
+              variant="contained" 
+              onClick={handleExportPDF} 
+              startIcon={<DownloadIcon />}
+              sx={{ 
+                ml: 2, 
+                borderRadius: '24px',
+                textTransform: 'none',
+                padding: '8px 20px',
+                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)'
+              }}
+            >
+              Exporter en PDF
+            </Button>
+          </Box>
         </BootstrapModal.Header>
-        <BootstrapModal.Body style={{ backgroundColor: '#f0f2f5', padding: '30px' }}>
+        <BootstrapModal.Body style={{ backgroundColor: '#f8f9fa', padding: '30px' }}>
           <Container fluid>
             <Grid container spacing={3}>
               {/* Informations Générales */}
               <Grid item xs={12}>
-                <Card elevation={3}>
-                  <CardHeader
-                    title="Informations Générales" 
-                    sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
-                  />
-                  <CardContent>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={4}>
-                        <Typography variant="subtitle1" fontWeight="bold">Référence famille:</Typography>
-                        <Typography variant="body1">{brevet?.reference_famille || 'N/A'}</Typography>
+                <Fade in={true} timeout={500}>
+                  <StyledCard elevation={2}>
+                    <StyledCardHeader
+                      title={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <AssignmentIcon sx={{ mr: 1.5 }} /> 
+                          <Typography variant="h6" fontWeight="600">Informations Générales</Typography>
+                        </Box>
+                      }
+                    />
+                    <CardContent sx={{ p: 3 }}>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} md={4}>
+                          <Typography variant="subtitle1" fontWeight="600" color="primary.main" gutterBottom>
+                            Référence famille
+                          </Typography>
+                          <Typography variant="body1" sx={{ 
+                            p: 1.5, 
+                            bgcolor: 'background.paper', 
+                            borderRadius: 2,
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            minHeight: '40px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            {brevet?.reference_famille || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={8}>
+                          <Typography variant="subtitle1" fontWeight="600" color="primary.main" gutterBottom>
+                            Titre
+                          </Typography>
+                          <Typography variant="body1" sx={{ 
+                            p: 1.5, 
+                            bgcolor: 'background.paper', 
+                            borderRadius: 2,
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            minHeight: '40px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            {brevet?.titre || 'N/A'}
+                          </Typography>
+                        </Grid>
                       </Grid>
-                      <Grid item xs={12} md={8}>
-                        <Typography variant="subtitle1" fontWeight="bold">Titre:</Typography>
-                        <Typography variant="body1">{brevet?.titre || 'N/A'}</Typography>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </StyledCard>
+                </Fade>
               </Grid>
 
               {/* Personnes liées - Ne montrer que si des données sont disponibles */}
               {(clientsLength > 0 || invLength > 0 || depLength > 0 || titLength > 0) && (
                 <Grid item xs={12}>
-                  <Card elevation={3}>
-                    <CardHeader
-                      title="Personnes Liées" 
-                      sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
-                    />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        {/* Clients */}
-                        {clientsLength > 0 && (
-                          <Grid item xs={12} md={3}>
-                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                                <BusinessIcon sx={{ mr: 1 }} /> Clients
-                              </Typography>
-                              <Divider sx={{ mb: 2 }} />
-                              <List dense>
-                                {clients.map((client, index) => {
-                                  const paysAssocies = client?.Pays || [];
-                                  return (
-                                    <ListItem 
-                                      key={index}
-                                      button
-                                      onClick={() => handleOpenEntityModal(client, 'client')}
-                                      divider={index < clientsLength - 1}
-                                    >
-                                      <ListItemText 
-                                        primary={`${client?.nom_client || ''} ${client?.prenom_client || ''}`}
-                                        secondary={
-                                          <>
-                                            <Typography variant="body2" component="span">{client?.email_client || 'Aucun email'}</Typography>
-                                            {renderPaysChips(paysAssocies)}
-                                          </>
-                                        }
-                                      />
-                                    </ListItem>
-                                  );
-                                })}
-                              </List>
-                            </Paper>
-                          </Grid>
-                        )}
+                  <Fade in={true} timeout={700}>
+                    <StyledCard elevation={2}>
+                      <StyledCardHeader
+                        title={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <PersonIcon sx={{ mr: 1.5 }} /> 
+                            <Typography variant="h6" fontWeight="600">Personnes Liées</Typography>
+                          </Box>
+                        }
+                      />
+                      <CardContent sx={{ p: 3 }}>
+                        <Grid container spacing={3}>
+                          {/* Clients */}
+                          {clientsLength > 0 && (
+                            <Grid item xs={12} md={3}>
+                              <StyledPaper>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between', 
+                                  mb: 2 
+                                }}>
+                                  <Typography variant="h6" sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    fontWeight: 600,
+                                    color: 'primary.main'
+                                  }}>
+                                    <BusinessIcon sx={{ mr: 1.5 }} /> Clients
+                                  </Typography>
+                                  <Chip 
+                                    label={clientsLength} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ borderRadius: '12px', fontWeight: 600 }}
+                                  />
+                                </Box>
+                                <Divider sx={{ mb: 2 }} />
+                                <List disablePadding sx={{ 
+                                  maxHeight: '300px', 
+                                  overflow: 'auto',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    background: alpha('#1976d2', 0.2),
+                                    borderRadius: '3px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb:hover': {
+                                    background: alpha('#1976d2', 0.3)
+                                  }
+                                }}>
+                                  {clients.map((client, index) => {
+                                    const paysAssocies = client?.Pays || [];
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => handleOpenEntityModal(client, 'client')}
+                                        divider={index < clientsLength - 1}
+                                        sx={{ borderRadius: '8px', mb: 1 }}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                            <BusinessIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {client?.nom_client || 'Client sans nom'}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              {client?.email_client && (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                                  <EmailIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                                                  <Typography variant="body2" color="text.secondary">
+                                                    {client.email_client}
+                                                  </Typography>
+                                                </Box>
+                                              )}
+                                              {renderPaysChips(paysAssocies)}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  })}
+                                </List>
+                              </StyledPaper>
+                            </Grid>
+                          )}
 
-                        {/* Inventeurs */}
-                        {invLength > 0 && (
-                          <Grid item xs={12} md={3}>
-                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                                <PersonIcon sx={{ mr: 1 }} /> Inventeurs
-                              </Typography>
-                              <Divider sx={{ mb: 2 }} />
-                              <List dense>
-                                {Array.isArray(inventeurs) && inventeurs.map((inventeur, index) => {
-                                  // Vérification supplémentaire que l'inventeur existe
-                                  if (!inventeur) return null;
-                                  
-                                  // Extraction sécurisée des propriétés
-                                  const nom = inventeur?.nom || inventeur?.nom_inventeur || '';
-                                  const prenom = inventeur?.prenom || inventeur?.prenom_inventeur || '';
-                                  const email = inventeur?.email || inventeur?.email_inventeur || 'Aucun email';
-                                  
-                                  // Récupérer les pays associés à l'inventeur
-                                  const paysAssocies = inventeur?.Pays || [];
-                                  
-                                  return (
-                                    <ListItem 
-                                      key={index}
-                                      button
-                                      onClick={() => handleOpenEntityModal(inventeur, 'inventeur')}
-                                      divider={index < invLength - 1}
-                                    >
-                                      <ListItemText 
-                                        primary={`${nom} ${prenom}`}
-                                        secondary={
-                                          <>
-                                            <Typography variant="body2" component="span">{email}</Typography>
-                                            {paysAssocies.length > 0 && (
-                                              <Box mt={1}>
-                                                {paysAssocies.map((p, i) => (
-                                                  <Chip
-                                                    key={i}
-                                                    size="small"
-                                                    label={p.nom_fr_fr || p.code}
-                                                    variant="outlined"
-                                                    sx={{ mr: 0.5, mt: 0.5 }}
-                                                    icon={p.alpha2 && <Flag code={p.alpha2} width="14" height="14" />}
-                                                  />
-                                                ))}
-                                              </Box>
-                                            )}
-                                          </>
-                                        }
-                                      />
-                                    </ListItem>
-                                  );
-                                })}
-                              </List>
-                            </Paper>
-                          </Grid>
-                        )}
+                          {/* Inventeurs */}
+                          {invLength > 0 && (
+                            <Grid item xs={12} md={3}>
+                              <StyledPaper>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between', 
+                                  mb: 2 
+                                }}>
+                                  <Typography variant="h6" sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    fontWeight: 600,
+                                    color: 'primary.main'
+                                  }}>
+                                    <PersonIcon sx={{ mr: 1.5 }} /> Inventeurs
+                                  </Typography>
+                                  <Chip 
+                                    label={invLength} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ borderRadius: '12px', fontWeight: 600 }}
+                                  />
+                                </Box>
+                                <Divider sx={{ mb: 2 }} />
+                                <List disablePadding sx={{ 
+                                  maxHeight: '300px', 
+                                  overflow: 'auto',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    background: alpha('#1976d2', 0.2),
+                                    borderRadius: '3px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb:hover': {
+                                    background: alpha('#1976d2', 0.3)
+                                  }
+                                }}>
+                                  {Array.isArray(inventeurs) && inventeurs.map((inventeur, index) => {
+                                    if (!inventeur) return null;
+                                    
+                                    const nom = inventeur?.nom_inventeur || inventeur?.nom || '';
+                                    const prenom = inventeur?.prenom_inventeur || inventeur?.prenom || '';
+                                    const email = inventeur?.email_inventeur || inventeur?.email || '';
+                                    
+                                    const paysAssocies = inventeur?.Pays || [];
+                                    
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => handleOpenEntityModal(inventeur, 'inventeur')}
+                                        divider={index < invLength - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <PersonIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {`${nom} ${prenom}`.trim() || 'Inventeur sans nom'}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              {email && (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                                  <EmailIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                                                  <Typography variant="body2" color="text.secondary">
+                                                    {email}
+                                                  </Typography>
+                                                </Box>
+                                              )}
+                                              {renderPaysChips(paysAssocies)}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  })}
+                                </List>
+                              </StyledPaper>
+                            </Grid>
+                          )}
 
-                        {/* Déposants */}
-                        {depLength > 0 && (
-                          <Grid item xs={12} md={3}>
-                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                                <BusinessIcon sx={{ mr: 1 }} /> Déposants
-                              </Typography>
-                              <Divider sx={{ mb: 2 }} />
-                              <List dense>
-                                {deposants.map((deposant, index) => {
-                                  const paysAssocies = deposant?.Pays || [];
-                                  return (
-                                    <ListItem 
-                                      key={index}
-                                      button
-                                      onClick={() => handleOpenEntityModal(deposant, 'deposant')}
-                                      divider={index < depLength - 1}
-                                    >
-                                      <ListItemText 
-                                        primary={`${deposant?.nom || deposant?.nom_deposant || ''} ${deposant?.prenom || deposant?.prenom_deposant || ''}`}
-                                        secondary={
-                                          <>
-                                            <Typography variant="body2" component="span">{deposant?.email || deposant?.email_deposant || 'Aucun email'}</Typography>
-                                            {renderPaysChips(paysAssocies)}
-                                          </>
-                                        }
-                                      />
-                                    </ListItem>
-                                  );
-                                })}
-                              </List>
-                            </Paper>
-                          </Grid>
-                        )}
+                          {/* Déposants et Titulaires - style similaire aux sections ci-dessus */}
+                          {depLength > 0 && (
+                            <Grid item xs={12} md={3}>
+                              <StyledPaper>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between', 
+                                  mb: 2 
+                                }}>
+                                  <Typography variant="h6" sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    fontWeight: 600,
+                                    color: 'primary.main'
+                                  }}>
+                                    <BusinessIcon sx={{ mr: 1.5 }} /> Déposants
+                                  </Typography>
+                                  <Chip 
+                                    label={depLength} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ borderRadius: '12px', fontWeight: 600 }}
+                                  />
+                                </Box>
+                                <Divider sx={{ mb: 2 }} />
+                                <List disablePadding sx={{ 
+                                  maxHeight: '300px', 
+                                  overflow: 'auto',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    background: alpha('#1976d2', 0.2),
+                                    borderRadius: '3px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb:hover': {
+                                    background: alpha('#1976d2', 0.3)
+                                  }
+                                }}>
+                                  {Array.isArray(deposants) && deposants.map((deposant, index) => {
+                                    if (!deposant) return null;
+                                    
+                                    const nom = deposant?.nom_deposant || deposant?.nom || '';
+                                    const prenom = deposant?.prenom_deposant || deposant?.prenom || '';
+                                    const email = deposant?.email_deposant || deposant?.email || '';
+                                    
+                                    const paysAssocies = deposant?.Pays || [];
+                                    
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => handleOpenEntityModal(deposant, 'deposant')}
+                                        divider={index < depLength - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <BusinessIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {`${nom} ${prenom}`.trim() || 'Déposant sans nom'}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              {email && (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                                  <EmailIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                                                  <Typography variant="body2" color="text.secondary">
+                                                    {email}
+                                                  </Typography>
+                                                </Box>
+                                              )}
+                                              {renderPaysChips(paysAssocies)}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  })}
+                                </List>
+                              </StyledPaper>
+                            </Grid>
+                          )}
 
-                        {/* Titulaires */}
-                        {titLength > 0 && (
-                          <Grid item xs={12} md={3}>
-                            <Paper elevation={2} sx={{ p: 2, height: '100%' }}>
-                              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                                <BusinessIcon sx={{ mr: 1 }} /> Titulaires
-                              </Typography>
-                              <Divider sx={{ mb: 2 }} />
-                              <List dense>
-                                {titulaires.map((titulaire, index) => {
-                                  const paysAssocies = titulaire?.Pays || [];
-                                  return (
-                                    <ListItem 
-                                      key={index}
-                                      button
-                                      onClick={() => handleOpenEntityModal(titulaire, 'titulaire')}
-                                      divider={index < titLength - 1}
-                                    >
-                                      <ListItemText 
-                                        primary={`${titulaire?.nom || titulaire?.nom_titulaire || ''} ${titulaire?.prenom || titulaire?.prenom_titulaire || ''}`}
-                                        secondary={
-                                          <>
-                                            <Typography variant="body2" component="span">{titulaire?.email || titulaire?.email_titulaire || 'Aucun email'}</Typography>
-                                            {renderPaysChips(paysAssocies)}
-                                          </>
-                                        }
-                                      />
-                                    </ListItem>
-                                  );
-                                })}
-                              </List>
-                            </Paper>
-                          </Grid>
-                        )}
-                      </Grid>
-                    </CardContent>
-                  </Card>
+                          {titLength > 0 && (
+                            <Grid item xs={12} md={3}>
+                              <StyledPaper>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between', 
+                                  mb: 2 
+                                }}>
+                                  <Typography variant="h6" sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    fontWeight: 600,
+                                    color: 'primary.main'
+                                  }}>
+                                    <BusinessIcon sx={{ mr: 1.5 }} /> Titulaires
+                                  </Typography>
+                                  <Chip 
+                                    label={titLength} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ borderRadius: '12px', fontWeight: 600 }}
+                                  />
+                                </Box>
+                                <Divider sx={{ mb: 2 }} />
+                                <List disablePadding sx={{ 
+                                  maxHeight: '300px', 
+                                  overflow: 'auto',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    background: alpha('#1976d2', 0.2),
+                                    borderRadius: '3px'
+                                  },
+                                  '&::-webkit-scrollbar-thumb:hover': {
+                                    background: alpha('#1976d2', 0.3)
+                                  }
+                                }}>
+                                  {Array.isArray(titulaires) && titulaires.map((titulaire, index) => {
+                                    if (!titulaire) return null;
+                                    
+                                    const nom = titulaire?.nom_titulaire || titulaire?.nom || '';
+                                    const prenom = titulaire?.prenom_titulaire || titulaire?.prenom || '';
+                                    const email = titulaire?.email_titulaire || titulaire?.email || '';
+                                    
+                                    const paysAssocies = titulaire?.Pays || [];
+                                    
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => handleOpenEntityModal(titulaire, 'titulaire')}
+                                        divider={index < titLength - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <BusinessIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {`${nom} ${prenom}`.trim() || 'Titulaire sans nom'}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              {email && (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                                                  <EmailIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                                                  <Typography variant="body2" color="text.secondary">
+                                                    {email}
+                                                  </Typography>
+                                                </Box>
+                                              )}
+                                              {renderPaysChips(paysAssocies)}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  })}
+                                </List>
+                              </StyledPaper>
+                            </Grid>
+                          )}
+                        </Grid>
+                      </CardContent>
+                    </StyledCard>
+                  </Fade>
                 </Grid>
               )}
 
-              {/* Cabinets - Ne montrer que si des données sont disponibles */}
+              {/* Cabinets - Style modernisé */}
               <Grid item xs={12}>
-                <Card elevation={3}>
-                  <CardHeader
-                    title="Cabinets" 
-                    sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
-                  />
-                  <CardContent>
-                    <Grid container spacing={3}>
-                      {/* Cabinets de Procédure */}
-                      <Grid item xs={12} md={6}>
-                        <Paper elevation={2} sx={{ p: 2 }}>
-                          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                            <BusinessIcon sx={{ mr: 1 }} /> Cabinets de Procédure
-                          </Typography>
-                          <Divider sx={{ mb: 2 }} />
-                          {(() => {
-                            // Tenter d'accéder aux cabinets via 3 sources différentes
-                            
-                            // 1. Chercher d'abord dans les relations BrevetCabinets du brevet
-                            const procedureRelations = brevet?.BrevetCabinets?.filter(rel => rel.type === 'procedure') || [];
-                            
-                            // 2. Vérifier aussi procedureCabinets provenant du hook
-                            const procCabinets = procedureCabinets || [];
-                            
-                            // 3. Vérifier si des cabinets sont présents directement dans le brevet (au cas où)
-                            const brevetCabinets = brevet?.Cabinets?.filter(cab => cab.type === 'procedure') || [];
-                            
-                            // Si nous avons des données dans l'une des sources, les afficher
-                            if (procedureRelations.length > 0) {
-                              return procedureRelations.map((relation, index) => {
-                                // Essayer de trouver le cabinet complet correspondant
-                                const matchingCabinet = procCabinets.find(cab => cab.id === relation.CabinetId || cab.id_cabinet === relation.CabinetId);
-                                
-                                return (
-                                  <Box key={index} sx={{ mb: 2 }}>
-                                    <Typography 
-                                      variant="subtitle1" 
-                                      fontWeight="bold" 
-                                      sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                    >
-                                      {matchingCabinet ? (matchingCabinet.nom_cabinet || matchingCabinet.nom) : `Cabinet ID: ${relation.CabinetId}`}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Référence: {relation.reference || 'Pas de référence'}
-                                    </Typography>
-                                    {index < procedureRelations.length - 1 && <Divider sx={{ my: 2 }} />}
-                                  </Box>
-                                );
-                              });
-                            } else if (procCabinets.length > 0) {
-                              return procCabinets.map((cabinet, index) => (
-                                <Box key={index} sx={{ mb: 2 }}>
-                                  <Typography 
-                                    variant="subtitle1" 
-                                    fontWeight="bold" 
-                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
-                                  >
-                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
-                                  </Typography>
-                                  {index < procCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
-                                </Box>
-                              ));
-                            } else if (brevetCabinets.length > 0) {
-                              return brevetCabinets.map((cabinet, index) => (
-                                <Box key={index} sx={{ mb: 2 }}>
-                                  <Typography 
-                                    variant="subtitle1" 
-                                    fontWeight="bold" 
-                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
-                                  >
-                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
-                                  </Typography>
-                                  {index < brevetCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
-                                </Box>
-                              ));
-                            } else {
-                              // Dernière tentative - afficher une liste des relations brutes
-                              if (brevet?.BrevetCabinets && brevet.BrevetCabinets.length > 0) {
-                                return (
-                                  <Box>
-                                    <Typography variant="subtitle1" fontWeight="bold">Relations cabinet trouvées:</Typography>
-                                    <List dense>
-                                      {brevet.BrevetCabinets.map((rel, idx) => (
-                                        <ListItem key={idx} divider>
-                                          <ListItemText 
-                                            primary={`Cabinet ID: ${rel.CabinetId}`}
-                                            secondary={`Type: ${rel.type}, Référence: ${rel.reference || 'N/A'}`}
-                                          />
-                                        </ListItem>
-                                      ))}
-                                    </List>
-                                  </Box>
-                                );
-                              } else {
-                                return <Typography variant="body2" color="text.secondary">Aucun cabinet de procédure</Typography>;
+                <Fade in={true} timeout={900}>
+                  <StyledCard elevation={2}>
+                    <StyledCardHeader
+                      title={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <BusinessIcon sx={{ mr: 1.5 }} />
+                          <Typography variant="h6" fontWeight="600">Cabinets</Typography>
+                        </Box>
+                      }
+                    />
+                    <CardContent sx={{ p: 3 }}>
+                      <Grid container spacing={3}>
+                        {/* Cabinets de Procédure - Conception moderne */}
+                        <Grid item xs={12} md={6}>
+                          <StyledPaper>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between', 
+                              mb: 2 
+                            }}>
+                              <Typography variant="h6" sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                fontWeight: 600,
+                                color: 'primary.main'
+                              }}>
+                                <WorkIcon sx={{ mr: 1.5 }} /> Cabinets de Procédure
+                              </Typography>
+                              <Chip 
+                                label={procCabLength} 
+                                size="small" 
+                                color="primary" 
+                                sx={{ borderRadius: '12px', fontWeight: 600 }}
+                              />
+                            </Box>
+                            <Divider sx={{ mb: 2 }} />
+                            <List disablePadding sx={{ 
+                              maxHeight: '400px', 
+                              overflow: 'auto',
+                              '&::-webkit-scrollbar': {
+                                width: '6px'
+                              },
+                              '&::-webkit-scrollbar-thumb': {
+                                background: alpha('#1976d2', 0.2),
+                                borderRadius: '3px'
+                              },
+                              '&::-webkit-scrollbar-thumb:hover': {
+                                background: alpha('#1976d2', 0.3)
                               }
-                            }
-                          })()}
-                        </Paper>
-                      </Grid>
+                            }}>
+                              {/* Même logique mais avec les nouveaux composants stylisés */}
+                              {(() => {
+                                // Tenter d'accéder aux cabinets via 3 sources différentes
+                                
+                                // 1. Chercher d'abord dans les relations BrevetCabinets du brevet
+                                const procedureRelations = brevet?.BrevetCabinets?.filter(rel => 
+                                  rel.type === 'procedure' || rel.type?.toLowerCase().includes('proced')
+                                ) || [];
+                                
+                                // 2. Vérifier aussi procedureCabinets provenant du hook
+                                const procCabinets = procedureCabinets || [];
+                                
+                                // 3. Vérifier si des cabinets sont présents directement dans le brevet (au cas où)
+                                const brevetCabinets = brevet?.Cabinets?.filter(cab => 
+                                  cab.type === 'procedure' || cab.type?.toLowerCase().includes('proced')
+                                ) || [];
+                                
+                                // Si nous avons des données dans l'une des sources, les afficher
+                                if (procedureRelations.length > 0) {
+                                  return procedureRelations.map((relation, index) => {
+                                    // Essayer de trouver le cabinet complet correspondant
+                                    const matchingCabinet = procCabinets.find(cab => cab.id === relation.CabinetId || cab.id_cabinet === relation.CabinetId);
+                                    const paysAssocies = matchingCabinet?.Pays || [];
+                                    
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => matchingCabinet && handleOpenEntityModal(matchingCabinet, 'cabinet')}
+                                        divider={index < procedureRelations.length - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <WorkIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {matchingCabinet ? (matchingCabinet.nom_cabinet || matchingCabinet.nom) : `Cabinet ID: ${relation.CabinetId}`}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              <Typography variant="body2" component="span">
+                                                Référence: {relation.reference || 'Pas de référence'}
+                                              </Typography>
+                                              {renderPaysChips(matchingCabinet?.Pays || [])}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  });
+                                } else if (procCabinets.length > 0) {
+                                  return procCabinets.map((cabinet, index) => {
+                                    const paysAssocies = cabinet?.Pays || [];
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                        divider={index < procCabinets.length - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <WorkIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              <Typography variant="body2" component="span">
+                                                {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
+                                              </Typography>
+                                              {renderPaysChips(paysAssocies)}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  });
+                                } else if (brevetCabinets.length > 0) {
+                                  // ... code similaire pour brevetCabinets ...
+                                  return <Typography variant="body2" color="text.secondary">Cabinets via Brevet.Cabinets: {brevetCabinets.length}</Typography>;
+                                } else {
+                                  // Dernière tentative - afficher une liste des relations brutes
+                                  if (brevet?.BrevetCabinets && brevet.BrevetCabinets.length > 0) {
+                                    return (
+                                      <Typography variant="body2" color="text.secondary">Relations cabinet trouvées, mais sans détails</Typography>
+                                    );
+                                  } else {
+                                    return <Typography variant="body2" color="text.secondary">Aucun cabinet de procédure</Typography>;
+                                  }
+                                }
+                              })()}
+                            </List>
+                          </StyledPaper>
+                        </Grid>
 
-                      {/* Cabinets d'Annuité */}
-                      <Grid item xs={12} md={6}>
-                        <Paper elevation={2} sx={{ p: 2 }}>
-                          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                            <BusinessIcon sx={{ mr: 1 }} /> Cabinets d'Annuité
-                          </Typography>
-                          <Divider sx={{ mb: 2 }} />
-                          {(() => {
-                            // Rechercher les cabinets d'annuité à partir de 3 sources possibles
-                            
-                            // Préparation des sources pour être toujours traitables comme des tableaux
-                            const brevetCabinetRelations = brevet?.BrevetCabinets || [];
-                            const annuiteCabs = annuiteCabinets || [];
-                            const brevetDirectCabinets = brevet?.Cabinets || [];
-                            
-                            // 1. Identifier correctement les relations de type annuité (avec meilleure tolérance)
-                            const annuiteRelations = brevetCabinetRelations.filter(rel => 
-                              rel.type && 
-                              (rel.type.toLowerCase() === 'annuite' || 
-                               rel.type.toLowerCase().includes('annuit'))
-                            );
-                            
-                            // 2. Identifier les cabinets directs de type annuité (avec meilleure tolérance)
-                            const brevetAnnuiteCabinets = brevetDirectCabinets.filter(cab => 
-                              cab.type && 
-                              (cab.type.toLowerCase() === 'annuite' || 
-                               cab.type.toLowerCase().includes('annuit'))
-                            );
-                            
-                            // Journaliser ce que nous avons trouvé pour déboguer
-                            console.log(`Cabinets d'annuité trouvés - Relations: ${annuiteRelations.length}, Hook: ${annuiteCabs.length}, Directs: ${brevetAnnuiteCabinets.length}`);
-                            
-                            // Commence par vérifier les relations (source la plus fiable)
-                            if (annuiteRelations.length > 0) {
-                              return annuiteRelations.map((relation, index) => {
-                                // Essayer de trouver le cabinet complet correspondant
-                                const matchingCabinet = [...annuiteCabs, ...brevetDirectCabinets].find(
-                                  cab => cab.id === relation.CabinetId || cab.id_cabinet === relation.CabinetId
+                        {/* Cabinets d'Annuité - Même style */}
+                        <Grid item xs={12} md={6}>
+                          <StyledPaper>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between', 
+                              mb: 2 
+                            }}>
+                              <Typography variant="h6" sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                fontWeight: 600,
+                                color: 'primary.main'
+                              }}>
+                                <WorkIcon sx={{ mr: 1.5 }} /> Cabinets d'Annuité
+                              </Typography>
+                              <Chip 
+                                label={annuiteCabLength} 
+                                size="small" 
+                                color="primary" 
+                                sx={{ borderRadius: '12px', fontWeight: 600 }}
+                              />
+                            </Box>
+                            <Divider sx={{ mb: 2 }} />
+                            <List disablePadding sx={{ 
+                              maxHeight: '400px', 
+                              overflow: 'auto',
+                              '&::-webkit-scrollbar': {
+                                width: '6px'
+                              },
+                              '&::-webkit-scrollbar-thumb': {
+                                background: alpha('#1976d2', 0.2),
+                                borderRadius: '3px'
+                              },
+                              '&::-webkit-scrollbar-thumb:hover': {
+                                background: alpha('#1976d2', 0.3)
+                              }
+                            }}>
+                              {/* Même logique mais avec les nouveaux composants stylisés */}
+                              {(() => {
+                                // Rechercher les cabinets d'annuité à partir de 3 sources possibles
+                                
+                                // Préparation des sources pour être toujours traitables comme des tableaux
+                                const brevetCabinetRelations = brevet?.BrevetCabinets || [];
+                                const annuiteCabs = annuiteCabinets || [];
+                                const brevetDirectCabinets = brevet?.Cabinets || [];
+                                
+                                // 1. Identifier correctement les relations de type annuité (avec meilleure tolérance)
+                                const annuiteRelations = brevetCabinetRelations.filter(rel => 
+                                  rel.type && 
+                                  (rel.type.toLowerCase() === 'annuite' || rel.type.toLowerCase().includes('annuit'))
                                 );
                                 
-                                return (
-                                  <Box key={index} sx={{ mb: 2 }}>
-                                    <Typography 
-                                      variant="subtitle1" 
-                                      fontWeight="bold" 
-                                      sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                      onClick={() => matchingCabinet && handleOpenEntityModal(matchingCabinet, 'cabinet')}
-                                    >
-                                      {matchingCabinet ? (matchingCabinet.nom_cabinet || matchingCabinet.nom) : `Cabinet ID: ${relation.CabinetId}`}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Référence: {relation.reference || 'Pas de référence'}
-                                    </Typography>
-                                    {index < annuiteRelations.length - 1 && <Divider sx={{ my: 2 }} />}
-                                  </Box>
-                                );
-                              });
-                            } 
-                            // Ensuite, vérifier les cabinets du hook
-                            else if (annuiteCabs.length > 0) {
-                              return annuiteCabs.map((cabinet, index) => (
-                                <Box key={index} sx={{ mb: 2 }}>
-                                  <Typography 
-                                    variant="subtitle1" 
-                                    fontWeight="bold" 
-                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
-                                  >
-                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Type: {cabinet?.type || 'Non spécifié'}
-                                  </Typography>
-                                  {index < annuiteCabs.length - 1 && <Divider sx={{ my: 2 }} />}
-                                </Box>
-                              ));
-                            } 
-                            // Enfin, vérifier les cabinets directs
-                            else if (brevetAnnuiteCabinets.length > 0) {
-                              return brevetAnnuiteCabinets.map((cabinet, index) => (
-                                <Box key={index} sx={{ mb: 2 }}>
-                                  <Typography 
-                                    variant="subtitle1" 
-                                    fontWeight="bold" 
-                                    sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                    onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
-                                  >
-                                    {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Type: {cabinet?.type || 'Non spécifié'}
-                                  </Typography>
-                                  {index < brevetAnnuiteCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
-                                </Box>
-                              ));
-                            } 
-                            else {
-                              // Dernier recours: chercher tous les cabinets et filtrer
-                              const allCabinets = [...brevetDirectCabinets, ...annuiteCabs];
-                              const potentialAnnuiteCabinets = allCabinets.filter(cab => 
-                                cab && cab.type && (
-                                  cab.type.toLowerCase() === 'annuite' || 
-                                  cab.type.toLowerCase().includes('annuit')
-                                )
-                              );
-                              
-                              if (potentialAnnuiteCabinets.length > 0) {
-                                return potentialAnnuiteCabinets.map((cabinet, index) => (
-                                  <Box key={index} sx={{ mb: 2 }}>
-                                    <Typography 
-                                      variant="subtitle1" 
-                                      fontWeight="bold" 
-                                      sx={{ cursor: 'pointer', color: 'primary.main' }}
-                                      onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
-                                    >
-                                      {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id}` || 'N/A'}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Type: {cabinet.type || 'Non spécifié'}
-                                    </Typography>
-                                    {index < potentialAnnuiteCabinets.length - 1 && <Divider sx={{ my: 2 }} />}
-                                  </Box>
-                                ));
-                              }
-                              
-                              return <Typography variant="body2" color="text.secondary">Aucun cabinet d'annuité trouvé</Typography>;
-                            }
-                          })()}
-                        </Paper>
+                                // Commence par vérifier les relations (source la plus fiable)
+                                if (annuiteRelations.length > 0) {
+                                  return annuiteRelations.map((relation, index) => {
+                                    // Essayer de trouver le cabinet complet correspondant
+                                    const matchingCabinet = [...annuiteCabs, ...brevetDirectCabinets].find(
+                                      cab => cab.id === relation.CabinetId || cab.id_cabinet === relation.CabinetId
+                                    );
+                                    const paysAssocies = matchingCabinet?.Pays || [];
+                                    
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => matchingCabinet && handleOpenEntityModal(matchingCabinet, 'cabinet')}
+                                        divider={index < annuiteRelations.length - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <WorkIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {matchingCabinet ? (matchingCabinet.nom_cabinet || matchingCabinet.nom) : `Cabinet ID: ${relation.CabinetId}`}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              <Typography variant="body2" component="span">
+                                                Référence: {relation.reference || 'Pas de référence'}
+                                              </Typography>
+                                              {renderPaysChips(matchingCabinet?.Pays || [])}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  });
+                                } 
+                                // Ensuite, vérifier les cabinets du hook
+                                else if (annuiteCabs.length > 0) {
+                                  return annuiteCabs.map((cabinet, index) => {
+                                    const paysAssocies = cabinet?.Pays || [];
+                                    return (
+                                      <StyledListItem 
+                                        key={index}
+                                        index={index}
+                                        button
+                                        onClick={() => handleOpenEntityModal(cabinet, 'cabinet')}
+                                        divider={index < annuiteCabs.length - 1}
+                                      >
+                                        <ListItemAvatar>
+                                          <Avatar sx={{ bgcolor: 'primary.light' }}>
+                                            <WorkIcon />
+                                          </Avatar>
+                                        </ListItemAvatar>
+                                        <ListItemText 
+                                          primary={
+                                            <Typography fontWeight="600">
+                                              {cabinet?.nom_cabinet || cabinet?.nom || `Cabinet ID: ${cabinet?.id || cabinet?.id_cabinet}` || 'N/A'}
+                                            </Typography>
+                                          }
+                                          secondary={
+                                            <Box>
+                                              <Typography variant="body2" component="span">
+                                                {cabinet?.reference || cabinet?.BrevetCabinets?.reference || 'Pas de référence'}
+                                              </Typography>
+                                              {renderPaysChips(paysAssocies)}
+                                            </Box>
+                                          }
+                                        />
+                                      </StyledListItem>
+                                    );
+                                  });
+                                } else {
+                                  return <Typography variant="body2" color="text.secondary">Aucun cabinet d'annuité trouvé</Typography>;
+                                }
+                              })()}
+                            </List>
+                          </StyledPaper>
+                        </Grid>
                       </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </StyledCard>
+                </Fade>
               </Grid>
 
-              {/* Pays et Statut - Ne montrer que si des données sont disponibles */}
+              {/* Pays et Statut - Design amélioré avec cartes */}
               {paysLength > 0 && (
                 <Grid item xs={12}>
-                  <Card elevation={3}>
-                    <CardHeader
-                      title="Pays et Statut" 
-                      sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
-                    />
-                    <CardContent>
-                      <Grid container spacing={2}>
-                        {pays && Array.isArray(pays) && paysLength > 0 ? pays.map((p, index) => {
-                          if (!p) return null; // Vérification supplémentaire pour les pays undefined
-                          
-                          // Amélioration de la recherche du statut
-                          let matchingStatut = null;
-                          if (statutsList && Array.isArray(statutsList)) {
-                            // Chercher d'abord dans la relation Statut directe
-                            if (p.Statut) {
-                              matchingStatut = p.Statut;
-                            } else if (p.id_statuts) {
-                              matchingStatut = statutsList.find(st => st && st.id === p.id_statuts);
+                  <Fade in={true} timeout={1100}>
+                    <StyledCard elevation={2}>
+                      <StyledCardHeader
+                        title={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <FlagIcon sx={{ mr: 1.5 }} />
+                            <Typography variant="h6" fontWeight="600">Pays et Statut</Typography>
+                          </Box>
+                        }
+                      />
+                      <CardContent sx={{ p: 3 }}>
+                        <Grid container spacing={2}>
+                          {pays && Array.isArray(pays) && paysLength > 0 ? pays.map((p, index) => {
+                            if (!p) return null;
+                            
+                            // Même logique d'extraction des données
+                            let matchingStatut = null;
+                            if (statutsList && Array.isArray(statutsList)) {
+                              if (p.Statut) {
+                                matchingStatut = p.Statut;
+                              } else if (p.id_statuts) {
+                                matchingStatut = statutsList.find(st => st && st.id === p.id_statuts);
+                              }
                             }
-                          }
-                          
-                          // Correction pour accéder aux données du pays - chercher dans les deux structures possibles
-                          const nomPays = p?.nom_fr_fr || p?.Pay?.nom_fr_fr || p?.nom || p?.Pay?.nom || 'N/A';
-                          const alpha2 = p?.alpha2 || p?.Pay?.alpha2;
-                          
-                          return (
-                            <Grid item xs={12} md={6} lg={4} key={index}>
-                              <Paper elevation={2} sx={{ p: 2 }}>
-                                <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                                  {alpha2 && (
-                                    <Flag code={alpha2} width="32" style={{ marginRight: '12px' }} />
-                                  )}
-                                  <Typography variant="h6">{nomPays}</Typography>
-                                </Box>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 1, mb: 1 }}>
-                                  <Typography variant="body2" fontWeight="bold">Statut:</Typography>
-                                  <Chip 
-                                    label={matchingStatut ? (matchingStatut.valeur || matchingStatut.statuts) : 'N/A'} 
-                                    color="primary" 
-                                    size="small"
-                                  />
+                            
+                            const nomPays = p?.nom_fr_fr || p?.Pay?.nom_fr_fr || p?.nom || p?.Pay?.nom || 'N/A';
+                            const alpha2 = p?.alpha2 || p?.Pay?.alpha2;
+                            
+                            return (
+                              <Grid item xs={12} md={6} lg={4} key={index}>
+                                <StyledPaper sx={{ 
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                  borderTop: `4px solid ${alpha('#1976d2', 0.8)}`
+                                }}>
+                                  {/* En-tête du pays avec drapeau */}
+                                  <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+                                    {alpha2 && (
+                                      <CountryFlag code={alpha2} size={28} />
+                                    )}
+                                    <Typography variant="h6" fontWeight="600" sx={{ ml: 1.5 }}>
+                                      {nomPays}
+                                    </Typography>
+                                  </Box>
                                   
-                                  <Typography variant="body2" fontWeight="bold">N° Dépôt:</Typography>
-                                  <Typography variant="body2">{p?.numero_depot || 'N/A'}</Typography>
+                                  {/* Statut sous forme de chip */}
+                                  <Box sx={{ mb: 2 }}>
+                                    <Chip 
+                                      label={matchingStatut ? (matchingStatut.valeur || matchingStatut.statuts) : 'N/A'} 
+                                      color="primary" 
+                                      size="small"
+                                      sx={{ fontWeight: 500 }}
+                                    />
+                                  </Box>
                                   
-                                  <Typography variant="body2" fontWeight="bold">Date Dépôt:</Typography>
-                                  <Typography variant="body2">{formatDate(p?.date_depot)}</Typography>
-                                  
-                                  <Typography variant="body2" fontWeight="bold">N° Publication:</Typography>
-                                  <Typography variant="body2">{p?.numero_publication || 'N/A'}</Typography>
-                                  
-                                  <Typography variant="body2" fontWeight="bold">N° Délivrance:</Typography>
-                                  <Typography variant="body2">{p?.numero_delivrance || 'N/A'}</Typography>
-                                  
-                                  <Typography variant="body2" fontWeight="bold">Date Délivrance:</Typography>
-                                  <Typography variant="body2">{formatDate(p?.date_delivrance)}</Typography>
-                                  
-                                  <Typography variant="body2" fontWeight="bold">Licence:</Typography>
-                                  <Typography variant="body2">{p?.licence ? 'Oui' : 'Non'}</Typography>
-                                </Box>
-                              </Paper>
+                                  {/* Grille d'informations */}
+                                  <Grid container spacing={1}>
+                                    {p?.numero_depot && (
+                                      <Grid item xs={12}>
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          bgcolor: 'background.paper',
+                                          p: 1.5,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(0,0,0,0.08)'
+                                        }}>
+                                          <Typography variant="body2" fontWeight="600" width="130px">N° Dépôt:</Typography>
+                                          <Typography variant="body2">{p.numero_depot}</Typography>
+                                        </Box>
+                                      </Grid>
+                                    )}
+                                    
+                                    {p?.date_depot && (
+                                      <Grid item xs={12}>
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          bgcolor: 'background.paper',
+                                          p: 1.5,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(0,0,0,0.08)'
+                                        }}>
+                                          <Typography variant="body2" fontWeight="600" width="130px">Date Dépôt:</Typography>
+                                          <Typography variant="body2">{formatDate(p.date_depot)}</Typography>
+                                        </Box>
+                                      </Grid>
+                                    )}
+                                    
+                                    {/* Informations similaires pour les autres champs */}
+                                    {p?.numero_publication && (
+                                      <Grid item xs={12}>
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          bgcolor: 'background.paper',
+                                          p: 1.5,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(0,0,0,0.08)'
+                                        }}>
+                                          <Typography variant="body2" fontWeight="600" width="130px">N° Publication:</Typography>
+                                          <Typography variant="body2">{p.numero_publication}</Typography>
+                                        </Box>
+                                      </Grid>
+                                    )}
+                                    
+                                    {p?.numero_delivrance && (
+                                      <Grid item xs={12}>
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          bgcolor: 'background.paper',
+                                          p: 1.5,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(0,0,0,0.08)'
+                                        }}>
+                                          <Typography variant="body2" fontWeight="600" width="130px">N° Délivrance:</Typography>
+                                          <Typography variant="body2">{p.numero_delivrance}</Typography>
+                                        </Box>
+                                      </Grid>
+                                    )}
+                                    
+                                    {p?.date_delivrance && (
+                                      <Grid item xs={12}>
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          bgcolor: 'background.paper',
+                                          p: 1.5,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(0,0,0,0.08)'
+                                        }}>
+                                          <Typography variant="body2" fontWeight="600" width="130px">Date Délivrance:</Typography>
+                                          <Typography variant="body2">{formatDate(p.date_delivrance)}</Typography>
+                                        </Box>
+                                      </Grid>
+                                    )}
+                                    
+                                    {p?.licence !== undefined && (
+                                      <Grid item xs={12}>
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          bgcolor: 'background.paper',
+                                          p: 1.5,
+                                          borderRadius: 1,
+                                          border: '1px solid rgba(0,0,0,0.08)'
+                                        }}>
+                                          <Typography variant="body2" fontWeight="600" width="130px">Licence:</Typography>
+                                          <Typography variant="body2">{p.licence ? 'Oui' : 'Non'}</Typography>
+                                        </Box>
+                                      </Grid>
+                                    )}
+                                  </Grid>
+                                </StyledPaper>
+                              </Grid>
+                            );
+                          }) : (
+                            <Grid item xs={12}>
+                              <Typography variant="body2" color="text.secondary">Aucun pays trouvé</Typography>
                             </Grid>
-                          );
-                        }) : (
-                          <Grid item xs={12}>
-                            <Typography variant="body2" color="text.secondary">Aucun pays trouvé</Typography>
-                          </Grid>
-                        )}
-                      </Grid>
-                    </CardContent>
-                  </Card>
+                          )}
+                        </Grid>
+                      </CardContent>
+                    </StyledCard>
+                  </Fade>
                 </Grid>
               )}
 
-              {/* Commentaire uniquement - sans les pièces jointes */}
+              {/* Commentaire avec design moderne */}
               <Grid item xs={12}>
-                <Card elevation={3}>
-                  <CardHeader
-                    title="Commentaire" 
-                    sx={{ backgroundColor: '#007bff', color: 'white', py: 1 }}
-                  />
-                  <CardContent>
-                    <Grid container spacing={3}>
-                      {/* Commentaire - Toujours visible, pleine largeur */}
-                      <Grid item xs={12}>
-                        <Paper elevation={2} sx={{ p: 2 }}>
-                          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                            <CommentIcon sx={{ mr: 1 }} /> Commentaire
-                          </Typography>
-                          <Divider sx={{ mb: 2 }} />
-                          <Typography variant="body1">
-                            {brevet?.commentaire || 'Aucun commentaire'}
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
+                <Fade in={true} timeout={1300}>
+                  <StyledCard elevation={2}>
+                    <StyledCardHeader
+                      title={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CommentIcon sx={{ mr: 1.5 }} />
+                          <Typography variant="h6" fontWeight="600">Commentaire</Typography>
+                        </Box>
+                      }
+                    />
+                    <CardContent sx={{ p: 3 }}>
+                      <StyledPaper>
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-line', p: 1 }}>
+                          {brevet?.commentaire || 'Aucun commentaire'}
+                        </Typography>
+                      </StyledPaper>
+                    </CardContent>
+                  </StyledCard>
+                </Fade>
               </Grid>
             </Grid>
           </Container>
         </BootstrapModal.Body>
-        <BootstrapModal.Footer>
+        <BootstrapModal.Footer style={{ borderTop: '1px solid rgba(0,0,0,0.08)', padding: '16px 24px' }}>
           <BootstrapButton
             variant="primary"
             onClick={handleClose}
-            style={{ backgroundColor: '#007bff', borderColor: '#007bff', borderRadius: '50px' }}
+            style={{ 
+              backgroundColor: '#1976d2', 
+              borderColor: '#1976d2', 
+              borderRadius: '24px',
+              padding: '8px 24px',
+              fontWeight: 500,
+              boxShadow: '0 3px 10px rgba(25, 118, 210, 0.2)',
+              transition: 'all 0.2s'
+            }}
           >
             Fermer
           </BootstrapButton>
         </BootstrapModal.Footer>
       </BootstrapModal>
 
-      {/* Modal pour les détails des entités (Clients, Inventeurs, etc.) */}
+      {/* Modal pour les détails des entités - Style amélioré */}
       <Modal
         open={openEntityModal}
         onClose={handleCloseEntityModal}
+        closeAfterTransition
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <Box
-          sx={{
-            p: 4,
-            bgcolor: 'background.paper',
-            position: 'relative',
-            width: '400px',
-            maxWidth: '90vw',
-            boxShadow: 24,
-            borderRadius: 4,
-            outline: 'none',
-            textAlign: 'center',
-          }}
-        >
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseEntityModal}
-            sx={{ position: 'absolute', right: 8, top: 8, color: '#333' }}
+        <Fade in={openEntityModal}>
+          <Box
+            sx={{
+              p: 4,
+              bgcolor: 'background.paper',
+              position: 'relative',
+              width: '450px',
+              maxWidth: '95vw',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              borderRadius: 4,
+              outline: 'none',
+              textAlign: 'center',
+              overflow: 'hidden',
+            }}
           >
-            <CloseIcon />
-          </IconButton>
-          {selectedEntity ? (
-            <div>
-              <Typography
-                variant="h5"
-                gutterBottom
-                style={{ fontWeight: 'bold', color: '#007bff', fontFamily: 'Roboto, sans-serif' }}
-              >
-                Information du {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
-              </Typography>
-              <Typography variant="h6">
-                {selectedEntity?.nom || selectedEntity?.nom_client || selectedEntity?.nom_cabinet || ''}
-                {' '}
-                {selectedEntity?.prenom || selectedEntity?.prenom_client || ''}
-              </Typography>
-              {(selectedEntity?.email || selectedEntity?.email_client) && (
-                <Typography>Email: {selectedEntity?.email || selectedEntity?.email_client}</Typography>
-              )}
-              {(selectedEntity?.telephone || selectedEntity?.telephone_client) && (
-                <Typography>Téléphone: {selectedEntity?.telephone || selectedEntity?.telephone_client}</Typography>
-              )}
-              {selectedEntity?.adresse_client && (
-                <Typography>Adresse: {selectedEntity.adresse_client}</Typography>
-              )}
-              {selectedEntity?.reference && (
-                <Typography>Référence: {selectedEntity.reference}</Typography>
-              )}
-            </div>
-          ) : (
-            <Typography color="error">Aucune information disponible</Typography>
-          )}
-          <Button
-            variant="contained"
-            onClick={handleCloseEntityModal}
-            sx={{ mt: 2, borderRadius: '20px', backgroundColor: '#007bff' }}
-          >
-            Fermer
-          </Button>
-        </Box>
+            {/* Barre de couleur supérieure */}
+            <Box sx={{ 
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '8px',
+              background: `linear-gradient(90deg, ${alpha('#1976d2', 0.8)} 0%, ${alpha('#1976d2', 0.6)} 100%)`
+            }} />
+            
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseEntityModal}
+              sx={{ position: 'absolute', right: 8, top: 8, color: '#333' }}
+            >
+              <CloseIcon />
+            </IconButton>
+            {selectedEntity ? (
+              <Box>
+                <Typography
+                  variant="h5"
+                  gutterBottom
+                  sx={{ fontWeight: 600, color: '#1976d2', mb: 3, mt: 1 }}
+                >
+                  Information du {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
+                </Typography>
+                
+                {/* Avatar et nom */}
+                <Avatar 
+                  sx={{ 
+                    width: 80, 
+                    height: 80, 
+                    bgcolor: 'primary.main', 
+                    margin: '0 auto 16px',
+                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)'
+                  }}
+                >
+                  {entityType === 'client' || entityType === 'cabinet' ? (
+                    <BusinessIcon sx={{ fontSize: 40 }} />
+                  ) : (
+                    <PersonIcon sx={{ fontSize: 40 }} />
+                  )}
+                </Avatar>
+                
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  {selectedEntity?.nom || selectedEntity?.nom_client || selectedEntity?.nom_cabinet || ''}
+                  {' '}
+                  {selectedEntity?.prenom || selectedEntity?.prenom_client || ''}
+                </Typography>
+                
+                {/* Informations de contact */}
+                <Box sx={{ 
+                  mt: 3, 
+                  mb: 3, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'flex-start',
+                  bgcolor: alpha('#1976d2', 0.05),
+                  p: 2,
+                  borderRadius: 2
+                }}>
+                  {(selectedEntity?.email || selectedEntity?.email_client) && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                      <EmailIcon sx={{ color: 'primary.main', mr: 1.5 }} />
+                      <Typography align="left">
+                        {selectedEntity?.email || selectedEntity?.email_client}
+                      </Typography>
+                    </Box>
+                  )}
+                  {(selectedEntity?.telephone || selectedEntity?.telephone_client) && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                      <PhoneIcon sx={{ color: 'primary.main', mr: 1.5 }} />
+                      <Typography align="left">
+                        {selectedEntity?.telephone || selectedEntity?.telephone_client}
+                      </Typography>
+                    </Box>
+                  )}
+                  {selectedEntity?.adresse_client && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                      <LocationOnIcon sx={{ color: 'primary.main', mr: 1.5 }} />
+                      <Typography align="left">
+                        {selectedEntity.adresse_client}
+                      </Typography>
+                    </Box>
+                  )}
+                  {selectedEntity?.reference && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AssignmentIcon sx={{ color: 'primary.main', mr: 1.5 }} />
+                      <Typography align="left">
+                        Référence: {selectedEntity.reference}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                
+                <Button
+                  variant="contained"
+                  onClick={handleCloseEntityModal}
+                  sx={{ 
+                    mt: 1, 
+                    borderRadius: '24px', 
+                    paddingX: 3,
+                    textTransform: 'none',
+                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)'
+                  }}
+                >
+                  Fermer
+                </Button>
+              </Box>
+            ) : (
+              <Typography color="error">Aucune information disponible</Typography>
+            )}
+          </Box>
+        </Fade>
       </Modal>
     </>
   );

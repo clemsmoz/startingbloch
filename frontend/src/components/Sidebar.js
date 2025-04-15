@@ -55,7 +55,7 @@ const Sidebar = ({ onLogout }) => {
               </ListItemIcon>
               <ListItemText primary="Portefeuille de Brevets TEST" primaryTypographyProps={{ fontSize: 20, color: 'primary.main' }} />
             </ListItem> */}
-            <ListItem button onClick={() => { navigate('/'); setOpen(false); }} sx={{ padding: 3 }}>
+            <ListItem button onClick={() => { navigate('/home'); setOpen(false); }} sx={{ padding: 3 }}>
               <ListItemIcon>
                 <FaHome size={40}  color="#1976D2" />
               </ListItemIcon>
