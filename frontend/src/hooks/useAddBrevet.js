@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import axios from 'axios';
+// utilitaire
+const safeArray = arr => Array.isArray(arr) ? arr : [];
 
 const useAddBrevet = (handleClose) => {
   const [formData, setFormData] = useState({
@@ -102,7 +104,7 @@ const useAddBrevet = (handleClose) => {
       .then(response => response.json())
       .then(data => {
         console.log('Clients récupérés :', data);
-        setClientsList(data.data || []);
+        setClientsList(safeArray(data.data));
       })
       .catch(() => setError('Erreur lors de la récupération des clients'));
 
@@ -112,7 +114,7 @@ const useAddBrevet = (handleClose) => {
       .then(data => {
         console.log('Statuts récupérés :', data);
         // Adapter le format des statuts pour correspondre à ce qu'attend le composant
-        const formattedStatuts = (data.data || []).map(statut => ({
+        const formattedStatuts = safeArray(data.data).map(statut => ({
           id_statuts: statut.id,
           valeur: statut.statuts
         }));
@@ -125,9 +127,18 @@ const useAddBrevet = (handleClose) => {
       .then(response => response.json())
       .then(data => {
         console.log('Pays récupérés :', data);
-        setPaysList(data.data || []);
+        if (data.message) {
+          console.error(`Erreur API /pays : ${data.message}`);
+          setPaysList([]);                           // on vide la liste en cas d’erreur métier
+        } else {
+          setPaysList(safeArray(data.data));         // sinon on alimente normalement
+        }
       })
-      .catch(() => setError('Erreur lors de la récupération des pays'));
+      .catch(err => {
+        console.error('Erreur réseau lors de la récupération des pays :', err);
+        setError('Erreur lors de la récupération des pays');
+        setPaysList([]);                             // fallback
+      });
 
     // Cabinets
     fetch(`${API_BASE_URL}/api/cabinet`)
@@ -409,7 +420,8 @@ const useAddBrevet = (handleClose) => {
   const handleCloseConfirmationModal = () => {
     setConfirmationModal(false);
     if (!isError) {
-      handleClose();
+      handleClose();          
+      window.location.reload();   // <- rechargement automatique après succès
     }
   };
 

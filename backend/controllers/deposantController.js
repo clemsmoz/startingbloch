@@ -6,10 +6,10 @@ const deposantController = {
   createDeposant: async (req, res) => {
     try {
       const deposant = {
-        nom_deposant: req.body.nom_deposant,
-        prenom_deposant: req.body.prenom_deposant,
-        email_deposant: req.body.email_deposant,
-        telephone_deposant: req.body.telephone_deposant
+        nom_deposant: req.body.nom_deposant || null,
+        prenom_deposant: req.body.prenom_deposant || null,
+        email_deposant: req.body.email_deposant || null,
+        telephone_deposant: req.body.telephone_deposant || null
       };
       
       const result = await Deposant.create(deposant);
@@ -74,7 +74,12 @@ const deposantController = {
   
   updateDeposant: async (req, res) => {
     try {
-      const [updated] = await Deposant.update(req.body, { where: { id: req.params.id } });
+      const [updated] = await Deposant.update({
+        nom_deposant: req.body.nom_deposant || null,
+        prenom_deposant: req.body.prenom_deposant || null,
+        email_deposant: req.body.email_deposant || null,
+        telephone_deposant: req.body.telephone_deposant || null
+      }, { where: { id: req.params.id } });
       if (updated) {
         const updatedDeposant = await Deposant.findByPk(req.params.id);
         res.status(200).json({

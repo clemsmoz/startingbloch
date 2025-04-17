@@ -5,22 +5,18 @@ const Op = db.Sequelize.Op;
 const TitulaireController = {
   // Création d'un nouveau titulaire avec validation des champs obligatoires
   createTitulaire: async (req, res) => {
-    if (!req.body.nom_titulaire || !req.body.prenom_titulaire || !req.body.email_titulaire || !req.body.telephone_titulaire) {
-      return res.status(400).json({ message: "Les champs nom, prénom, email et téléphone sont obligatoires!" });
-    }
-
-    const titulaire = {
-      nom_titulaire: req.body.nom_titulaire,
-      prenom_titulaire: req.body.prenom_titulaire,
-      email_titulaire: req.body.email_titulaire,
-      telephone_titulaire: req.body.telephone_titulaire
+    const data = {
+      nom_titulaire:       req.body.nom_titulaire       || null,
+      prenom_titulaire:    req.body.prenom_titulaire    || null,
+      email_titulaire:     req.body.email_titulaire     || null,
+      telephone_titulaire: req.body.telephone_titulaire || null
     };
 
     try {
-      const result = await Titulaire.create(titulaire);
-      return res.status(201).json(result);
-    } catch (error) {
-      return res.status(500).json({ message: error.message || "Une erreur est survenue lors de la création du titulaire." });
+      const result = await Titulaire.create(data);
+      res.status(201).json(result);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   },
 
@@ -63,18 +59,20 @@ const TitulaireController = {
 
   // Mise à jour d'un titulaire par son identifiant
   updateTitulaire: async (req, res) => {
-    const id = req.params.id;
     try {
-      const [updated] = await Titulaire.update(req.body, { where: { id: id } });
-      if (updated === 1) {
-        const updatedTitulaire = await Titulaire.findByPk(id);
+      const [cnt] = await Titulaire.update({
+        nom_titulaire:       req.body.nom_titulaire       || null,
+        prenom_titulaire:    req.body.prenom_titulaire    || null,
+        email_titulaire:     req.body.email_titulaire     || null,
+        telephone_titulaire: req.body.telephone_titulaire || null
+      }, { where: { id: req.params.id } });
+      if (cnt === 1) {
+        const updatedTitulaire = await Titulaire.findByPk(req.params.id);
         return res.status(200).json(updatedTitulaire);
       } else {
-        return res.status(400).json({ message: `Impossible de mettre à jour le titulaire avec id=${id}. Peut-être que le titulaire n'a pas été trouvé ou req.body est vide!` });
+        return res.status(400).json({ message: `Impossible de mettre à jour le titulaire avec id=${req.params.id}. Peut-être que le titulaire n'a pas été trouvé ou req.body est vide!` });
       }
-    } catch (error) {
-      return res.status(500).json({ message: "Erreur lors de la mise à jour du titulaire avec id=" + id });
-    }
+    } catch (e) { res.status(500).json({ error: e.message }); }
   },
 
   // Suppression d'un titulaire par son identifiant

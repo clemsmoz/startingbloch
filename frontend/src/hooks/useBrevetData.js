@@ -5,6 +5,10 @@ import { API_BASE_URL } from '../config'; // Importation du fichier de configura
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import cacheService from '../services/cacheService';
 
+// utilitaires
+const safeArray = arr => Array.isArray(arr) ? arr : [];
+const safeValue = v => v == null ? '' : v;
+
 const useBrevetData = (brevetId) => {
   const [brevet, setBrevet] = useState(null);
   const [procedureCabinets, setProcedureCabinets] = useState([]);
@@ -79,102 +83,36 @@ const useBrevetData = (brevetId) => {
     try {
       // Charger les données du brevet avec toutes ses relations
       const brevetResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/relations`);
-      setBrevet(brevetResponse.data.data);
+      const master = brevetResponse.data.data || {};
+      setBrevet(master);
   
-      console.log("Données du brevet chargées:", brevetResponse.data.data);
+      console.log("Données du brevet chargées:", master);
   
       // Charger les données spécifiques pour chaque type d'entité liée
-      const clientsResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/clients`);
-      setClients(clientsResponse.data || []);
-  
-      const invResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/inventeurs`);
-      setInventeurs(invResponse.data || []);
-  
-      const depResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/deposants`);
-      setDeposants(depResponse.data || []);
-  
-      const titResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/titulaires`);
-      setTitulaires(titResponse.data || []);
+      const [cli, inv, dep, tit] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/clients`),
+        axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/inventeurs`),
+        axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/deposants`),
+        axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/titulaires`)
+      ]);
+      setClients(safeArray(cli.data));
+      setInventeurs(safeArray(inv.data));
+      setDeposants(safeArray(dep.data));
+      setTitulaires(safeArray(tit.data));
   
       // Récupérer tous les cabinets associés au brevet et leurs relations
-      const cabinetsResponse = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/cabinets`);
-      
-      // Log détaillé pour déboguer les relations avec les cabinets
-      console.log("Données cabinets brutes:", cabinetsResponse.data);
-      
-      // Stocker tous les cabinets
-      if (cabinetsResponse.data.data && Array.isArray(cabinetsResponse.data.data)) {
-        const allCabinets = cabinetsResponse.data.data;
-        
-        // Amélioration du tri entre cabinets procédure et annuité
-        const procedureCabs = [];
-        const annuiteCabs = [];
-        
-        allCabinets.forEach(cabinet => {
-          // Vérifier si c'est un cabinet d'annuité ou de procédure
-          let isAnnuite = false;
-          let isProcedure = false;
-          
-          // Vérifier le type du cabinet lui-même
-          if (cabinet.type) {
-            const cabinetType = cabinet.type.toLowerCase();
-            isAnnuite = cabinetType === 'annuite' || cabinetType.includes('annuit');
-            isProcedure = cabinetType === 'procedure' || cabinetType.includes('proced');
-          }
-          
-          // Vérifier également dans la relation BrevetCabinets
-          if (cabinet.BrevetCabinets && cabinet.BrevetCabinets.type) {
-            const relationType = cabinet.BrevetCabinets.type.toLowerCase();
-            if (relationType === 'annuite' || relationType.includes('annuit')) {
-              isAnnuite = true;
-            } else if (relationType === 'procedure' || relationType.includes('proced')) {
-              isProcedure = true;
-            }
-          }
-          
-          // S'assurer que les pays du cabinet sont disponibles
-          if (!cabinet.Pays && cabinetsResponse.data.cabinetsPays) {
-            const cabinetPays = cabinetsResponse.data.cabinetsPays.filter(
-              cp => cp.CabinetId === cabinet.id
-            );
-            if (cabinetPays.length > 0) {
-              cabinet.Pays = cabinetPays;
-            }
-          }
-          
-          // Classer le cabinet selon son type
-          if (isAnnuite) {
-            annuiteCabs.push(cabinet);
-          }
-          if (isProcedure) {
-            procedureCabs.push(cabinet);
-          }
-          
-          // Si aucun type n'est trouvé, regarder le dernier recours - la relation directe
-          if (!isAnnuite && !isProcedure && brevetResponse.data.data?.BrevetCabinets) {
-            const matchingRelation = brevetResponse.data.data.BrevetCabinets.find(
-              rel => rel.CabinetId === cabinet.id
-            );
-            
-            if (matchingRelation && matchingRelation.type) {
-              const relType = matchingRelation.type.toLowerCase();
-              if (relType === 'annuite' || relType.includes('annuit')) {
-                annuiteCabs.push({...cabinet, BrevetCabinets: matchingRelation});
-              } else if (relType === 'procedure' || relType.includes('proced')) {
-                procedureCabs.push({...cabinet, BrevetCabinets: matchingRelation});
-              }
-            }
-          }
-        });
-        
-        console.log(`Cabinets triés: ${procedureCabs.length} procédure, ${annuiteCabs.length} annuité`);
-        setProcedureCabinets(procedureCabs);
-        setAnnuiteCabinets(annuiteCabs);
-      } else {
-        console.warn("Format de réponse des cabinets inattendu:", cabinetsResponse.data);
-        setProcedureCabinets([]);
-        setAnnuiteCabinets([]);
-      }
+      const cb = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/cabinets`);
+      const allC = safeArray(cb.data.data);
+      const proc = allC.filter(c => (c.type || '').toLowerCase().includes('proced'));
+      const ann = allC.filter(c => (c.type || '').toLowerCase().includes('annuit'));
+      setProcedureCabinets(proc);
+      setAnnuiteCabinets(ann);
+  
+      // Récupérer les contacts pour les cabinets
+      setContactsProcedure(await Promise.all(proc.map(c => fetchApi(`${API_BASE_URL}/api/contacts/cabinets/${c.id}`))) 
+        .then(arr => safeArray(arr.flatMap(r => safeArray(r.data)))));
+      setContactsAnnuite(await Promise.all(ann.map(c => fetchApi(`${API_BASE_URL}/api/contacts/cabinets/${c.id}`))) 
+        .then(arr => safeArray(arr.flatMap(r => safeArray(r.data)))));
   
       // ...existing code...
     } catch (error) {
@@ -234,15 +172,15 @@ const useBrevetData = (brevetId) => {
             // Statuts - utiliser la nouvelle route API
             fetchApi(`${API_BASE_URL}/api/statuts`, "Erreur lors de la récupération des statuts")
               .then(statutsData => {
-                setStatutsList(statutsData.data || []);
-                return statutsData.data || [];
+                setStatutsList(safeArray(statutsData.data));
+                return safeArray(statutsData.data);
               }),
             
             // Clients - utiliser la route dédiée
             fetchApi(`${API_BASE_URL}/api/brevets/${brevetId}/clients`, "Erreur lors de la récupération des clients")
               .then(clientsData => {
                 console.log("Clients récupérés:", clientsData);
-                setClients(Array.isArray(clientsData) ? clientsData : (clientsData.data || []));
+                setClients(safeArray(clientsData));
               }),
             
             // Inventeurs - nouvelle route API
@@ -250,7 +188,7 @@ const useBrevetData = (brevetId) => {
               .then(invData => {
                 console.log("Inventeurs récupérés:", invData);
                 // S'assurer que les données sont traitées comme un tableau
-                let inventeursData = Array.isArray(invData) ? invData : (invData.data || []);
+                let inventeursData = safeArray(invData);
                 console.log(`Nombre d'inventeurs trouvés: ${inventeursData.length}`);
                 setInventeurs(inventeursData);
               }),
@@ -260,7 +198,7 @@ const useBrevetData = (brevetId) => {
               .then(depData => {
                 console.log("Déposants récupérés:", depData);
                 // S'assurer que les données sont traitées comme un tableau
-                let deposantsData = Array.isArray(depData) ? depData : (depData.data || []);
+                let deposantsData = safeArray(depData);
                 console.log(`Nombre de déposants trouvés: ${deposantsData.length}`);
                 setDeposants(deposantsData);
               }),
@@ -270,7 +208,7 @@ const useBrevetData = (brevetId) => {
               .then(titData => {
                 console.log("Titulaires récupérés:", titData);
                 // S'assurer que les données sont traitées comme un tableau
-                let titulairesData = Array.isArray(titData) ? titData : (titData.data || []);
+                let titulairesData = safeArray(titData);
                 console.log(`Nombre de titulaires trouvés: ${titulairesData.length}`);
                 setTitulaires(titulairesData);
               }),
@@ -278,7 +216,7 @@ const useBrevetData = (brevetId) => {
             // Pays - utiliser la route existante
             fetchApi(`${API_BASE_URL}/api/numeros_pays?id_brevet=${brevetId}`, "Erreur lors de la récupération des pays")
               .then(paysData => {
-                setPays(paysData.data || []);
+                setPays(safeArray(paysData.data));
               }),
               
             // Cabinets - nouvelle route API 
@@ -345,7 +283,7 @@ const useBrevetData = (brevetId) => {
                     const contacts = await Promise.all(contactPromises);
                     const allContacts = contacts
                       .filter(c => c && (c.data || Array.isArray(c)))
-                      .map(c => Array.isArray(c) ? c : c.data)
+                      .map(c => safeArray(c))
                       .flat();
                     
                     console.log(`Contacts procédure trouvés: ${allContacts.length}`);
@@ -367,7 +305,7 @@ const useBrevetData = (brevetId) => {
                     const contacts = await Promise.all(contactPromises);
                     const allContacts = contacts
                       .filter(c => c && (c.data || Array.isArray(c)))
-                      .map(c => Array.isArray(c) ? c : c.data)
+                      .map(c => safeArray(c))
                       .flat();
                     
                     console.log(`Contacts annuité trouvés: ${allContacts.length}`);
@@ -922,9 +860,9 @@ const useBrevetData = (brevetId) => {
     inventeurs,
     deposants,
     titulaires,
-    pays,
+    pays: safeArray(pays),
     statut,
-    statutsList,
+    statutsList: safeArray(statutsList),
     loading,
     error,
     generatePDF,

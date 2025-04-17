@@ -94,7 +94,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Clients */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Clients</Typography>
-                {formData.clients.map((client, index) => (
+                {(formData.clients || []).map((client, index) => (
                   <Stack direction="row" spacing={2} key={index} alignItems="center" sx={{ mt: 2 }}>
                     <FormControl fullWidth>
                       <InputLabel>Client</InputLabel>
@@ -102,7 +102,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                         value={client.id_client || ''}
                         onChange={(e) => handleDynamicChange(e, index, 'clients')}
                         name="id_client"
-                        required
                       >
                         <MenuItem value="">Sélectionner un client</MenuItem>
                         {clientsList.map((clientOption) => (
@@ -142,7 +141,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     name="reference_famille"
                     value={formData.reference_famille}
                     onChange={handleChange}
-                    required
                   />
                   <TextField
                     fullWidth
@@ -150,7 +148,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     name="titre"
                     value={formData.titre}
                     onChange={handleChange}
-                    required
                   />
                 </Stack>
               </Card>
@@ -158,7 +155,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Nouvelle section : Informations de dépôt */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Informations de dépôt</Typography>
-                {formData.informations_depot.map((info, index) => (
+                {(formData.informations_depot || []).map((info, index) => (
                   <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
                     {/* Pays et numéro de dépôt */}
                     <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
@@ -168,7 +165,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                           value={typeof info?.id_pays !== 'undefined' ? String(info.id_pays) : ''}
                           onChange={(e) => handleDynamicChange(e, index, 'informations_depot')}
                           name="id_pays"
-                          required
                         >
                           <MenuItem value="">Sélectionner un pays</MenuItem>
                           {paysList.map((paysItem) => (
@@ -286,7 +282,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Inventeurs */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Inventeurs</Typography>
-                {formData.inventeurs.map((item, index) => (
+                {(formData.inventeurs || []).map((item, index) => (
                   <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <TextField
@@ -295,7 +291,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                         name="nom_inventeur"
                         value={item.nom_inventeur || ''}
                         onChange={(e) => handleDynamicChange(e, index, 'inventeurs')}
-                        required
                       />
                       <TextField
                         fullWidth
@@ -342,7 +337,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                               handleDynamicChangeForSubField(e, index, 'inventeurs', pIndex, 'id_pays')
                             }
                             name="id_pays"
-                            required
                           >
                             <MenuItem value="">Sélectionner un pays</MenuItem>
                             {/* Utiliser les pays associés ou tous les pays si aucun n'est associé */}
@@ -398,7 +392,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Déposants */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Déposants</Typography>
-                {formData.deposants.map((item, index) => (
+                {(formData.deposants || []).map((item, index) => (
                   <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <TextField
@@ -407,7 +401,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                         name="nom_deposant"
                         value={item.nom_deposant || ''}
                         onChange={(e) => handleDynamicChange(e, index, 'deposants')}
-                        required
                       />
                       <TextField
                         fullWidth
@@ -453,7 +446,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                               handleDynamicChangeForSubField(e, index, 'deposants', pIndex, 'id_pays')
                             }
                             name="id_pays"
-                            required
                           >
                             <MenuItem value="">Sélectionner un pays</MenuItem>
                             {getCountriesForSelection().map((paysItem) => (
@@ -508,7 +500,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Titulaires */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Titulaires</Typography>
-                {formData.titulaires.map((item, index) => (
+                {(formData.titulaires || []).map((item, index) => (
                   <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <TextField
@@ -517,7 +509,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                         name="nom_titulaire"
                         value={item.nom_titulaire || ''}
                         onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                        required
                       />
                       <TextField
                         fullWidth
@@ -583,7 +574,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                               handleDynamicChangeForSubField(e, index, 'titulaires', pIndex, 'id_pays')
                             }
                             name="id_pays"
-                            required
                           >
                             <MenuItem value="">Sélectionner un pays</MenuItem>
                             {getCountriesForSelection().map((paysItem) => (
@@ -638,7 +628,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Cabinets de Procédure et Contacts - Version modifiée avec multiple pays */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Cabinets de Procédure et Contacts</Typography>
-                {formData.cabinets_procedure.map((item, index) => (
+                {(formData.cabinets_procedure || []).map((item, index) => (
                   <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
                     {/* Cabinet et Référence */}
                     <Stack direction="row" spacing={2}>
@@ -651,7 +641,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                             fetchContacts(e.target.value, 'procedure');
                           }}
                           name="id_cabinet"
-                          required
                         >
                           <MenuItem value="">Sélectionner un cabinet</MenuItem>
                           {(cabinets?.procedure || []).map((cabinet) => (
@@ -667,7 +656,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                         name="reference"
                         value={item.reference || ''}
                         onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                        required
                       />
                     </Stack>
 
@@ -712,7 +700,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                               handleDynamicChangeForSubField(e, index, 'cabinets_procedure', pIndex, 'id_pays')
                             }
                             name="id_pays"
-                            required
                           >
                             <MenuItem value="">Sélectionner un pays</MenuItem>
                             {getCountriesForSelection().map((paysItem) => (
@@ -765,7 +752,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
               {/* Cabinets d'Annuité et Contacts - Version modifiée avec multiple pays */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5">Cabinets d'Annuité et Contacts</Typography>
-                {formData.cabinets_annuite.map((item, index) => (
+                {(formData.cabinets_annuite || []).map((item, index) => (
                   <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
                     {/* Cabinet et Référence */}
                     <Stack direction="row" spacing={2}>
@@ -778,7 +765,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                             fetchContacts(e.target.value, 'annuite');
                           }}
                           name="id_cabinet"
-                          required
                         >
                           <MenuItem value="">Sélectionner un cabinet</MenuItem>
                           {(cabinets?.annuite || []).map((cabinet) => (
@@ -794,7 +780,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                         name="reference"
                         value={item.reference || ''}
                         onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                        required
                       />
                     </Stack>
 
@@ -839,7 +824,6 @@ const AddBrevetModal = ({ show, handleClose }) => {
                               handleDynamicChangeForSubField(e, index, 'cabinets_annuite', pIndex, 'id_pays')
                             }
                             name="id_pays"
-                            required
                           >
                             <MenuItem value="">Sélectionner un pays</MenuItem>
                             {getCountriesForSelection().map((paysItem) => (
@@ -897,7 +881,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     fullWidth
                     label="Commentaire"
                     name="commentaire"
-                    value={formData.commentaire}
+                    value={formData.commentaire || ''}
                     onChange={handleChange}
                     multiline
                     rows={4}
@@ -913,10 +897,11 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 fullWidth
                 disabled={loading}
                 onClick={(e) => {
-                  // Validation stricte avant soumission
-                  if (!formData.reference_famille || !formData.titre) {
+                  // Vérification minimale : au moins un champ essentiel doit être rempli
+                  if (!formData.reference_famille && !formData.titre && 
+                      (!formData.informations_depot || formData.informations_depot.length === 0)) {
                     e.preventDefault();
-                    alert('Erreur: La référence et le titre du brevet sont obligatoires.');
+                    alert('Erreur: Veuillez renseigner au moins un champ pour créer le brevet (référence ou titre).');
                     return false;
                   }
                 }}
@@ -944,7 +929,12 @@ const AddBrevetModal = ({ show, handleClose }) => {
             <Typography variant="body1" sx={{ my: 2 }}>
               {confirmationMessage}
             </Typography>
-            <Button variant="contained" color="primary" onClick={handleCloseConfirmationModal} fullWidth>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCloseConfirmationModal}
+              fullWidth
+            >
               OK
             </Button>
           </Card>

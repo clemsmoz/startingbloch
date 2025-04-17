@@ -7,8 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     id_brevet: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      unique: false // Pas de contrainte d'unicité ici
+      allowNull: false
     },
     id_pays: {
       type: DataTypes.INTEGER,
@@ -16,31 +15,38 @@ module.exports = (sequelize, DataTypes) => {
     },
     numero_depot: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     numero_publication: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     id_statuts: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     date_depot: {
       type: DataTypes.DATE,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     date_publication: {
       type: DataTypes.DATE,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     date_delivrance: {
       type: DataTypes.DATE,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     numero_delivrance: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: null
     },
     licence: {
       type: DataTypes.BOOLEAN,
@@ -50,10 +56,9 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'numero_pays',
     timestamps: false,
     indexes: [
-      // Créer un index composite mais pas unique
       {
         fields: ['id_brevet', 'id_pays'],
-        name: 'brevet_pays_idx'
+        unique: false
       }
     ]
   });

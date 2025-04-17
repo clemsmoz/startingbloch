@@ -14,19 +14,17 @@ const brevetController = {
       
       // 1. Extraction des données de base du brevet
       const brevetData = {
-        reference_famille: req.body.reference_famille,
-        titre: req.body.titre,
-        commentaire: req.body.commentaire || ''
+        reference_famille: req.body.reference_famille || null,
+        titre: req.body.titre || null,
+        commentaire: req.body.commentaire || null
       };
       
-      // Vérification des données requises (avec plus de détails)
-      if (!brevetData.reference_famille || !brevetData.titre) {
-        console.log("ERREUR: Données manquantes:", {
-          reference_famille: brevetData.reference_famille,
-          titre: brevetData.titre
-        });
+      // Suppression de la vérification stricte pour permettre des valeurs nulles
+      // On vérifie simplement qu'au moins l'un des champs est renseigné
+      if (!req.body || Object.keys(req.body).length === 0) {
+        console.log("ERREUR: Aucune donnée fournie");
         return res.status(400).json({
-          error: 'Données requises manquantes (référence famille et titre)'
+          error: 'Aucune donnée fournie pour créer le brevet'
         });
       }
       
@@ -390,12 +388,15 @@ const brevetController = {
       
       console.log(`Mise à jour du brevet ID: ${req.params.id} avec les données:`, req.body);
       
-      const result = await Brevet.update(req.body, { where: { id: req.params.id } });
-      if (result[0] === 0) {
-        res.status(404).json({ error: 'Brevet non trouvé' });
-      } else {
-        res.status(200).json({ message: 'Brevet mis à jour avec succès' });
-      }
+      const updatedFields = {
+        reference_famille: req.body.reference_famille || null,
+        titre: req.body.titre || null,
+        commentaire: req.body.commentaire || null
+      };
+      const [count] = await Brevet.update(updatedFields, { where: { id: req.params.id } });
+      if (!count) return res.status(404).json({ error: 'Brevet non trouvé' });
+      const updated = await Brevet.findByPk(req.params.id);
+      res.status(200).json({ message: 'Brevet mis à jour', data: updated });
     } catch (error) {
       console.error('Erreur mise à jour brevet:', error);
       res.status(500).json({ error: 'Erreur lors de la mise à jour du brevet' });

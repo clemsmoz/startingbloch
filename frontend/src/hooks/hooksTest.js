@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import qs from 'qs';
+// utilitaire
+const safeArray = arr => Array.isArray(arr) ? arr : [];
 
 const useAllBrevetsData = () => {
   const [brevets, setBrevets] = useState([]);
@@ -100,7 +102,7 @@ const useAllBrevetsData = () => {
         // Récupérer tous les brevets et extraire les IDs
         console.log('Fetching all brevets...');
         const brevetsResponse = await axios.get('http://localhost:3100/brevets');
-        const brevetsData = brevetsResponse.data.data || [];
+        const brevetsData = safeArray(brevetsResponse.data.data);
         const brevetIds = brevetsData.map(brevet => brevet.id_brevet);
         console.log('Brevets IDs fetched:', brevetIds);
 
@@ -116,7 +118,7 @@ const useAllBrevetsData = () => {
 
               // Récupérer les clients associés au brevet
               const clientsResponse = await axios.get(`http://localhost:3100/brevets/${brevetId}/clients`);
-              brevetData.clients = clientsResponse.data.data || [];
+              brevetData.clients = safeArray(clientsResponse.data.data);
 
               // Récupérer tous les statuts et trouver celui correspondant
               const statutsResponse = await axios.get(`http://localhost:3100/statuts`);
@@ -132,7 +134,7 @@ const useAllBrevetsData = () => {
                   params: { id_inventeurs: inventeurIds },
                   paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
                 });
-                brevetData.inventeurs = inventeursResponse.data.data || [];
+                brevetData.inventeurs = safeArray(inventeursResponse.data.data);
               } else {
                 brevetData.inventeurs = [];
               }
@@ -142,7 +144,7 @@ const useAllBrevetsData = () => {
                 const deposantsResponse = await axios.get(`http://localhost:3100/deposant`, {
                   params: { id_deposants: deposantIds }
                 });
-                brevetData.deposants = deposantsResponse.data.data || [];
+                brevetData.deposants = safeArray(deposantsResponse.data.data);
               } else {
                 brevetData.deposants = [];
               }
@@ -152,7 +154,7 @@ const useAllBrevetsData = () => {
                 const titulairesResponse = await axios.get(`http://localhost:3100/titulaire`, {
                   params: { id_titulaires: titulaireIds }
                 });
-                brevetData.titulaires = titulairesResponse.data.data || [];
+                brevetData.titulaires = safeArray(titulairesResponse.data.data);
               } else {
                 brevetData.titulaires = [];
               }
@@ -161,7 +163,7 @@ const useAllBrevetsData = () => {
               const paysResponse = await axios.get(`http://localhost:3100/numeros_pays`, {
                 params: { id_brevet: brevetId }
               });
-              brevetData.pays = paysResponse.data.data || [];
+              brevetData.pays = safeArray(paysResponse.data.data);
 
               // Récupérer les cabinets
               const cabinetsResponse = await axios.get(`http://localhost:3100/cabinets`, {
@@ -184,13 +186,13 @@ const useAllBrevetsData = () => {
                 axios.get(`http://localhost:3100/contacts/cabinets/${cabinet.id_cabinet}`)
               );
               const contactsProcedureResults = await Promise.all(contactsProcedurePromises);
-              brevetData.contactsProcedure = contactsProcedureResults.flatMap(result => result.data.data || []);
+              brevetData.contactsProcedure = contactsProcedureResults.flatMap(result => safeArray(result.data.data));
 
               const contactsAnnuitePromises = annuiteCabinetsData.map(cabinet =>
                 axios.get(`http://localhost:3100/contacts/cabinets/${cabinet.id_cabinet}`)
               );
               const contactsAnnuiteResults = await Promise.all(contactsAnnuitePromises);
-              brevetData.contactsAnnuite = contactsAnnuiteResults.flatMap(result => result.data.data || []);
+              brevetData.contactsAnnuite = contactsAnnuiteResults.flatMap(result => safeArray(result.data.data));
 
               return brevetData;
             } catch (error) {

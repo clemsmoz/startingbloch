@@ -13,6 +13,7 @@ const CabinetsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const navigate = useNavigate();
+  const safe = (val) => val ?? '';
 
   useEffect(() => {
     refreshCabinets();
@@ -74,7 +75,7 @@ const CabinetsPage = () => {
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
               {annuiteCabinets.map((cabinet) => (
                 <Box
-                  key={cabinet.id}
+                  key={safe(cabinet.id)}
                   component={Paper}
                   elevation={6}
                   onClick={() => handleCardClick(cabinet.id)}
@@ -88,20 +89,20 @@ const CabinetsPage = () => {
                 >
                   <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                     <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                      {cabinet.nom_cabinet && cabinet.nom_cabinet.charAt(0)}
+                      {safe(cabinet.nom_cabinet).charAt(0)}
                     </Avatar>
                     <Box>
                       <Typography variant="h6" component="div" fontWeight="bold">
-                        {cabinet.nom_cabinet}
+                        {safe(cabinet.nom_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence: {cabinet.reference_cabinet}
+                        Référence: {safe(cabinet.reference_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Email: {cabinet.email_cabinet}
+                        Email: {safe(cabinet.email_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Téléphone: {cabinet.telephone_cabinet}
+                        Téléphone: {safe(cabinet.telephone_cabinet)}
                       </Typography>
                       {/* Affichage des pays associés */}
                       <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: 0 }}>
@@ -141,20 +142,20 @@ const CabinetsPage = () => {
                 >
                   <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                     <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                      {cabinet.nom_cabinet && cabinet.nom_cabinet.charAt(0)}
+                      {safe(cabinet.nom_cabinet).charAt(0)}
                     </Avatar>
                     <Box>
                       <Typography variant="h6" component="div" fontWeight="bold">
-                        {cabinet.nom_cabinet}
+                        {safe(cabinet.nom_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence: {cabinet.reference_cabinet}
+                        Référence: {safe(cabinet.reference_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Email: {cabinet.email_cabinet}
+                        Email: {safe(cabinet.email_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Téléphone: {cabinet.telephone_cabinet}
+                        Téléphone: {safe(cabinet.telephone_cabinet)}
                       </Typography>
                       <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: 0 }}>
                         {(cabinet.Pays || []).map((pays) => (

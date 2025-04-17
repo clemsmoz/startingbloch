@@ -5,16 +5,14 @@ const Op = db.Sequelize.Op;
 const StatutsController = {
   // Création d'un nouveau statut
   createStatuts: async (req, res) => {
-    const statutData = {
-      statuts: req.body.statuts,
-      description: req.body.description
-    };
-
     try {
-      const data = await Statuts.create(statutData);
-      return res.status(201).json(data);
-    } catch (err) {
-      return res.status(500).json({ message: err.message || "Une erreur est survenue lors de la création du statut." });
+      const data = await Statuts.create({
+        statuts:     req.body.statuts     || null,
+        description: req.body.description || null
+      });
+      res.status(201).json(data);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   },
 
@@ -57,17 +55,17 @@ const StatutsController = {
 
   // Mise à jour d'un statut par son identifiant
   updateStatuts: async (req, res) => {
-    const id = req.params.id;
     try {
-      const [num] = await Statuts.update(req.body, { where: { id: id } });
-      if (num === 1) {
+      const [cnt] = await Statuts.update({
+        statuts:     req.body.statuts     || null,
+        description: req.body.description || null
+      }, { where: { id: req.params.id } });
+      if (cnt === 1) {
         return res.status(200).json({ message: "Le statut a été mis à jour avec succès." });
       } else {
-        return res.status(400).json({ message: `Impossible de mettre à jour le statut avec id=${id}. Peut-être que le statut n'a pas été trouvé ou req.body est vide!` });
+        return res.status(400).json({ message: `Impossible de mettre à jour le statut avec id=${req.params.id}. Peut-être que le statut n'a pas été trouvé ou req.body est vide!` });
       }
-    } catch (err) {
-      return res.status(500).json({ message: "Erreur lors de la mise à jour du statut avec id=" + id });
-    }
+    } catch (e) { res.status(500).json({ error: e.message }); }
   },
 
   // Suppression d'un statut par son identifiant

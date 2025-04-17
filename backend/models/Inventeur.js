@@ -3,18 +3,22 @@ module.exports = (sequelize, DataTypes) => {
     nom_inventeur: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: null
     },
     prenom_inventeur: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: null
     },
     email_inventeur: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: null
     },
     telephone_inventeur: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: null
     }
   }, {
     tableName: 'inventeurs',

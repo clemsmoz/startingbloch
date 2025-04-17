@@ -2,11 +2,13 @@ module.exports = (sequelize, DataTypes) => {
   const Brevet = sequelize.define('Brevet', {
     reference_famille: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true,
+      defaultValue: null
     },
     titre: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true,
+      defaultValue: null
     },
     commentaire: {
       type: DataTypes.TEXT,

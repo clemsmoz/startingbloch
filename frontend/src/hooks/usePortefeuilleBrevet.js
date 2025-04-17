@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
 
+// utilitaires
+const safeArray = arr => Array.isArray(arr) ? arr : [];
+const safeValue = v => v == null ? '' : v;
+
 // Hook pour gérer le portefeuille de brevets global 
 const usePortefeuilleBrevet = () => {
   const [brevets, setBrevets] = useState([]);
@@ -24,7 +28,7 @@ const usePortefeuilleBrevet = () => {
       const data = await response.json();
       // Vérifier si les données sont dans une propriété "data" ou directement dans la réponse
       const brevetsData = data.data || data;
-      setBrevets(brevetsData);
+      setBrevets(safeArray(brevetsData));
       setError(null);
     } catch (error) {
       console.error("Erreur lors de la récupération des brevets:", error);

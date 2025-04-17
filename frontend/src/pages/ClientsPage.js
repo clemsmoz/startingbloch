@@ -17,6 +17,8 @@ const ClientsPage = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const navigate = useNavigate();
 
+  const safe = (val) => val ?? '';
+
   useEffect(() => {
     refreshClients();
   }, []);
@@ -83,7 +85,7 @@ const ClientsPage = () => {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {clients.map(client => (
             <Paper
-              key={client.id}
+              key={safe(client.id)}
               elevation={6}
               onClick={() => handleClientClick(client.id)}
               sx={{
@@ -113,14 +115,14 @@ const ClientsPage = () => {
               </Box>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" component="div" fontWeight="bold" sx={{ mt: 2 }}>
-                  {client.nom_client}
+                  {safe(client.nom_client)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  <strong>Référence :</strong> {client.reference_client}<br />
-                  <strong>Adresse :</strong> {client.adresse_client}<br />
-                  <strong>Code Postal :</strong> {client.code_postal}<br />
-                  <strong>Email :</strong> {client.email_client}<br />
-                  <strong>Téléphone :</strong> {client.telephone_client}
+                  <strong>Référence :</strong> {safe(client.reference_client)}<br />
+                  <strong>Adresse :</strong> {safe(client.adresse_client)}<br />
+                  <strong>Code Postal :</strong> {safe(client.code_postal)}<br />
+                  <strong>Email :</strong> {safe(client.email_client)}<br />
+                  <strong>Téléphone :</strong> {safe(client.telephone_client)}
                 </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: 'center' }}>

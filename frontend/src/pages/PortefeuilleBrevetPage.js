@@ -107,6 +107,8 @@ const PortefeuilleBrevetPage = () => {
     }, 100);
   };
 
+  const safe = (val) => val ?? '';
+
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
@@ -167,7 +169,7 @@ const PortefeuilleBrevetPage = () => {
           {currentBrevets.length > 0 ? (
             currentBrevets.map((brevet) => {
               // S'assurer que l'ID est correctement extrait
-              const brevetId = brevet.id || brevet.id_brevet;
+              const brevetId = safe(brevet.id) || safe(brevet.id_brevet);
               console.log('Rendu de la carte brevet:', { brevetId, titre: brevet.titre });
               
               return (
@@ -185,10 +187,10 @@ const PortefeuilleBrevetPage = () => {
                   <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
                     <Box>
                       <Typography variant="h6" fontWeight="bold">
-                        {brevet.titre}
+                        {safe(brevet.titre)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence Famille: {brevet.reference_famille}
+                        Référence Famille: {safe(brevet.reference_famille)}
                       </Typography>
                     </Box>
                   </Box>

@@ -28,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       through: 'CabinetPays',
       foreignKey: 'CabinetId',
       otherKey: 'PaysId',
+      unique: false,
       uniqueKey: false,
       timestamps: true
     });

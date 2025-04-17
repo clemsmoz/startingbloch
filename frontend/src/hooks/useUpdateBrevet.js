@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
+import { API_BASE_URL } from '../config';
 import useAddBrevet from '../hooks/useAddBrevet';
 import useBrevetData from '../hooks/useBrevetData';
+// utilitaire
+const safeArray = arr => Array.isArray(arr) ? arr : [];
 
 const useUpdateBrevet = (brevetId, handleClose) => {
   const {
@@ -18,64 +20,27 @@ const useUpdateBrevet = (brevetId, handleClose) => {
     piecesJointes,
   } = useBrevetData(brevetId);
 
-  const {
-    formData,
-    setFormData,
-    clientsList,
-    statuts,
-    paysList,
-    cabinets,
-    message,
-    error,
-    loading,
-    confirmationModal,
-    confirmationMessage,
-    isError,
-    handleChange,
-    handleDynamicChange,
-    handleAddField,
-    handleRemoveField,
-    setLoading,
-    setError,
-    setConfirmationMessage,
-    setIsError,
-    setConfirmationModal,
-    fetchContacts,
-    handleCloseConfirmationModal,
-  } = useAddBrevet(handleClose);
+  const { formData, setFormData, setLoading, setError, setConfirmationMessage, setIsError, setConfirmationModal, ...rest } 
+        = useAddBrevet(handleClose);
 
   useEffect(() => {
     if (brevet) {
-      // Convertir les dates au format "yyyy-MM-dd"
-      const formattedDateDepot = brevet.date_depot ? new Date(brevet.date_depot).toISOString().split('T')[0] : '';
-      const formattedDateDelivrance = brevet.date_delivrance ? new Date(brevet.date_delivrance).toISOString().split('T')[0] : '';
-
-      setFormData({
+      const fd = {
         ...brevet,
-        date_depot: formattedDateDepot,
-        date_delivrance: formattedDateDelivrance,
-        clients: clients || [],
-        inventeurs: inventeurs || [],
-        deposants: deposants || [],
-        titulaires: titulaires || [],
-        pays: pays || [],
-        pieces_jointes: piecesJointes || [],
-        cabinets_procedure: procedureCabinets || [],
-        cabinets_annuite: annuiteCabinets || [],
-      });
+        date_depot: brevet.date_depot?.split('T')[0] || '',
+        date_delivrance: brevet.date_delivrance?.split('T')[0] || '',
+        clients: safeArray(clients),
+        inventeurs: safeArray(inventeurs),
+        deposants: safeArray(deposants),
+        titulaires: safeArray(titulaires),
+        pays: safeArray(pays),
+        pieces_jointes: safeArray(piecesJointes),
+        cabinets_procedure: safeArray(procedureCabinets),
+        cabinets_annuite: safeArray(annuiteCabinets),
+      };
+      setFormData(fd);
     }
-  }, [
-    brevet,
-    clients,
-    inventeurs,
-    deposants,
-    titulaires,
-    pays,
-    piecesJointes,
-    procedureCabinets,
-    annuiteCabinets,
-    setFormData,
-  ]);
+  }, [brevet, clients, inventeurs, deposants, titulaires, pays, piecesJointes, procedureCabinets, annuiteCabinets]);
 
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
@@ -110,26 +75,9 @@ const useUpdateBrevet = (brevetId, handleClose) => {
 
   return {
     formData,
-    setFormData,
-    clientsList,
-    statuts,
-    paysList,
-    cabinets,
-    contactsProcedure,
-    contactsAnnuite,
-    message,
-    error,
-    loading,
-    confirmationModal,
-    confirmationMessage,
-    isError,
-    handleChange,
-    handleDynamicChange,
-    handleAddField,
-    handleRemoveField,
-    handleUpdateSubmit,
-    fetchContacts,
-    handleCloseConfirmationModal,
+    // ...existing return...
+    ...rest,
+    handleUpdateSubmit: rest.handleUpdateSubmit
   };
 };
 

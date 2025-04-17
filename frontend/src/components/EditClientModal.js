@@ -66,7 +66,6 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
               name="nom_client"
               value={formData.nom_client}
               onChange={handleChange}
-              required
             />
           </Form.Group>
           <Form.Group controlId="formClientReference" className="mt-3">
@@ -76,7 +75,6 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
               name="reference_client"
               value={formData.reference_client}
               onChange={handleChange}
-              required
             />
           </Form.Group>
           <Form.Group controlId="formClientAdresse" className="mt-3">
@@ -86,7 +84,6 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
               name="adresse_client"
               value={formData.adresse_client}
               onChange={handleChange}
-              required
             />
           </Form.Group>
           <Form.Group controlId="formClientCodePostal" className="mt-3">
@@ -96,7 +93,6 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
               name="code_postal"
               value={formData.code_postal}
               onChange={handleChange}
-              required
             />
           </Form.Group>
           <Form.Group controlId="formClientEmail" className="mt-3">
@@ -106,7 +102,6 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
               name="email_client"
               value={formData.email_client}
               onChange={handleChange}
-              required
             />
           </Form.Group>
           <Form.Group controlId="formClientTelephone" className="mt-3">
@@ -116,7 +111,6 @@ const EditClientModal = ({ show, handleClose, refreshClients, client }) => {
               name="telephone_client"
               value={formData.telephone_client}
               onChange={handleChange}
-              required
             />
           </Form.Group>
           <Button variant="primary" type="submit" className="mt-3">Sauvarger changement</Button>

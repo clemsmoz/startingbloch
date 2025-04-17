@@ -4,21 +4,20 @@ const Op = sequelize.Sequelize.Op;
 const clientController = {
   createClient: async (req, res) => {
     try {
-      console.log("Données client reçues:", req.body);
-      const client = {
-        nom_client: req.body.nom_client,
-        reference_client: req.body.reference_client,
-        adresse_client: req.body.adresse_client,
-        code_postal: req.body.code_postal,
-        pays_client: req.body.pays_client,
-        email_client: req.body.email_client,
-        telephone_client: req.body.telephone_client
+      const clientData = {
+        nom_client:       req.body.nom_client       || null,
+        reference_client: req.body.reference_client || null,
+        adresse_client:   req.body.adresse_client   || null,
+        code_postal:      req.body.code_postal      || null,
+        pays_client:      req.body.pays_client      || null,
+        email_client:     req.body.email_client     || null,
+        telephone_client: req.body.telephone_client || null
       };
-      const result = await Client.create(client);
-      res.status(201).json({ message: 'Client créé avec succès', data: result });
+      const result = await Client.create(clientData);
+      res.status(201).json({ message: 'Client créé', data: result });
     } catch (error) {
-      console.error("Erreur création client:", error);
-      res.status(500).json({ error: 'Erreur lors de la création du client' });
+      console.error('Erreur création client :', error);
+      res.status(500).json({ error: 'Erreur création client' });
     }
   },
   getAllClients: async (req, res) => {
@@ -59,16 +58,22 @@ const clientController = {
   },
   updateClient: async (req, res) => {
     try {
-      const [updated] = await Client.update(req.body, { where: { id: req.params.id } });
-      if (updated) {
-        const updatedClient = await Client.findByPk(req.params.id);
-        res.status(200).json({ message: 'Client mis à jour', data: updatedClient });
-      } else {
-        res.status(404).json({ error: 'Client non trouvé' });
-      }
+      const [updated] = await Client.update({
+        nom_client:       req.body.nom_client       || null,
+        reference_client: req.body.reference_client || null,
+        adresse_client:   req.body.adresse_client   || null,
+        code_postal:      req.body.code_postal      || null,
+        pays_client:      req.body.pays_client      || null,
+        email_client:     req.body.email_client     || null,
+        telephone_client: req.body.telephone_client || null
+      }, { where: { id: req.params.id } });
+
+      if (!updated) return res.status(404).json({ error: 'Client non trouvé' });
+      const updatedClient = await Client.findByPk(req.params.id);
+      res.json({ message: 'Client mis à jour', data: updatedClient });
     } catch (error) {
-      console.error("Erreur mise à jour client:", error);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour du client' });
+      console.error('Erreur maj client :', error);
+      res.status(500).json({ error: 'Erreur maj client' });
     }
   },
   getClientsByBrevetId: async (req, res) => {

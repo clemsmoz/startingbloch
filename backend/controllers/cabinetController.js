@@ -3,18 +3,15 @@ const { Cabinet, Pays, Brevet, sequelize } = require('../models');
 const cabinetController = {
   createCabinet: async (req, res) => {
     try {
-      // Ignorer les données de pays et utiliser uniquement les données du cabinet
-      const { pays, ...cabinetData } = req.body;
-      
-      // Création du cabinet dans la table 'cabinet'
-      const cabinet = await Cabinet.create(cabinetData);
-      
-      console.log('Cabinet créé', cabinet);
-      res.status(201).json({ message: 'Cabinet créé avec succès', data: cabinet });
-    } catch (error) {
-      console.error('Erreur création cabinet:', error);
-      res.status(500).json({ error: 'Erreur lors de la création du cabinet' });
-    }
+      const data = await Cabinet.create({
+        nom_cabinet:       req.body.nom_cabinet       || null,
+        email_cabinet:     req.body.email_cabinet     || null,
+        telephone_cabinet: req.body.telephone_cabinet || null,
+        reference_cabinet: req.body.reference_cabinet || null,
+        type:              req.body.type              || null
+      });
+      res.status(201).json(data);
+    } catch (e) { res.status(500).json({ error: e.message }); }
   },
 
   // Récupère tous les cabinets
@@ -44,17 +41,20 @@ const cabinetController = {
   },
   updateCabinet: async (req, res) => {
     try {
-      const [updated] = await Cabinet.update(req.body, { where: { id: req.params.id } });
-      if (updated) {
+      const [cnt] = await Cabinet.update({
+        nom_cabinet:       req.body.nom_cabinet       || null,
+        email_cabinet:     req.body.email_cabinet     || null,
+        telephone_cabinet: req.body.telephone_cabinet || null,
+        reference_cabinet: req.body.reference_cabinet || null,
+        type:              req.body.type              || null
+      }, { where: { id: req.params.id } });
+      if (cnt) {
         const updatedCabinet = await Cabinet.findByPk(req.params.id);
         res.status(200).json({ message: 'Cabinet mis à jour', data: updatedCabinet });
       } else {
         res.status(404).json({ error: 'Cabinet non trouvé' });
       }
-    } catch (error) {
-      console.error('Erreur mise à jour cabinet:', error);
-      res.status(500).json({ error: 'Erreur lors de la mise à jour du cabinet' });
-    }
+    } catch (e) { res.status(500).json({ error: e.message }); }
   },
   deleteCabinet: async (req, res) => {
     try {

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
+// utilitaire
+const safeArray = arr => Array.isArray(arr) ? arr : [];
 
 const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
   const [formData, setFormData] = useState({
@@ -46,81 +48,67 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
             id_statut: brevetData.id_statut || '',
             
             // Traitement des données de pays
-            pays: Array.isArray(brevetData.NumeroPays) && brevetData.NumeroPays.length 
-              ? brevetData.NumeroPays.map(p => ({
-                  id_pays: p.id_pays || '',
-                  numero_depot: p.numero_depot || '',
-                  numero_publication: p.numero_publication || '',
-                  id_statuts: p.id_statuts || '',
-                  date_depot: p.date_depot ? new Date(p.date_depot).toISOString().split('T')[0] : '',
-                  date_delivrance: p.date_delivrance ? new Date(p.date_delivrance).toISOString().split('T')[0] : '',
-                  numero_delivrance: p.numero_delivrance || '',
-                  licence: p.licence || false
-                }))
-              : [{ id_pays: '', numero_depot: '', numero_publication: '' }],
+            pays: safeArray(brevetData.NumeroPays).map(p => ({
+              id_pays: p.id_pays || '',
+              numero_depot: p.numero_depot || '',
+              numero_publication: p.numero_publication || '',
+              id_statuts: p.id_statuts || '',
+              date_depot: p.date_depot ? new Date(p.date_depot).toISOString().split('T')[0] : '',
+              date_delivrance: p.date_delivrance ? new Date(p.date_delivrance).toISOString().split('T')[0] : '',
+              numero_delivrance: p.numero_delivrance || '',
+              licence: p.licence || false
+            })),
               
             // Traitement des inventeurs
-            inventeurs: Array.isArray(brevetData.Inventeurs) && brevetData.Inventeurs.length
-              ? brevetData.Inventeurs.map(i => ({
-                  nom_inventeur: i.nom_inventeur || '',
-                  prenom_inventeur: i.prenom_inventeur || '',
-                  email_inventeur: i.email_inventeur || '',
-                  telephone_inventeur: i.telephone_inventeur || ''
-                }))
-              : [{ nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' }],
+            inventeurs: safeArray(brevetData.Inventeurs).map(i => ({
+              nom_inventeur: i.nom_inventeur || '',
+              prenom_inventeur: i.prenom_inventeur || '',
+              email_inventeur: i.email_inventeur || '',
+              telephone_inventeur: i.telephone_inventeur || ''
+            })),
               
             // Traitement des titulaires
-            titulaires: Array.isArray(brevetData.Titulaires) && brevetData.Titulaires.length
-              ? brevetData.Titulaires.map(t => ({
-                  nom_titulaire: t.nom_titulaire || '',
-                  prenom_titulaire: t.prenom_titulaire || '',
-                  email_titulaire: t.email_titulaire || '',
-                  telephone_titulaire: t.telephone_titulaire || '',
-                  part_pi: t.part_pi || '',
-                  executant: t.executant || false,
-                  client_correspondant: t.client_correspondant || false
-                }))
-              : [{ nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false }],
+            titulaires: safeArray(brevetData.Titulaires).map(t => ({
+              nom_titulaire: t.nom_titulaire || '',
+              prenom_titulaire: t.prenom_titulaire || '',
+              email_titulaire: t.email_titulaire || '',
+              telephone_titulaire: t.telephone_titulaire || '',
+              part_pi: t.part_pi || '',
+              executant: t.executant || false,
+              client_correspondant: t.client_correspondant || false
+            })),
                 
             // Traitement des déposants
-            deposants: Array.isArray(brevetData.Deposants) && brevetData.Deposants.length
-              ? brevetData.Deposants.map(d => ({
-                  nom_deposant: d.nom_deposant || '',
-                  prenom_deposant: d.prenom_deposant || '',
-                  email_deposant: d.email_deposant || '',
-                  telephone_deposant: d.telephone_deposant || ''
-                }))
-              : [{ nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' }],
+            deposants: safeArray(brevetData.Deposants).map(d => ({
+              nom_deposant: d.nom_deposant || '',
+              prenom_deposant: d.prenom_deposant || '',
+              email_deposant: d.email_deposant || '',
+              telephone_deposant: d.telephone_deposant || ''
+            })),
                 
             // Traitement des cabinets de procédure
-            cabinets_procedure: Array.isArray(brevetData.Cabinets) 
-              ? brevetData.Cabinets
-                .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'procedure')
-                .map(c => ({
-                  id_cabinet_procedure: c.id || '',
-                  reference: c.BrevetCabinets?.reference || '',
-                  dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
-                  id_contact_procedure: c.BrevetCabinets?.contact_id || ''
-                }))
-              : [{ id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' }],
+            cabinets_procedure: safeArray(brevetData.Cabinets)
+              .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'procedure')
+              .map(c => ({
+                id_cabinet_procedure: c.id || '',
+                reference: c.BrevetCabinets?.reference || '',
+                dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
+                id_contact_procedure: c.BrevetCabinets?.contact_id || ''
+              })),
                 
             // Traitement des cabinets d'annuité
-            cabinets_annuite: Array.isArray(brevetData.Cabinets)
-              ? brevetData.Cabinets
-                .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'annuite')
-                .map(c => ({
-                  id_cabinet_annuite: c.id || '',
-                  reference: c.BrevetCabinets?.reference || '',
-                  dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
-                  id_contact_annuite: c.BrevetCabinets?.contact_id || ''
-                }))
-              : [{ id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }],
+            cabinets_annuite: safeArray(brevetData.Cabinets)
+              .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'annuite')
+              .map(c => ({
+                id_cabinet_annuite: c.id || '',
+                reference: c.BrevetCabinets?.reference || '',
+                dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
+                id_contact_annuite: c.BrevetCabinets?.contact_id || ''
+              })),
                 
             commentaire: brevetData.commentaire || '',
             piece_jointe: null,
-            clients: Array.isArray(brevetData.Clients) && brevetData.Clients.length
-              ? brevetData.Clients.map(c => ({ id_client: c.id || '' }))
-              : [{ id_client: '' }]
+            clients: safeArray(brevetData.Clients).map(c => ({ id_client: c.id || '' }))
           };
           
           console.log("Données formatées pour le formulaire:", formattedData);
@@ -132,25 +120,25 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
     // Récupération des données de référence (clients, statuts, pays, cabinets)
     fetch(`${API_BASE_URL}/api/clients`)
       .then(response => response.json())
-      .then(data => setClients(data.data || []))
+      .then(data => setClients(safeArray(data.data)))
       .catch(error => console.error('Erreur lors de la récupération des clients:', error));
 
     fetch(`${API_BASE_URL}/api/statuts`)
       .then(response => response.json())
-      .then(data => setStatuts(data.data || []))
+      .then(data => setStatuts(safeArray(data.data)))
       .catch(error => console.error('Erreur lors de la récupération des statuts:', error));
 
     fetch(`${API_BASE_URL}/api/pays`)
       .then(response => response.json())
-      .then(data => setPaysList(data.data || []))
+      .then(data => setPaysList(safeArray(data.data)))
       .catch(error => console.error('Erreur lors de la récupération des pays:', error));
 
     fetch(`${API_BASE_URL}/api/cabinets`)
       .then(response => response.json())
       .then(data => {
         setCabinets({
-          procedure: data.procedure || [],
-          annuite: data.annuite || []
+          procedure: safeArray(data.procedure),
+          annuite: safeArray(data.annuite)
         });
       })
       .catch(error => console.error('Erreur lors de la récupération des cabinets:', error));

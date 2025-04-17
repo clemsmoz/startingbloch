@@ -4,21 +4,16 @@ const Op = db.Sequelize.Op;
 
 const inventeurController = {
   createInventeur: async (req, res) => {
-    // Créer un inventeur
-    const inventeur = {
-      nom_inventeur: req.body.nom_inventeur,
-      prenom_inventeur: req.body.prenom_inventeur,
-      email_inventeur: req.body.email_inventeur,
-      telephone_inventeur: req.body.telephone_inventeur
-    };
-
     try {
-      const data = await Inventeur.create(inventeur);
-      res.send(data);
-    } catch (err) {
-      res.status(500).send({
-        message: err.message || "Une erreur est survenue lors de la création de l'inventeur."
+      const data = await Inventeur.create({
+        nom_inventeur:       req.body.nom_inventeur       || null,
+        prenom_inventeur:    req.body.prenom_inventeur    || null,
+        email_inventeur:     req.body.email_inventeur     || null,
+        telephone_inventeur: req.body.telephone_inventeur || null
       });
+      res.status(201).json(data);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   },
 
@@ -73,7 +68,12 @@ const inventeurController = {
     const id = req.params.id;
 
     try {
-      const num = await Inventeur.update(req.body, {
+      const num = await Inventeur.update({
+        nom_inventeur:       req.body.nom_inventeur       || null,
+        prenom_inventeur:    req.body.prenom_inventeur    || null,
+        email_inventeur:     req.body.email_inventeur     || null,
+        telephone_inventeur: req.body.telephone_inventeur || null
+      }, {
         where: { id: id }
       });
       

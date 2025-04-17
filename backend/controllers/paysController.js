@@ -34,11 +34,7 @@ const PaysController = {
       const data = await Pays.findAll({
         where: condition,
         include: [
-          { model: db.NumeroPays },
-          { model: db.Titulaire },
-          { model: db.Deposant },
-          { model: db.Inventeur },
-          { model: db.Statuts }
+          { model: db.NumeroPays }
         ]
       });
       return res.status(200).json({ data });
@@ -53,11 +49,7 @@ const PaysController = {
     try {
       const data = await Pays.findByPk(id, {
         include: [
-          { model: db.NumeroPays },
-          { model: db.Titulaire },
-          { model: db.Deposant },
-          { model: db.Inventeur },
-          { model: db.Statuts }
+          { model: db.NumeroPays }
         ]
       });
       if (!data) {

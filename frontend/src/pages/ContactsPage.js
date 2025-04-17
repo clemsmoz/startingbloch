@@ -20,6 +20,8 @@ const ContactsPage = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const navigate = useNavigate();
 
+  const safe = (val) => val ?? '';
+
   useEffect(() => {
     if (cabinetId) {
       refreshContacts({ cabinet_id: cabinetId });
@@ -109,7 +111,7 @@ const ContactsPage = () => {
           {Array.isArray(contacts) && contacts.length > 0 ? (
             contacts.map(contact => (
               <Box
-                key={contact.id || contact.id_contact}
+                key={safe(contact.id) || safe(contact.id_contact)}
                 component={Paper}
                 elevation={6}
                 sx={{
@@ -123,7 +125,7 @@ const ContactsPage = () => {
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-                    {contact.nom_contact ? contact.nom_contact.charAt(0) : ''}{contact.prenom_contact ? contact.prenom_contact.charAt(0) : ''}
+                    {safe(contact.nom_contact).charAt(0)}{safe(contact.prenom_contact).charAt(0)}
                   </Avatar>
                   <Box>
                     <FaEdit
@@ -138,11 +140,11 @@ const ContactsPage = () => {
                 </Box>
                 <CardContent sx={{ textAlign: 'center', mt: 2 }}>
                   <Typography variant="h5" component="div" fontWeight="bold">
-                    {contact.nom_contact} {contact.prenom_contact}
+                    {safe(contact.nom_contact)} {safe(contact.prenom_contact)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    <strong>Téléphone :</strong> {contact.telephone_contact}<br />
-                    <strong>Email :</strong> {contact.email_contact}
+                    <strong>Téléphone :</strong> {safe(contact.telephone_contact)}<br />
+                    <strong>Email :</strong> {safe(contact.email_contact)}
                   </Typography>
                 </CardContent>
               </Box>

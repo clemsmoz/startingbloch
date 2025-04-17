@@ -190,7 +190,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                         value={client.id_client}
                         onChange={(e) => handleDynamicChange(e, index, 'clients')}
                         name="id_client"
-                        required
                       >
                         <MenuItem value="">Sélectionner un client</MenuItem>
                         {clientsList.map((clientOption) => (
@@ -230,7 +229,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                     name="reference_famille"
                     value={formData.reference_famille}
                     onChange={handleChange}
-                    required
                   />
                   <TextField
                     fullWidth
@@ -238,7 +236,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                     name="titre"
                     value={formData.titre}
                     onChange={handleChange}
-                    required
                   />
                   <Box display="flex" justifyContent="space-between">
                     <TextField
@@ -249,7 +246,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                       onChange={handleChange}
                       InputLabelProps={{ shrink: true }}
                       sx={{ flex: 1, mr: 2 }}
-                      required
                     />
                     <TextField
                       fullWidth
@@ -293,7 +289,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
     value={item.nom_fr_fr || ''}
     onChange={(e) => handleDynamicChange(e, index, 'pays')}
     name="nom_fr_fr"
-    required
   >
     <MenuItem value="">Sélectionner un pays</MenuItem>
     {paysList.map((paysItem) => (
@@ -310,7 +305,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                       name="numero_depot"
                       value={item.numero_depot}
                       onChange={(e) => handleDynamicChange(e, index, 'pays')}
-                      required
                     />
                     <TextField
                       fullWidth
@@ -325,7 +319,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                         value={item.id_statuts}
                         onChange={(e) => handleDynamicChange(e, index, 'pays')}
                         name="id_statuts"
-                        required
                       >
                         <MenuItem value="">Sélectionner un statut</MenuItem>
                         {statuts.map((statut) => (
@@ -366,7 +359,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                       name="nom"
                       value={item.nom}
                       onChange={(e) => handleDynamicChange(e, index, 'inventeurs')}
-                      required
                     />
                     <TextField
                       fullWidth
@@ -422,7 +414,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                       name="nom"
                       value={item.nom}
                       onChange={(e) => handleDynamicChange(e, index, 'deposants')}
-                      required
                     />
                     <TextField
                       fullWidth
@@ -478,7 +469,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
                       name="nom"
                       value={item.nom}
                       onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                      required
                     />
                     <TextField
                       fullWidth
@@ -557,7 +547,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
             value={item.id_cabinet || ''}
             onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
             name="id_cabinet"
-            required
           >
             <MenuItem value="">Sélectionner un cabinet</MenuItem>
             {cabinets.procedure.map((cabinet) => (
@@ -573,7 +562,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
           name="reference"
           value={item.reference || ''}
           onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-          required
         />
         <FormControlLabel
           control={
@@ -643,7 +631,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
             value={item.id_cabinet || ''}
             onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
             name="id_cabinet"
-            required
           >
             <MenuItem value="">Sélectionner un cabinet</MenuItem>
             {cabinets.annuite.map((cabinet) => (
@@ -659,7 +646,6 @@ const EditBrevetModal = ({ show, brevetId, handleClose }) => {
           name="reference"
           value={item.reference || ''}
           onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-          required
         />
         <FormControlLabel
           control={

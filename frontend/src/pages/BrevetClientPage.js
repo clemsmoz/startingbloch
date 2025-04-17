@@ -22,6 +22,8 @@ const BrevetClientPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(8); // Nombre d'éléments par page
   const navigate = useNavigate();
 
+  const safe = (val) => val ?? '';
+
   useEffect(() => {
     refreshBrevets();
     fetchClientName();
@@ -199,7 +201,7 @@ const BrevetClientPage = () => {
           {currentBrevets && currentBrevets.length > 0 ? (
             currentBrevets.map(brevet => (
               <Paper
-                key={brevet.id_brevet}
+                key={safe(brevet.id_brevet)}
                 elevation={6}
                 sx={{
                   width: '300px',
@@ -213,10 +215,10 @@ const BrevetClientPage = () => {
                 <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
                   <Box>
                     <Typography variant="h6" component="div" fontWeight="bold">
-                      {brevet.titre}
+                      {safe(brevet.titre)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Référence Famille: {brevet.reference_famille}
+                      Référence Famille: {safe(brevet.reference_famille)}
                     </Typography>
                   </Box>
                 </Box>

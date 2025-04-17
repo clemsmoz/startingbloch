@@ -95,7 +95,6 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
               name="nom"
               value={formData.nom}
               onChange={handleChange}
-              required
               fullWidth
               variant="outlined"
             />
@@ -106,7 +105,6 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
               name="prenom"
               value={formData.prenom}
               onChange={handleChange}
-              required
               fullWidth
               variant="outlined"
             />
@@ -117,7 +115,6 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
               name="fonction"
               value={formData.fonction}
               onChange={handleChange}
-              required
               fullWidth
               variant="outlined"
             />
@@ -129,7 +126,6 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
               type="email"
               value={formData.email}
               onChange={handleChange}
-              required
               fullWidth
               variant="outlined"
             />
@@ -140,7 +136,6 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
               name="telephone"
               value={formData.telephone}
               onChange={handleChange}
-              required
               fullWidth
               variant="outlined"
             />
