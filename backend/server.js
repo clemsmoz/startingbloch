@@ -1,9 +1,10 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu, dialog } = require('electron');
 const express = require('express');
 const cors = require('cors');
 const portfinder = require('portfinder');
 const path = require('path');
 const fs = require('fs');
+const bodyParser = require('body-parser');
 
 console.log("🚀 Démarrage de l'application Electron + Express (tout-en-un)");
 
@@ -13,6 +14,7 @@ console.log("🚀 Démarrage de l'application Electron + Express (tout-en-un)");
 const expressApp = express();
 expressApp.use(cors());
 expressApp.use(express.json());
+expressApp.use(bodyParser.json());
 
 // Charger les routes Express (assurez-vous que le dossier routes existe et est correctement configuré)
 try {
@@ -28,6 +30,23 @@ console.log("📂 __dirname détecté :", __dirname);
 const isPackaged = process.mainModule.filename.indexOf('app.asar') !== -1;
 const basePath = isPackaged ? path.join(process.resourcesPath, 'app') : __dirname;
 
+// nouvelle route pour exporter la base SQLite
+expressApp.get('/api/backup', (req, res) => {
+  let dbPath = path.join(basePath, 'data', 'database.sqlite');
+  const fallback = path.join(basePath, 'database.sqlite');
+  if (!fs.existsSync(dbPath)) {
+    console.warn('DB introuvable dans data/, fallback vers:', fallback);
+    dbPath = fallback;
+  }
+  console.log('Backup DB path:', dbPath);
+  res.download(dbPath, 'database.sqlite', err => {
+    if (err) {
+      console.error('Erreur export DB:', err);
+      return res.status(500).send('Erreur lors du téléchargement de la sauvegarde.');
+    }
+  });
+});
+
 const frontendStaticPath = path.join(basePath, 'frontend', 'build');
 console.log("📂 Chemin utilisé pour le frontend :", frontendStaticPath);
 
@@ -35,7 +54,8 @@ if (fs.existsSync(frontendStaticPath)) {
   console.log("✅ frontend/build trouvé !");
   expressApp.use(express.static(frontendStaticPath));
 
-  expressApp.get('*', (req, res) => {
+  expressApp.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
     const indexPath = path.join(frontendStaticPath, 'index.html');
     console.log(`📌 Requête reçue pour ${req.url}, envoi de ${indexPath}`);
     res.sendFile(indexPath);
@@ -44,6 +64,13 @@ if (fs.existsSync(frontendStaticPath)) {
 } else {
   console.warn("⚠️ Dossier frontend/build non trouvé. Vérifiez que le build du frontend est bien généré.");
 }
+
+
+
+// Gestion des erreurs 404
+expressApp.use((req, res) => {
+  res.status(404).json({ error: 'Route non trouvée' });
+});
 
 // ------------------------------
 // Partie Frontend : Electron
@@ -59,11 +86,28 @@ function createWindow(port) {
     },
   });
 
+  // Gérer les téléchargements (pour .sqlite)
+  win.webContents.session.on('will-download', (event, item) => {
+    const fileName = item.getFilename();
+    const savePath = path.join(app.getPath('downloads'), fileName);
+    item.setSavePath(savePath);
+    item.once('done', (e, state) => {
+      if (state === 'completed') {
+        console.log(`Téléchargement terminé : ${savePath}`);
+      } else {
+        console.error(`Échec du téléchargement : ${state}`);
+      }
+    });
+  });
+
   const startUrl = `http://127.0.0.1:${port}`;
   console.log("🔗 Chargement de l'URL :", startUrl);
   win.loadURL(startUrl)
     .then(() => console.log("✅ URL chargée avec succès :", startUrl))
     .catch(err => console.error("❌ Échec du chargement de l'URL :", err.message));
+
+  // Ouvrir la console de développement par défaut
+  win.webContents.openDevTools({ mode: 'detach' });
 
   // Ajouter des écouteurs d'événements pour les changements de page
   win.webContents.on('did-navigate', (event, url) => {
@@ -91,12 +135,52 @@ app.whenReady().then(() => {
     console.log(`🚀 Démarrage du serveur Express sur le port ${port}...`);
     expressApp.listen(port, () => {
       console.log(`✅ Serveur Express en écoute sur http://127.0.0.1:${port}`);
-      createWindow(port); // Maintenant, on est sûr qu'Electron est prêt
+      createWindow(port);
     }).on('error', (err) => {
       console.error("❌ Erreur lors du démarrage d'Express :", err);
       app.quit();
     });
   });
+
+  // Menu natif "Télécharger la base de données"
+  const template = [
+    {
+      label: 'Fichier',
+      submenu: [
+        {
+          label: 'Télécharger la base de données',
+          click: async () => {
+            // fallback if data/database.sqlite n'existe pas
+            let source = path.join(basePath, 'data', 'database.sqlite');
+            if (!fs.existsSync(source)) {
+              console.warn('DB introuvable dans data/, fallback vers racine');
+              source = path.join(basePath, 'database.sqlite');
+            }
+
+            const { canceled, filePath } = await dialog.showSaveDialog({
+              title: 'Enregistrer la base SQLite',
+              defaultPath: 'database.sqlite'
+            });
+            if (!canceled && filePath) {
+              fs.copyFile(source, filePath, err => {
+                if (err) {
+                  dialog.showErrorBox('Erreur', `Impossible de copier la base : ${err.message}`);
+                } else {
+                  dialog.showMessageBox({
+                    type: 'info',
+                    message: 'Base de données sauvegardée avec succès.'
+                  });
+                }
+              });
+            }
+          }
+        },
+        { type: 'separator' },
+        { role: 'quit', label: 'Quitter' }
+      ]
+    }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 });
 
 // Gestion de la fermeture de l'application

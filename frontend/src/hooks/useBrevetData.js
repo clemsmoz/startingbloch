@@ -383,15 +383,12 @@ const useBrevetData = (brevetId) => {
       
       // Palette de couleurs modernes
       const colors = {
-        primary: [25, 118, 210],    // Bleu principal
-        secondary: [66, 165, 245],  // Bleu secondaire
-        accent: [255, 152, 0],      // Orange
-        success: [76, 175, 80],     // Vert
-        warning: [255, 193, 7],     // Jaune
-        danger: [244, 67, 54],      // Rouge
-        light: [245, 245, 245],     // Gris clair
-        dark: [33, 33, 33],         // Noir texte
-        white: [255, 255, 255]      // Blanc
+        primary:   [25, 118, 210],   // Bleu principal
+        secondary: [25, 118, 210],   // Identique au primary
+        accent:    [25, 118, 210],   // Identique au primary
+        light:     [245, 245, 245],
+        dark:      [33,  33,  33],
+        white:     [255, 255, 255]
       };
       
       // Compteur de pages
@@ -418,73 +415,72 @@ const useBrevetData = (brevetId) => {
         return false;
       };
 
-      // Fonction pour ajouter un titre de section
+      // remplace addSectionTitle
       const addSectionTitle = (title) => {
-        checkNewPage(15);
-        
-        // Fond pour le titre
+        const minSectionHeight = 60;
+        if (y + minSectionHeight > pageHeight - margin) {
+          // ...existing new‑page header...
+          doc.addPage();
+          pageCount++;
+          doc.setFillColor(...colors.primary);
+          doc.rect(0, 0, pageWidth, 12, 'F');
+          doc.setTextColor(...colors.white);
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(8);
+          doc.text(`Brevet: ${brevet.titre || "Sans titre"}`, margin, 8);
+          doc.text(`Page ${pageCount}`, pageWidth - margin, 8, { align: 'right' });
+          y = 20;
+        }
+        // bande claire
+        doc.setFillColor(...colors.light); 
+        doc.rect(margin, y, contentWidth, 14, 'F');
+        // barre colorée
         doc.setFillColor(...colors.primary);
-        doc.rect(margin, y, contentWidth, 10, 'F');
-        
-        // Texte du titre
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...colors.white);
+        doc.rect(margin, y, 4, 14, 'F');
+        // texte du titre
+        doc.setFont('helvetica','bold');
         doc.setFontSize(12);
-        doc.text(title, margin + 5, y + 7);
-        
-        y += 15;
+        doc.setTextColor(...colors.primary);
+        doc.text(title.toUpperCase(), margin + 6, y + 10);
+        y += 18;
       };
 
-      // Fonction pour créer une carte d'information
+      // remplace addInfoCard
       const addInfoCard = (title, data, options = {}) => {
-        const { 
-          width = contentWidth / 2 - 5, 
+        const {
+          width = contentWidth/2 - 5,
           x = margin,
-          bgColor = colors.light,
-          titleBgColor = colors.primary,
           height = 60
         } = options;
-        
-        checkNewPage(height + 5);
-        
-        // Fond de la carte
-        doc.setFillColor(...bgColor);
-        doc.rect(x, y, width, height, 'F');
-        
-        // En-tête de la carte
-        doc.setFillColor(...titleBgColor);
+        checkNewPage(height + 8);
+        // ombre portée
+        doc.setFillColor(0, 0, 0, 0.1);
+        doc.roundedRect(x + 2, y + 2, width, height, 3, 3, 'F');
+        // fond de la carte
+        doc.setFillColor(...colors.white);
+        doc.roundedRect(x, y, width, height, 3, 3, 'F');
+        // entête colorée
+        doc.setFillColor(...colors.primary);
         doc.rect(x, y, width, 8, 'F');
-        
-        // Titre de la carte
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(10);
         doc.setTextColor(...colors.white);
         doc.text(title, x + 5, y + 6);
-        
-        // Contenu de la carte
-        let localY = y + 15;
-        
-        for (const [key, value] of Object.entries(data)) {
-          if (value) {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.setTextColor(...colors.primary);
-            doc.text(`${key}:`, x + 5, localY);
-            
-            const labelWidth = doc.getTextWidth(`${key}:`) + 3;
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(...colors.dark);
-            
-            // Si la valeur est trop longue, la tronquer
-            const maxValueWidth = width - labelWidth - 10;
-            const valueText = doc.splitTextToSize(value.toString(), maxValueWidth);
-            doc.text(valueText, x + 5 + labelWidth, localY);
-            
-            localY += 7 * valueText.length;
-          }
+        // contenu
+        let localY = y + 14;
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(9);
+        for (const [key, val] of Object.entries(data)) {
+          if (!val) continue;
+          doc.setTextColor(...colors.primary);
+          doc.text(`${key}:`, x + 5, localY);
+          const lw = doc.getTextWidth(`${key}:`) + 4;
+          doc.setTextColor(...colors.dark);
+          const lines = doc.splitTextToSize(val.toString(), width - lw - 6);
+          doc.text(lines, x + 5 + lw, localY);
+          localY += 7 * lines.length;
         }
-        
-        y += height + 5;
+        y += height + 8;
       };
 
       // Page de couverture
@@ -630,7 +626,67 @@ const useBrevetData = (brevetId) => {
             }
           }
         }
-        
+
+        // Section Déposants
+        if (deposants && deposants.length > 0) {
+          addSectionTitle("Déposants");
+          for (let i = 0; i < deposants.length; i += 2) {
+            addInfoCard(`Déposant ${i+1}`, {
+              "Nom": deposants[i]?.nom_deposant || deposants[i]?.nom || "N/A",
+              "Email": deposants[i]?.email_deposant || "",
+              "Téléphone": deposants[i]?.telephone_deposant || ""
+            }, {
+              x: margin,
+              width: contentWidth/2 - 5,
+              height: 50,
+              titleBgColor: colors.primary
+            });
+            if (i + 1 < deposants.length) {
+              y -= 55;
+              addInfoCard(`Déposant ${i+2}`, {
+                "Nom": deposants[i+1]?.nom_deposant || deposants[i+1]?.nom || "N/A",
+                "Email": deposants[i+1]?.email_deposant || "",
+                "Téléphone": deposants[i+1]?.telephone_deposant || ""
+              }, {
+                x: margin + contentWidth/2 + 5,
+                width: contentWidth/2 - 5,
+                height: 50,
+                titleBgColor: colors.primary
+              });
+            }
+          }
+        }
+
+        // Section Titulaires
+        if (titulaires && titulaires.length > 0) {
+          addSectionTitle("TITULAIRES");
+          for (let i = 0; i < titulaires.length; i += 2) {
+            addInfoCard(`Titulaire ${i+1}`, {
+              "Nom": titulaires[i]?.nom_titulaire || titulaires[i]?.nom || "N/A",
+              "Email": titulaires[i]?.email_titulaire || "",
+              "Téléphone": titulaires[i]?.telephone_titulaire || ""
+            }, {
+              x: margin,
+              width: contentWidth/2 - 5,
+              height: 50,
+              titleBgColor: colors.secondary
+            });
+            if (i + 1 < titulaires.length) {
+              y -= 55;
+              addInfoCard(`Titulaire ${i+2}`, {
+                "Nom": titulaires[i+1]?.nom_titulaire || titulaires[i+1]?.nom || "N/A",
+                "Email": titulaires[i+1]?.email_titulaire || "",
+                "Téléphone": titulaires[i+1]?.telephone_titulaire || ""
+              }, {
+                x: margin + contentWidth/2 + 5,
+                width: contentWidth/2 - 5,
+                height: 50,
+                titleBgColor: colors.secondary
+              });
+            }
+          }
+        }
+
         // Section Pays
         if (pays && pays.length > 0) {
           addSectionTitle("PAYS ET STATUTS");
@@ -848,7 +904,7 @@ const useBrevetData = (brevetId) => {
       alert(`Erreur lors de la génération du PDF: ${error.message}`);
       return false;
     }
-  }, [brevet, procedureCabinets, annuiteCabinets, clients, inventeurs, pays, statutsList, logo]);
+  }, [brevet, procedureCabinets, annuiteCabinets, clients, inventeurs, deposants, titulaires, pays, statutsList, logo]);
 
   return {
     brevet,

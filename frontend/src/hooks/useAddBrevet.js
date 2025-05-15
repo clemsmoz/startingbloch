@@ -97,22 +97,54 @@ const useAddBrevet = (handleClose) => {
   const [confirmationModal, setConfirmationModal] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [loadingInitialData, setLoadingInitialData] = useState(true);
+  
+  // Add these new state declarations
+  const [newClientName, setNewClientName] = useState('');
+  const [creatingClient, setCreatingClient] = useState(false);
+  const [clientError, setClientError] = useState('');
+  const [clientSuccess, setClientSuccess] = useState('');
 
   useEffect(() => {
+    let loaded = 0;
+    const total = 4; // clients, statuts, pays, cabinets
+
+    const checkLoaded = () => {
+      loaded++;
+      if (loaded >= total) {
+        setLoadingInitialData(false);
+        console.log('[useAddBrevet] Toutes les données initiales sont chargées.');
+      }
+    };
+
     // Clients
     fetch(`${API_BASE_URL}/api/clients`)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        console.log('Clients récupérés :', data);
+        console.log('[useAddBrevet] Clients récupérés :', data);
         setClientsList(safeArray(data.data));
       })
-      .catch(() => setError('Erreur lors de la récupération des clients'));
+      .catch(err => {
+        console.error('[useAddBrevet] Erreur lors de la récupération des clients:', err);
+        setError('Erreur lors de la récupération des clients');
+      })
+      .finally(checkLoaded);
 
     // Statuts
     fetch(`${API_BASE_URL}/api/statuts`)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        console.log('Statuts récupérés :', data);
+        console.log('[useAddBrevet] Statuts récupérés :', data);
         // Adapter le format des statuts pour correspondre à ce qu'attend le composant
         const formattedStatuts = safeArray(data.data).map(statut => ({
           id_statuts: statut.id,
@@ -120,13 +152,22 @@ const useAddBrevet = (handleClose) => {
         }));
         setStatuts(formattedStatuts);
       })
-      .catch(() => setError('Erreur lors de la récupération des statuts'));
+      .catch(err => {
+        console.error('[useAddBrevet] Erreur lors de la récupération des statuts:', err);
+        setError('Erreur lors de la récupération des statuts');
+      })
+      .finally(checkLoaded);
 
     // Pays
     fetch(`${API_BASE_URL}/api/pays`)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        console.log('Pays récupérés :', data);
+        console.log('[useAddBrevet] Pays récupérés :', data);
         if (data.message) {
           console.error(`Erreur API /pays : ${data.message}`);
           setPaysList([]);                           // on vide la liste en cas d’erreur métier
@@ -135,16 +176,22 @@ const useAddBrevet = (handleClose) => {
         }
       })
       .catch(err => {
-        console.error('Erreur réseau lors de la récupération des pays :', err);
+        console.error('[useAddBrevet] Erreur lors de la récupération des pays :', err);
         setError('Erreur lors de la récupération des pays');
         setPaysList([]);                             // fallback
-      });
+      })
+      .finally(checkLoaded);
 
     // Cabinets
     fetch(`${API_BASE_URL}/api/cabinet`)
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        console.log('Cabinets récupérés (brut) :', data);
+        console.log('[useAddBrevet] Cabinets récupérés (brut) :', data);
         const cabinetData = data.data ? data.data : data;
         if (Array.isArray(cabinetData)) {
           setCabinets({
@@ -160,7 +207,11 @@ const useAddBrevet = (handleClose) => {
           });
         }
       })
-      .catch(() => setError('Erreur lors de la récupération des cabinets'));
+      .catch(err => {
+        console.error('[useAddBrevet] Erreur lors de la récupération des cabinets:', err);
+        setError('Erreur lors de la récupération des cabinets');
+      })
+      .finally(checkLoaded);
   }, []);
 
   // Effet pour mettre à jour la liste des pays associés lorsque informations_depot change
@@ -251,42 +302,55 @@ const useAddBrevet = (handleClose) => {
   // Gestion des sous-champs "pays" dans les entités (inventeurs, titulaires, déposants)
   const handleDynamicChangeForSubField = (e, parentIndex, field, subIndex, subField) => {
     const { value, type, checked } = e.target;
-    // Pour "id_pays", on convertit en chaîne
-    let newValue;
+    let newValue = value;
+    
+    // Conversion des valeurs selon le type
     if (type === 'checkbox') {
       newValue = checked ? 1 : 0;
     } else if (subField === 'id_pays') {
+      // Laisser id_pays comme une chaîne pour la cohérence
       newValue = value.toString();
-    } else {
-      newValue = value;
     }
-    const updatedParent = formData[field].map((item, idx) => {
-      if (idx === parentIndex) {
-        const updatedSubArray = item.pays.map((subItem, sIdx) =>
-          sIdx === subIndex ? { ...subItem, [subField]: newValue } : subItem
-        );
-        return { ...item, pays: updatedSubArray };
-      }
-      return item;
+
+    setFormData(prevData => {
+      const updatedData = { ...prevData };
+      const item = { ...updatedData[field][parentIndex] };
+      const updatedSubArray = [...item.pays];
+      
+      // Mettre à jour le pays spécifique
+      updatedSubArray[subIndex] = {
+        ...updatedSubArray[subIndex],
+        [subField]: newValue
+      };
+      
+      // Mettre à jour l'élément parent avec le pays modifié
+      item.pays = updatedSubArray;
+      updatedData[field][parentIndex] = item;
+      
+      console.log(`Modification du pays ${subIndex} du ${field} ${parentIndex}:`, updatedSubArray[subIndex]);
+      return updatedData;
     });
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: updatedParent
-    }));
   };
 
   const handleAddSubField = (parentIndex, field, subField) => {
     const emptySubField = { id_pays: '', licence: false };
-    const updatedParent = formData[field].map((item, idx) => {
-      if (idx === parentIndex) {
-        return { ...item, [subField]: item[subField] ? [...item[subField], emptySubField] : [emptySubField] };
+    setFormData(prevData => {
+      const updatedData = { ...prevData };
+      const item = { ...updatedData[field][parentIndex] };
+      
+      // S'assurer que le tableau pays existe
+      if (!item[subField]) {
+        item[subField] = [];
       }
-      return item;
+      
+      // Ajouter le nouveau pays
+      item[subField] = [...item[subField], emptySubField];
+      // Mettre à jour l'élément parent avec le nouveau pays
+      updatedData[field][parentIndex] = item;
+      
+      console.log(`Ajout d'un pays au ${field} ${parentIndex}:`, item[subField]);
+      return updatedData;
     });
-    setFormData(prevData => ({
-      ...prevData,
-      [field]: updatedParent
-    }));
   };
 
   const handleRemoveSubField = (parentIndex, field, subIndex, subField) => {
@@ -425,10 +489,48 @@ const useAddBrevet = (handleClose) => {
     }
   };
 
+  const handleCreateClient = async () => {
+    if (!newClientName.trim()) {
+      setClientError('Veuillez saisir un nom de client.');
+      setClientSuccess('');
+      return;
+    }
+    setCreatingClient(true);
+    setClientError('');
+    setClientSuccess('');
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || API_BASE_URL}/api/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom_client: newClientName.trim() })
+      });
+
+      if (!res.ok) {
+        throw new Error('Erreur lors de la création du client');
+      }
+
+      // Recharger immédiatement la liste des clients
+      const clientsRes = await fetch(`${API_BASE_URL}/api/clients`);
+      const clientsData = await clientsRes.json();
+      
+      if (clientsData && clientsData.data) {
+        setClientsList(clientsData.data);
+        setClientSuccess('Client créé avec succès !');
+        setNewClientName('');
+      }
+    } catch (e) {
+      setClientError(e.message);
+      setClientSuccess('');
+    } finally {
+      setCreatingClient(false);
+    }
+  };
+
   return {
     formData,
     setFormData,
     clientsList,
+    setClientsList, // <-- Ajouté ici pour permettre la mise à jour depuis AddBrevetModal
     statuts,
     paysList,
     associatedCountries,
@@ -450,7 +552,17 @@ const useAddBrevet = (handleClose) => {
     handleRemoveField,
     handleSubmit,
     fetchContacts,
-    handleCloseConfirmationModal
+    handleCloseConfirmationModal,
+    newClientName,
+    setNewClientName,
+    creatingClient,
+    setCreatingClient,
+    clientError,
+    setClientError,
+    clientSuccess,
+    setClientSuccess,
+    handleCreateClient,
+    loadingInitialData // <-- Ajouté ici
   };
 };
 

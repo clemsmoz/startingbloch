@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import AddBrevetModal from '../components/AddBrevetModal';
 import BrevetDetailModal from '../components/BrevetDetailModal';
@@ -15,6 +15,15 @@ import {
   IconButton,
   Pagination,
   FormControl,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  InputLabel,
+  Checkbox,
+  CircularProgress,
+  TextField as MuiTextField,
+  LinearProgress
 } from '@mui/material';
 import {
   FaEdit,
@@ -107,7 +116,222 @@ const PortefeuilleBrevetPage = () => {
     }, 100);
   };
 
+  // Améliorer handleShowEditModal avec des logs de débogage
+  const handleEditClick = (brevetId) => {
+    console.log('Ouverture du modal modification pour le brevet ID:', brevetId);
+    handleShowEditModal(brevetId);
+    setTimeout(() => {
+      console.log('État après clic sur modification:', {
+        selectedId: selectedBrevetId,
+        modalVisible: showEditModal
+      });
+    }, 100);
+  };
+
   const safe = (val) => val ?? '';
+
+  const fileInputRef = useRef();
+
+  // Pour la sélection des clients lors de l'import Excel
+  const [showClientSelectModal, setShowClientSelectModal] = useState(false);
+  const [excelFileToImport, setExcelFileToImport] = useState(null);
+  const [clientsList, setClientsList] = useState([]);
+  const [selectedClientIds, setSelectedClientIds] = useState([]);
+
+  // Buffer pour l'import Excel
+  const [importLoading, setImportLoading] = useState(false);
+  const [importPhase, setImportPhase] = useState('idle'); // 'idle' | 'upload' | 'processing'
+  const [importPercent, setImportPercent] = useState(0);
+  const [importEstimatedTotal, setImportEstimatedTotal] = useState(0);
+  const [processingElapsed, setProcessingElapsed] = useState(0);
+  const [importStatus, setImportStatus] = useState(null);
+  const [importId, setImportId] = useState(null);
+
+  // Charger la liste des clients au montage (pour la modale)
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/clients`)
+      .then(res => res.json())
+      .then(data => setClientsList(Array.isArray(data.data) ? data.data : []))
+      .catch(() => setClientsList([]));
+  }, []);
+
+  // Handler pour le bouton Excel
+  const handleExcelButtonClick = () => {
+    setShowClientSelectModal(true);
+  };
+
+  // Handler pour la sélection du fichier dans la modale
+  const handleExcelFileChange = (event) => {
+    const file = event.target.files?.[0];
+    setExcelFileToImport(file || null);
+  };
+
+  // Handler pour la sélection des clients dans la modale
+  const handleClientSelectChange = (event) => {
+    setSelectedClientIds(event.target.value);
+  };
+
+  // Handler pour valider l'import Excel avec clients (remplacé par XMLHttpRequest)
+  const handleValidateExcelImport = async () => {
+    if (!excelFileToImport || selectedClientIds.length === 0) {
+      alert('Veuillez sélectionner un fichier Excel et au moins un client.');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', excelFileToImport);
+    formData.append('client_ids', JSON.stringify(selectedClientIds));
+
+    setImportLoading(true);
+    setImportPhase('upload');
+    setProcessingElapsed(0);
+    setImportEstimatedTotal(0);
+    setImportPercent(0);
+    setProcessingElapsed(0);
+    setImportStatus(null);
+    setImportId(null);
+
+    let uploadStart = Date.now();
+    let uploadTimer = setInterval(() => {
+      setProcessingElapsed(Math.floor((Date.now() - uploadStart) / 1000));
+    }, 500);
+
+    const xhr = new window.XMLHttpRequest();
+    xhr.open('POST', `${API_BASE_URL}/api/brevets/import-excel`, true);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = (event.loaded / event.total) * 100;
+        setImportPercent(percent);
+        const elapsed = (Date.now() - uploadStart) / 1000;
+        setProcessingElapsed(Math.round(elapsed));
+        // Estimation dynamique du temps total d'upload
+        if (event.loaded > 0 && elapsed > 0) {
+          const speed = event.loaded / 1024 / 1024 / elapsed; // Mo/s
+          const estimatedTotal = (event.total / 1024 / 1024) / speed;
+          setImportEstimatedTotal(Math.round(estimatedTotal));
+        }
+      }
+    };
+
+    xhr.onload = () => {
+      clearInterval(uploadTimer);
+      setImportPhase('processing');
+      setImportPercent(100);
+      setProcessingElapsed(Math.round((Date.now() - uploadStart) / 1000));
+      // Démarre le timer pour la phase de traitement serveur
+      let processingStart = Date.now();
+      setProcessingElapsed(0);
+      let processingTimer = setInterval(() => {
+        setProcessingElapsed(Math.floor((Date.now() - processingStart) / 1000));
+      }, 500);
+
+      let result = {};
+      try {
+        result = JSON.parse(xhr.responseText);
+      } catch (e) {
+        result = {};
+      }
+
+      // Récupère l'importId pour le polling
+      if (result.importId) {
+        setImportId(result.importId);
+        // Polling sur l'état d'avancement du backend
+        let pollInterval = setInterval(async () => {
+          try {
+            const resp = await fetch(`${API_BASE_URL}/api/brevets/import-status/${result.importId}`);
+            const status = await resp.json();
+            setImportStatus(status);
+            if (status.status === 'done' || status.status === 'error') {
+              clearInterval(pollInterval);
+              clearInterval(processingTimer);
+              setTimeout(() => {
+                setImportLoading(false);
+                setShowClientSelectModal(false);
+                setExcelFileToImport(null);
+                setSelectedClientIds([]);
+                setImportPhase('idle');
+                setProcessingElapsed(0);
+                setImportStatus(null);
+                setImportId(null);
+                if (status.status === 'done') {
+                  alert('Import Excel réussi');
+                  window.location.reload();
+                } else {
+                  alert(status.message || 'Erreur lors de l\'import Excel');
+                }
+              }, 1000);
+            }
+          } catch (err) {
+            // ignore polling errors
+          }
+        }, 1000);
+      } else {
+        // fallback : pas d'importId, on termine comme avant
+        setTimeout(() => {
+          clearInterval(processingTimer);
+          setImportLoading(false);
+          setShowClientSelectModal(false);
+          setExcelFileToImport(null);
+          setSelectedClientIds([]);
+          setImportPhase('idle');
+          setProcessingElapsed(0);
+          setImportStatus(null);
+          setImportId(null);
+          if (xhr.status === 200) {
+            alert(result.message || 'Import Excel réussi');
+            window.location.reload();
+          } else {
+            alert(result.error || 'Erreur lors de l\'import Excel');
+          }
+        }, 500);
+      }
+    };
+
+    xhr.onerror = () => {
+      clearInterval(uploadTimer);
+      setImportLoading(false);
+      setImportPhase('idle');
+      setProcessingElapsed(0);
+      setImportStatus(null);
+      setImportId(null);
+      alert('Erreur lors de l\'import Excel');
+    };
+
+    xhr.send(formData);
+  };
+
+  // Pour la création d'un nouveau client dans la modale Excel
+  const [newClientName, setNewClientName] = useState('');
+  const [creatingClient, setCreatingClient] = useState(false);
+  const [clientError, setClientError] = useState('');
+
+  // Correction : fonction complète pour créer un client à la volée
+  const handleCreateClient = async () => {
+    if (!newClientName.trim()) {
+      setClientError('Veuillez saisir un nom de client.');
+      return;
+    }
+    setCreatingClient(true);
+    setClientError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom_client: newClientName.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du client');
+      if (data && (data.id || data.id_client)) {
+        setClientsList(prev => [...prev, data]);
+        setSelectedClientIds(prev => [...prev, data.id || data.id_client]);
+        setNewClientName('');
+      }
+    } catch (e) {
+      setClientError(e.message);
+    } finally {
+      setCreatingClient(false);
+    }
+  };
 
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
@@ -157,10 +381,156 @@ const PortefeuilleBrevetPage = () => {
           <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
             Ajouter un brevet
           </Button>
+          {/* Bouton pour ajout via Excel */}
+          <Button
+            variant="outlined"
+            color="success"
+            sx={{ ml: 2 }}
+            startIcon={
+              <svg width="20" height="20" viewBox="0 0 20 20" style={{ verticalAlign: 'middle' }}>
+                <rect width="20" height="20" rx="3" fill="#217346"/>
+                <text x="50%" y="60%" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">X</text>
+              </svg>
+            }
+            onClick={handleExcelButtonClick}
+          >
+            Ajouter via Excel
+          </Button>
           <Typography variant="h6" sx={{ ml: 2 }}>
             Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}
           </Typography>
         </Box>
+
+        {/* Modale de sélection des clients et du fichier Excel */}
+        <Dialog open={showClientSelectModal} onClose={() => setShowClientSelectModal(false)} maxWidth="xs" fullWidth>
+          <DialogTitle>Importer des brevets via Excel</DialogTitle>
+          <DialogContent>
+            <Box sx={{ my: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Clients à lier</InputLabel>
+                <Select
+                  multiple
+                  value={selectedClientIds}
+                  onChange={handleClientSelectChange}
+                  renderValue={(selected) =>
+                    clientsList
+                      .filter(c => selected.includes(c.id))
+                      .map(c => c.nom_client)
+                      .join(', ')
+                  }
+                >
+                  {clientsList.map(client => (
+                    <MenuItem key={client.id} value={client.id}>
+                      <Checkbox checked={selectedClientIds.includes(client.id)} />
+                      <Typography>{client.nom_client}</Typography>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {/* Champ pour créer un nouveau client à la volée */}
+              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <MuiTextField
+                  label="Nouveau client"
+                  value={newClientName}
+                  onChange={e => setNewClientName(e.target.value)}
+                  size="small"
+                  fullWidth
+                />
+                <Button
+                  variant="outlined"
+                  color="success"
+                  onClick={handleCreateClient}
+                  disabled={creatingClient}
+                >
+                  {creatingClient ? <CircularProgress size={18} /> : 'Créer'}
+                </Button>
+              </Box>
+              {clientError && (
+                <Typography color="error" sx={{ mt: 1 }}>{clientError}</Typography>
+              )}
+            </Box>
+            <Box sx={{ my: 2 }}>
+              <Button
+                variant="contained"
+                component="label"
+                fullWidth
+              >
+                Sélectionner un fichier Excel
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  hidden
+                  onChange={handleExcelFileChange}
+                />
+              </Button>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {excelFileToImport ? excelFileToImport.name : 'Aucun fichier sélectionné'}
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowClientSelectModal(false)}>Annuler</Button>
+            <Button variant="contained" color="primary" onClick={handleValidateExcelImport} disabled={importLoading}>
+              {importLoading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
+              Importer
+            </Button>
+          </DialogActions>
+        </Dialog>
+        {/* Buffer global pendant l'import Excel avec estimation */}
+        <Dialog open={importLoading} maxWidth="xs" fullWidth>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 6 }}>
+            <CircularProgress size={60} sx={{ mb: 3 }} />
+            <Typography variant="h6">
+              {importPhase === 'upload'
+                ? 'Envoi du fichier Excel...'
+                : 'Traitement serveur en cours...'}
+            </Typography>
+            {importPhase === 'upload' && (
+              <>
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                  Temps écoulé : {processingElapsed} seconde{processingElapsed > 1 ? 's' : ''}
+                </Typography>
+                {importEstimatedTotal > 0 && (
+                  <>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Estimation totale : {importEstimatedTotal} seconde{importEstimatedTotal > 1 ? 's' : ''}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Progression upload : {Math.min(100, Math.round(importPercent))}%
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min(100, importPercent)}
+                      sx={{ width: '100%', mt: 1 }}
+                    />
+                  </>
+                )}
+              </>
+            )}
+            {importPhase === 'processing' && (
+              <>
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                  Temps traitement serveur : {processingElapsed} seconde{processingElapsed > 1 ? 's' : ''}
+                </Typography>
+                {importStatus && (
+                  <>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      {importStatus.message}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Progression serveur : {importStatus.progress || 0}%
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={importStatus.progress || 0}
+                      sx={{ width: '100%', mt: 1 }}
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </Box>
+        </Dialog>
 
         {loading && <Typography>Chargement...</Typography>}
         {error && <Typography color="error">{error}</Typography>}
@@ -202,7 +572,11 @@ const PortefeuilleBrevetPage = () => {
                     >
                       <FaInfoCircle size={24} />
                     </IconButton>
-                    <IconButton color="warning" onClick={() => handleShowEditModal(brevet.id_brevet)}>
+                    <IconButton 
+                      color="warning" 
+                      onClick={() => handleEditClick(brevetId)}   // <-- remplacé ici
+                      aria-label="Modifier"
+                    >
                       <FaEdit size={24} />
                     </IconButton>
                     <IconButton color="error" onClick={() => handleDeleteBrevet(brevet.id_brevet)}>
@@ -230,18 +604,18 @@ const PortefeuilleBrevetPage = () => {
 
         <AddBrevetModal show={showAddModal} handleClose={handleCloseAddModal} />
 
-        {selectedBrevetId ? (
-          <BrevetDetailModal 
-            show={showDetailModal} 
-            handleClose={handleCloseDetailModal} 
-            brevetId={selectedBrevetId} 
-            onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
-          />
-        ) : null}
+        <BrevetDetailModal 
+          show={showDetailModal} 
+          handleClose={handleCloseDetailModal} 
+          brevetId={selectedBrevetId} 
+          onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
+        />
 
-        {selectedBrevetId && (
-          <EditBrevetModal show={showEditModal} handleClose={handleCloseEditModal} brevetId={selectedBrevetId} />
-        )}
+        <EditBrevetModal 
+          show={showEditModal} 
+          handleClose={handleCloseEditModal} 
+          brevetId={selectedBrevetId} 
+        />
 
         <IconButton
           onClick={scrollTop}
@@ -257,6 +631,7 @@ const PortefeuilleBrevetPage = () => {
         >
           <FaArrowUp />
         </IconButton>
+        {/* Close the Container wrapping the whole content */}
       </Container>
     </Box>
   );

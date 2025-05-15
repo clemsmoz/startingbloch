@@ -111,15 +111,15 @@ const usePortefeuilleBrevet = () => {
   const handleShowAddModal = () => setShowAddModal(true);
   const handleCloseAddModal = () => setShowAddModal(false);
 
-  const handleShowDetailModal = (brevetId, event) => {
-    setSelectedBrevetId(brevetId);
+  const handleShowDetailModal = (id) => {
+    setSelectedBrevetId(id);
     setShowDetailModal(true);
   };
 
   const handleCloseDetailModal = () => setShowDetailModal(false);
 
-  const handleShowEditModal = (brevetId, event) => {
-    setSelectedBrevetId(brevetId);
+  const handleShowEditModal = (id) => {
+    setSelectedBrevetId(id);
     setShowEditModal(true);
   };
 

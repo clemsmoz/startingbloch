@@ -25,30 +25,32 @@ const AddClientModal = ({ show, handleClose, refreshClients }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);  // Activation de l'état de chargement
     setError(null);    // Réinitialisation des erreurs
 
-    fetch(`${API_BASE_URL}/api/clients`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-      .then(response => response.json())
-      .then(data => {
-        refreshClients();
-        handleClose();
-      })
-      .catch(error => {
-        setError('Erreur lors de la création du client.'); // Gestion d'erreur simple
-        console.error('There was an error creating the client!', error);
-      })
-      .finally(() => {
-        setLoading(false);  // Désactivation de l'état de chargement
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Client créé avec succès:', data);
+      refreshClients();
+      handleClose();
+    } catch (err) {
+      console.error('Erreur lors de la création du client:', err);
+      setError(`Erreur: ${err.message}`);
+    } finally {
+      setLoading(false);  // Désactivation de l'état de chargement
+    }
   };
 
   return (

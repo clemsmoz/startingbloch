@@ -30,4 +30,15 @@ router.get('/brevets/:id/cabinets', brevetController.getAllCabinetsByBrevetId);
 // Ajouter cette route
 router.get('/last-update', brevetController.getLastUpdate);
 
+// Route pour l'import Excel (à placer AVANT module.exports)
+const multer = require('multer');
+const path = require('path');
+const upload = multer({
+  dest: path.join(__dirname, '../../uploads')
+});
+router.post('/brevets/import-excel', upload.single('file'), brevetController.importFromExcel);
+
+// Nouvelle route de polling pour l'état d'avancement de l'import Excel
+router.get('/brevets/import-status/:importId', brevetController.getImportStatus);
+
 module.exports = router;

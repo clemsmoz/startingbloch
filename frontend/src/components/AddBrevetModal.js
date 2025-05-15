@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Modal,
+  Dialog,
   TextField,
   Button,
   Card,
@@ -19,11 +19,14 @@ import {
 import { FaPlus, FaMinus, FaSave } from 'react-icons/fa';
 import CloseIcon from '@mui/icons-material/Close';
 import useAddBrevet from '../hooks/useAddBrevet';
+import { API_BASE_URL } from '../config'; // <-- Ajouté ici
 
 const AddBrevetModal = ({ show, handleClose }) => {
   const {
     formData,
+    setFormData, // <-- Ajouté ici pour corriger l'erreur
     clientsList,
+    setClientsList, // <-- Ajouté ici
     statuts,
     paysList,
     associatedCountries, // Ajout du nouvel état
@@ -44,19 +47,47 @@ const AddBrevetModal = ({ show, handleClose }) => {
     isError,
     confirmationModal,
     confirmationMessage,
-    handleCloseConfirmationModal
+    handleCloseConfirmationModal,
+    loadingInitialData, // <-- à ajouter dans le hook (voir plus bas)
+    newClientName,        // Ajout de ces props manquantes
+    setNewClientName,     // Ajout de ces props manquantes
+    creatingClient,
+    clientError,
+    clientSuccess,
+    handleCreateClient,
   } = useAddBrevet(handleClose);
 
-  // Fonction d'aide pour déterminer quels pays afficher
-  const getCountriesForSelection = () => {
-    // Si des pays ont été sélectionnés dans les informations de dépôt, on les utilise
-    // Sinon, on affiche tous les pays disponibles
-    return associatedCountries.length > 0 ? associatedCountries : paysList;
+  // Ajouter ces deux fonctions dans le composant
+  const handleClientSelect = (e, index) => {
+    console.log('[AddBrevetModal] Sélection client dans la liste déroulante :', e.target.value);
+    handleDynamicChange(e, index, 'clients');
   };
+
+  // Modifier le getCountriesForSelection existant
+  const getCountriesForSelection = () => {
+    return paysList; // Toujours retourner la liste complète des pays
+  };
+
+  // Ajouter cette fonction pour la gestion des pays multiples
+  const handleAddCountry = (parentIndex, field) => {
+    handleAddSubField(parentIndex, field, 'pays');
+  };
+
+  // Affichage d'une modale de chargement si les données initiales ne sont pas prêtes
+  if (loadingInitialData) {
+    return (
+      <Dialog open={show} fullWidth maxWidth="sm">
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 6 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6">Chargement des données (clients, pays, statuts, cabinets)...</Typography>
+        </Box>
+      </Dialog>
+    );
+  }
 
   return (
     <>
-      <Modal open={show} onClose={handleClose}>
+      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
         <Box
           sx={{
             display: 'flex',
@@ -100,7 +131,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
                       <InputLabel>Client</InputLabel>
                       <Select
                         value={client.id_client || ''}
-                        onChange={(e) => handleDynamicChange(e, index, 'clients')}
+                        onChange={(e) => handleClientSelect(e, index)}
                         name="id_client"
                       >
                         <MenuItem value="">Sélectionner un client</MenuItem>
@@ -129,6 +160,29 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 >
                   <FaPlus /> Ajouter un client
                 </Button>
+                {/* Champ pour créer un nouveau client à la volée */}
+                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <TextField
+                    label="Nouveau client"
+                    value={newClientName}          // Utilisation de la prop
+                    onChange={(e) => setNewClientName(e.target.value)}  // Utilisation du setter
+                    size="small"
+                  />
+                  <Button
+                    variant="outlined"
+                    color="success"
+                    onClick={handleCreateClient}   // Utilisation de la fonction du hook
+                    disabled={creatingClient}
+                  >
+                    {creatingClient ? <CircularProgress size={18} /> : 'Créer ce client'}
+                  </Button>
+                  {clientError && (
+                    <Typography color="error" sx={{ ml: 2 }}>{clientError}</Typography>
+                  )}
+                  {clientSuccess && (
+                    <Typography color="success.main" sx={{ ml: 2 }}>{clientSuccess}</Typography>
+                  )}
+                </Box>
               </Card>
 
               {/* Informations Générales */}
@@ -161,7 +215,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
                     <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
                       <FormControl fullWidth>
                         <InputLabel>Pays</InputLabel>
-                        <Select
+                        <Select   
                           value={typeof info?.id_pays !== 'undefined' ? String(info.id_pays) : ''}
                           onChange={(e) => handleDynamicChange(e, index, 'informations_depot')}
                           name="id_pays"
@@ -894,28 +948,18 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 variant="contained"
                 color="primary"
                 type="submit"
-                fullWidth
-                disabled={loading}
-                onClick={(e) => {
-                  // Vérification minimale : au moins un champ essentiel doit être rempli
-                  if (!formData.reference_famille && !formData.titre && 
-                      (!formData.informations_depot || formData.informations_depot.length === 0)) {
-                    e.preventDefault();
-                    alert('Erreur: Veuillez renseigner au moins un champ pour créer le brevet (référence ou titre).');
-                    return false;
-                  }
-                }}
                 startIcon={loading ? <CircularProgress size={20} /> : <FaSave />}
+                disabled={loading}
               >
                 {loading ? 'En cours...' : 'Ajouter'}
               </Button>
             </form>
           </Card>
         </Box>
-      </Modal>
+      </Dialog>
 
       {/* Modal de confirmation */}
-      <Modal open={confirmationModal} onClose={handleCloseConfirmationModal}>
+      <Dialog open={confirmationModal} onClose={handleCloseConfirmationModal} fullWidth maxWidth="xs">
         <Box
           sx={{
             display: 'flex',
@@ -939,7 +983,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
             </Button>
           </Card>
         </Box>
-      </Modal>
+      </Dialog>
     </>
   );
 };

@@ -1,9 +1,29 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config'; // Importation du fichier de configuration
-// utilitaire
-const safeArray = arr => Array.isArray(arr) ? arr : [];
+import useBrevetData from './useBrevetData';
+import { API_BASE_URL } from '../config';
 
-const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
+const safeArray = arr => Array.isArray(arr) ? arr : [];
+const safeStr = v => (v == null ? '' : String(v));
+
+const useBrevetFormModif = (brevetId, handleClose, refreshBrevets) => {
+  // 1) données brutes + loading/error
+  const {
+    brevet,
+    clients,
+    inventeurs,
+    deposants,
+    titulaires,
+    pays,
+    procedureCabinets,
+    annuiteCabinets,
+    contactsProcedure,
+    contactsAnnuite,
+    statutsList,
+    loading,
+    error
+  } = useBrevetData(brevetId);
+
+  // 2) state du formulaire
   const [formData, setFormData] = useState({
     reference_famille: '',
     titre: '',
@@ -12,238 +32,196 @@ const useBrevetFormModif = (brevetId, brevet, handleClose, refreshBrevets) => {
     date_delivrance: '',
     licence: false,
     id_statut: '',
-    pays: [{ id_pays: '', numero_depot: '', numero_publication: '' }],
-    inventeurs: [{ nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' }],
-    titulaires: [{ nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false }],
-    deposants: [{ nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' }],
-    cabinets_procedure: [{ id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' }],
-    cabinets_annuite: [{ id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }],
-    commentaire: '',
-    piece_jointe: null,
-    clients: [{ id_client: '' }]
+    clients: [],
+    infos_depot: [],
+    inventeurs: [],
+    deposants: [],
+    titulaires: [],
+    cabinets_procedure: [],
+    cabinets_annuite: [],
+    commentaire: ''
+
+
   });
 
-  const [clients, setClients] = useState([]);
-  const [statuts, setStatuts] = useState([]);
-  const [paysList, setPaysList] = useState([]);
-  const [cabinets, setCabinets] = useState({ procedure: [], annuite: [] });
-
+  // 3) mapping dès que les données sont chargées
   useEffect(() => {
-    if (brevetId) {
-      // Récupérer les données du brevet avec relations
-      fetch(`${API_BASE_URL}/api/brevets/${brevetId}/with-relations`)
-        .then(response => response.json())
-        .then(data => {
-          const brevetData = data.data;
-          console.log("Données complètes du brevet récupérées:", brevetData);
-          
-          // Construire un objet de formulaire à partir des données récupérées
-          const formattedData = {
-            reference_famille: brevetData.reference_famille || '',
-            titre: brevetData.titre || '',
-            date_depot: brevetData.date_depot ? new Date(brevetData.date_depot).toISOString().split('T')[0] : '',
-            numero_delivrance: brevetData.numero_delivrance || '',
-            date_delivrance: brevetData.date_delivrance ? new Date(brevetData.date_delivrance).toISOString().split('T')[0] : '',
-            licence: brevetData.licence || false,
-            id_statut: brevetData.id_statut || '',
-            
-            // Traitement des données de pays
-            pays: safeArray(brevetData.NumeroPays).map(p => ({
-              id_pays: p.id_pays || '',
-              numero_depot: p.numero_depot || '',
-              numero_publication: p.numero_publication || '',
-              id_statuts: p.id_statuts || '',
-              date_depot: p.date_depot ? new Date(p.date_depot).toISOString().split('T')[0] : '',
-              date_delivrance: p.date_delivrance ? new Date(p.date_delivrance).toISOString().split('T')[0] : '',
-              numero_delivrance: p.numero_delivrance || '',
-              licence: p.licence || false
-            })),
-              
-            // Traitement des inventeurs
-            inventeurs: safeArray(brevetData.Inventeurs).map(i => ({
-              nom_inventeur: i.nom_inventeur || '',
-              prenom_inventeur: i.prenom_inventeur || '',
-              email_inventeur: i.email_inventeur || '',
-              telephone_inventeur: i.telephone_inventeur || ''
-            })),
-              
-            // Traitement des titulaires
-            titulaires: safeArray(brevetData.Titulaires).map(t => ({
-              nom_titulaire: t.nom_titulaire || '',
-              prenom_titulaire: t.prenom_titulaire || '',
-              email_titulaire: t.email_titulaire || '',
-              telephone_titulaire: t.telephone_titulaire || '',
-              part_pi: t.part_pi || '',
-              executant: t.executant || false,
-              client_correspondant: t.client_correspondant || false
-            })),
-                
-            // Traitement des déposants
-            deposants: safeArray(brevetData.Deposants).map(d => ({
-              nom_deposant: d.nom_deposant || '',
-              prenom_deposant: d.prenom_deposant || '',
-              email_deposant: d.email_deposant || '',
-              telephone_deposant: d.telephone_deposant || ''
-            })),
-                
-            // Traitement des cabinets de procédure
-            cabinets_procedure: safeArray(brevetData.Cabinets)
-              .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'procedure')
-              .map(c => ({
-                id_cabinet_procedure: c.id || '',
-                reference: c.BrevetCabinets?.reference || '',
-                dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
-                id_contact_procedure: c.BrevetCabinets?.contact_id || ''
-              })),
-                
-            // Traitement des cabinets d'annuité
-            cabinets_annuite: safeArray(brevetData.Cabinets)
-              .filter(c => c.BrevetCabinets && c.BrevetCabinets.type === 'annuite')
-              .map(c => ({
-                id_cabinet_annuite: c.id || '',
-                reference: c.BrevetCabinets?.reference || '',
-                dernier_intervenant: c.BrevetCabinets?.dernier_intervenant || false,
-                id_contact_annuite: c.BrevetCabinets?.contact_id || ''
-              })),
-                
-            commentaire: brevetData.commentaire || '',
-            piece_jointe: null,
-            clients: safeArray(brevetData.Clients).map(c => ({ id_client: c.id || '' }))
-          };
-          
-          console.log("Données formatées pour le formulaire:", formattedData);
-          setFormData(formattedData);
-        })
-        .catch(error => console.error('Erreur lors du chargement des données du brevet:', error));
-    }
+    if (!brevet) return;
+    setFormData({
+      reference_famille: safeStr(brevet.reference_famille),
+      titre: safeStr(brevet.titre),
+      date_depot: safeStr(brevet.date_depot).split('T')[0],
+      numero_delivrance: safeStr(brevet.numero_delivrance),
+      date_delivrance: safeStr(brevet.date_delivrance).split('T')[0],
+      licence: Boolean(brevet.licence),
+      id_statut: safeStr(brevet.id_statut),
+      clients: safeArray(clients).map(c=>({ id_client: safeStr(c.id_client||c.id) })),
+      infos_depot: safeArray(pays).map(p=>({
+        id_pays: safeStr(p.id_pays||p.Pay?.id),
+        numero_depot: safeStr(p.numero_depot),
+        numero_publication: safeStr(p.numero_publication),
+        date_depot: safeStr(p.date_depot).split('T')[0],
+        date_publication: safeStr(p.date_publication).split('T')[0],
+        date_delivrance: safeStr(p.date_delivrance).split('T')[0],
+        id_statuts: safeStr(p.id_statuts),
+        licence: Boolean(p.licence)
+      })),
+      inventeurs: safeArray(inventeurs).map(i=>({
+        nom_inventeur: safeStr(i.nom_inventeur||i.nom),
+        prenom_inventeur: safeStr(i.prenom_inventeur||i.prenom),
+        email_inventeur: safeStr(i.email_inventeur||i.email),
+        telephone_inventeur: safeStr(i.telephone_inventeur||i.telephone)
+      })),
+      deposants: safeArray(deposants).map(d=>({
+        nom_deposant: safeStr(d.nom_deposant||d.nom),
+        prenom_deposant: safeStr(d.prenom_deposant||d.prenom),
+        email_deposant: safeStr(d.email_deposant||d.email),
+        telephone_deposant: safeStr(d.telephone_deposant||d.telephone)
+      })),
+      titulaires: safeArray(titulaires).map(t=>({
+        nom_titulaire: safeStr(t.nom_titulaire||t.nom),
+        prenom_titulaire: safeStr(t.prenom_titulaire||t.prenom),
+        email_titulaire: safeStr(t.email_titulaire||t.email),
+        telephone_titulaire: safeStr(t.telephone_titulaire||t.telephone),
+        executant: Boolean(t.executant),
+        client_correspondant: Boolean(t.client_correspondant)
+      })),
+      cabinets_procedure: safeArray(procedureCabinets).map(c=>({
+        id_cabinet: safeStr(c.id),
+        reference: safeStr(c.reference),
+        dernier_intervenant: Boolean(c.dernier_intervenant),
+        id_contact: safeStr(c.contact_id),
+        pays: []
+      })),
+      cabinets_annuite: safeArray(annuiteCabinets).map(c=>({
+        id_cabinet: safeStr(c.id),
+        reference: safeStr(c.reference),
+        dernier_intervenant: Boolean(c.dernier_intervenant),
+        id_contact: safeStr(c.contact_id),
+        pays: []
+      })),
+      commentaire: safeStr(brevet.commentaire)
+    });
+  }, [brevet, clients, inventeurs, deposants, titulaires, pays, procedureCabinets, annuiteCabinets]);
 
-    // Récupération des données de référence (clients, statuts, pays, cabinets)
-    fetch(`${API_BASE_URL}/api/clients`)
-      .then(response => response.json())
-      .then(data => setClients(safeArray(data.data)))
-      .catch(error => console.error('Erreur lors de la récupération des clients:', error));
-
-    fetch(`${API_BASE_URL}/api/statuts`)
-      .then(response => response.json())
-      .then(data => setStatuts(safeArray(data.data)))
-      .catch(error => console.error('Erreur lors de la récupération des statuts:', error));
-
-    fetch(`${API_BASE_URL}/api/pays`)
-      .then(response => response.json())
-      .then(data => setPaysList(safeArray(data.data)))
-      .catch(error => console.error('Erreur lors de la récupération des pays:', error));
-
-    fetch(`${API_BASE_URL}/api/cabinets`)
-      .then(response => response.json())
-      .then(data => {
-        setCabinets({
-          procedure: safeArray(data.procedure),
-          annuite: safeArray(data.annuite)
-        });
-      })
-      .catch(error => console.error('Erreur lors de la récupération des cabinets:', error));
-  }, [brevetId, API_BASE_URL]);
-
-  const handleChange = (e) => {
+  // 4) handlers
+  const handleChange = e => {
     const { name, value, type, checked } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: type === 'checkbox' ? checked : value
+    setFormData(fd=>({
+      ...fd,
+      [name]: type==='checkbox' ? checked : value
     }));
   };
 
-  const handleDynamicChange = (e, index, field) => {
+  const handleDynamicChange = (e, idx, field) => {
     const { name, value, type, checked } = e.target;
-    const newValue = type === 'checkbox' ? (checked ? 1 : 0) : value;
-
-    if (Array.isArray(formData[field])) {
-      const updatedFields = formData[field].map((item, idx) => (
-        idx === index ? { ...item, [name]: newValue } : item
-      ));
-
-      setFormData(prevData => ({
-        ...prevData,
-        [field]: updatedFields
-      }));
-    }
+    setFormData(fd=>({
+      ...fd,
+      [field]: fd[field].map((it,i)=> i===idx
+        ? { ...it, [name]: type==='checkbox'? checked: value }
+        : it
+      )
+    }));
   };
 
-  const handleAddField = (field) => {
-    const emptyField = {
-      pays: { id_pays: '', numero_depot: '', numero_publication: '' },
-      inventeurs: { nom_inventeur: '', prenom_inventeur: '', email_inventeur: '', telephone_inventeur: '' },
-      titulaires: { nom_titulaire: '', prenom_titulaire: '', email_titulaire: '', telephone_titulaire: '', part_pi: '', executant: false, client_correspondant: false },
-      deposants: { nom_deposant: '', prenom_deposant: '', email_deposant: '', telephone_deposant: '' },
-      cabinets_procedure: { id_cabinet_procedure: '', reference: '', dernier_intervenant: false, id_contact_procedure: '' },
-      cabinets_annuite: { id_cabinet_annuite: '', reference: '', dernier_intervenant: false, id_contact_annuite: '' }
+  const handleDynamicChangeForSubField = (e, idx, field, subIdx, subField) => {
+    const { value, checked, type, name } = e.target;
+    setFormData(fd=>({
+      ...fd,
+      [field]: fd[field].map((it,i)=> i===idx
+        ? { ...it, [subField]: it[subField].map((sub,j)=> j===subIdx
+            ? { ...sub, [name]: type==='checkbox'? checked: value }
+            : sub
+          )
+        }
+        : it
+      )
+    }));
+  };
+
+  const handleAddField = field => {
+    const empty = {
+      clients: { id_client: '' },
+      infos_depot: { id_pays:'',numero_depot:'',numero_publication:'',date_depot:'',date_publication:'',date_delivrance:'',id_statuts:'',licence:false },
+      inventeurs: { nom_inventeur:'',prenom_inventeur:'',email_inventeur:'',telephone_inventeur:'' },
+      deposants: { nom_deposant:'',prenom_deposant:'',email_deposant:'',telephone_deposant:'' },
+      titulaires: { nom_titulaire:'',prenom_titulaire:'',email_titulaire:'',telephone_titulaire:'',executant:false,client_correspondant:false },
+      cabinets_procedure: { id_cabinet:'',reference:'',dernier_intervenant:false,id_contact:'',pays:[] },
+      cabinets_annuite: { id_cabinet:'',reference:'',dernier_intervenant:false,id_contact:'',pays:[] }
     }[field];
-
-    if (Array.isArray(formData[field])) {
-      setFormData(prevData => ({
-        ...prevData,
-        [field]: [...prevData[field], emptyField]
-      }));
-    }
+    setFormData(fd=>({
+      ...fd,
+      [field]: [...fd[field], empty]
+    }));
   };
 
-  const handleRemoveField = (index, field) => {
-    if (Array.isArray(formData[field])) {
-      const updatedFields = formData[field].filter((_, idx) => idx !== index);
-      setFormData(prevData => ({
-        ...prevData,
-        [field]: updatedFields
-      }));
-    }
+  const handleRemoveField = (idx, field) => {
+    setFormData(fd=>({
+      ...fd,
+      [field]: fd[field].filter((_,i)=>i!==idx)
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleAddSubField = (idx, field, subField) => {
+    setFormData(fd=>({
+      ...fd,
+      [field]: fd[field].map((it,i)=> i===idx
+        ? { ...it, [subField]: [...(it[subField]||[]), { id_pays:'', licence:false }] }
+        : it
+      )
+    }));
+  };
+
+  const handleRemoveSubField = (idx, field, subIdx, subField) => {
+    setFormData(fd=>({
+      ...fd,
+      [field]: fd[field].map((it,i)=> i===idx
+        ? { ...it, [subField]: it[subField].filter((_,j)=>j!==subIdx) }
+        : it
+      )
+    }));
+  };
+
+  const fetchContactsHandler = (cabId, type) => {
+    // attribut aux state internes si besoin…
+    // ou réexposer le fetch pour le composant
+  };
+
+  const getCountriesForSelection = () =>
+    safeArray(formData.infos_depot).map(x=>x.id_pays)
+      .length ? formData.infos_depot.map(x=>x.id_pays) : safeArray(pays).map(p=>p.id_pays);
+
+  const handleSubmit = e => {
     e.preventDefault();
-
-    const dataToSubmit = new FormData();
-    dataToSubmit.append('reference_famille', formData.reference_famille);
-    dataToSubmit.append('titre', formData.titre);
-    dataToSubmit.append('date_depot', formData.date_depot);
-    dataToSubmit.append('numero_delivrance', formData.numero_delivrance);
-    dataToSubmit.append('date_delivrance', formData.date_delivrance);
-    dataToSubmit.append('licence', formData.licence ? 1 : 0);
-    dataToSubmit.append('id_statut', formData.id_statut);
-    dataToSubmit.append('commentaire', formData.commentaire);
-    dataToSubmit.append('clients', JSON.stringify(formData.clients));
-    dataToSubmit.append('pays', JSON.stringify(formData.pays));
-    dataToSubmit.append('inventeurs', JSON.stringify(formData.inventeurs));
-    dataToSubmit.append('titulaires', JSON.stringify(formData.titulaires));
-    dataToSubmit.append('deposants', JSON.stringify(formData.deposants));
-    dataToSubmit.append('cabinets_procedure', JSON.stringify(formData.cabinets_procedure));
-    dataToSubmit.append('cabinets_annuite', JSON.stringify(formData.cabinets_annuite));
-
-    if (formData.piece_jointe) {
-      dataToSubmit.append('piece_jointe', formData.piece_jointe);
-    }
-
-    fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
-      method: 'PUT',
-      body: dataToSubmit,
-    })
-      .then(() => {
-        refreshBrevets();
-        handleClose();
-      })
-      .catch(error => {
-        console.error('Erreur lors de la mise à jour du brevet:', error);
-      });
+    const fd = new FormData();
+    Object.entries(formData).forEach(([k,v])=>{
+      if (Array.isArray(v)|| typeof v==='object') fd.append(k, JSON.stringify(v));
+      else fd.append(k, v);
+    });
+    fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, { method:'PUT', body: fd })
+      .then(()=> { refreshBrevets?.(); handleClose(); })
+      .catch(console.error);
   };
 
   return {
     formData,
-    setFormData,
+    loading,
+    error,
     clients,
-    statuts,
-    paysList,
-    cabinets,
+    statuts: statutsList,
+    paysList: pays,
+    cabinets: { procedure: procedureCabinets, annuite: annuiteCabinets },
+    contactsProcedure,
+    contactsAnnuite,
     handleChange,
     handleDynamicChange,
+    handleDynamicChangeForSubField,
     handleAddField,
     handleRemoveField,
+    handleAddSubField,
+    handleRemoveSubField,
+    fetchContacts: fetchContactsHandler,
+    getCountriesForSelection,
     handleSubmit
   };
 };

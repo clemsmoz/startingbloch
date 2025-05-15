@@ -5,7 +5,7 @@ import { Modal as BootstrapModal, Button as BootstrapButton, Container } from 'r
 import Flag from 'react-world-flags';
 
 import { 
-  Modal, Box, Typography, IconButton, Button, Card, CardContent, CardHeader,
+  Dialog, Box, Typography, IconButton, Button, Card, CardContent, CardHeader,
   Grid, Divider, Chip, List, ListItem, ListItemText, Paper, Avatar, Fade, 
   useTheme, alpha, ListItemAvatar
 } from '@mui/material';
@@ -313,9 +313,13 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
   }, [brevet]);
 
   // Si les conditions ne sont pas remplies, retourner null mais APRÈS avoir appelé tous les hooks
-  if (!shouldRender) {
-    console.log("BrevetDetailModal: Modal non affichée ou brevet non défini", { show, brevetId });
-    return null;
+  if (!brevet) {
+    // on affiche un loader le temps de récupérer les données
+    return (
+      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
+        {/* ...chargement... */}
+      </Dialog>
+    );
   }
 
   // Si en cours de chargement, afficher un message
@@ -384,7 +388,7 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
   // Contenu principal si tout est bien chargé
   return (
     <>
-      <BootstrapModal show={show} onHide={handleClose} fullscreen>
+      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
         <BootstrapModal.Header closeButton style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', padding: '16px 24px' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <Typography variant="h5" sx={{ fontWeight: 600, color: '#1976d2', fontFamily: '"Poppins", "Roboto", sans-serif' }}>
@@ -1347,10 +1351,10 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
             Fermer
           </BootstrapButton>
         </BootstrapModal.Footer>
-      </BootstrapModal>
+      </Dialog>
 
       {/* Modal pour les détails des entités - Style amélioré */}
-      <Modal
+      <Dialog
         open={openEntityModal}
         onClose={handleCloseEntityModal}
         closeAfterTransition
@@ -1485,7 +1489,7 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
             )}
           </Box>
         </Fade>
-      </Modal>
+      </Dialog>
     </>
   );
 };

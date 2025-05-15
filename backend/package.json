@@ -1,6 +1,6 @@
 {
   "name": "startingbloch",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Votre description de l'application",
   "author": "Votre nom",
   "main": "server.js",
@@ -27,7 +27,8 @@
     "promise": "^8.3.0",
     "qs": "^6.13.0",
     "sequelize": "^6.37.5",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.0.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "electron": "^24.8.8",

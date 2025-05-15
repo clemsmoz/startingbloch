@@ -50,11 +50,14 @@ module.exports = (sequelize, DataTypes) => {
       unique: false // Désactiver l'unicité
     });
     
+    // Modifier la relation avec Cabinet pour désactiver l'unicité
     Brevet.belongsToMany(models.Cabinet, { 
-      through: 'BrevetCabinets',
+      through: {
+        model: 'BrevetCabinets',
+        unique: false // Désactiver l'unicité ici
+      },
       foreignKey: 'BrevetId',
-      otherKey: 'CabinetId',
-      unique: false // Désactiver l'unicité explicitement
+      otherKey: 'CabinetId'
     });
     
     // Modifier cette relation pour permettre plusieurs pays par brevet
