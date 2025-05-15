@@ -839,15 +839,18 @@ importFromExcel: async (req, res) => {
     if (!rows.length) throw new Error('Excel vide.');
 
     const headers = Object.keys(rows[0]);
+    console.log('[IMPORT EXCEL] Colonnes Excel détectées :', headers);
     // Mapping explicite des colonnes utiles
     const excelMapping = {
       reference_famille: headers.find(h => h.trim().toLowerCase() === "référence famille"),
       titre: headers.find(h => h.trim().toLowerCase() === "titre"),
       pays_depot: headers.find(h => h.trim().toLowerCase().startsWith("pays")),
-      cabinet_procedure: headers.find(h => h.trim().toLowerCase().includes("cabinet procedure") || h.trim().toLowerCase().includes("cabinet procédures")), // Ajout du mapping sans accent
-      cabinet_annuite: headers.find(h => h.trim().toLowerCase().includes("cabinet annuite") || h.trim().toLowerCase().includes("cabinet annuités")), // Ajout du mapping sans accent
-      contact_procedure: headers.find(h => h.trim().toLowerCase().includes("contact procéd") || h.trim().toLowerCase().includes("contact proced")), // Plus flexible
-      contact_annuite: headers.find(h => h.trim().toLowerCase().includes("contact annuit")), // Plus flexible
+      cabinet_procedure: headers.find(h => h.trim().toLowerCase().includes("cabinet procédures") || h.trim().toLowerCase().includes("cabinet procedure")),
+      cabinet_annuite: headers.find(h => h.trim().toLowerCase().includes("cabinet annuités") || h.trim().toLowerCase().includes("cabinet annuite")),
+      contact_procedure: headers.find(h => h.trim().toLowerCase() === "contact email cpi"),
+      contact_annuite: headers.find(h => h.trim().toLowerCase() === "contact email"),
+      // Ajout du mapping pour les titulaires
+      titulaire: headers.find(h => h.trim().toLowerCase() === "titulaire"),
       statut: headers.find(h => h.trim().toLowerCase() === "statut"),
       numero_publication: headers.find(h => h.trim().toLowerCase() === "numéro de publication"),
       date_depot: headers.find(h => h.trim().toLowerCase() === "date de dépôt"),
@@ -1046,7 +1049,6 @@ importFromExcel: async (req, res) => {
         if (excelMapping.cabinet_procedure && row[excelMapping.cabinet_procedure]) {
           const cabinetName = row[excelMapping.cabinet_procedure].toString().trim();
           console.log(`[IMPORT EXCEL] Traitement cabinet procédure: "${cabinetName}" pour refFam="${refFam}"`);
-          // ...existing code...
           if (cabinetName.toLowerCase() !== 'aucune' && cabinetName !== '') {
             let cabinet = await Cabinet.findOne({
               where: sequelize.where(
@@ -1064,28 +1066,37 @@ importFromExcel: async (req, res) => {
               }, { transaction: tnx });
             }
 
-            // Gestion du contact procédure
+            // --- Correction : gestion contact procédure ---
             let contactId = null;
             if (excelMapping.contact_procedure && row[excelMapping.contact_procedure]) {
               const contactInfo = row[excelMapping.contact_procedure].toString().trim();
-              console.log(`Traitement contact procédure: "${contactInfo}"`);
-              
+              console.log(`[IMPORT EXCEL] Traitement contact procédure: "${contactInfo}"`);
               if (contactInfo.toLowerCase() !== 'aucune' && contactInfo !== '') {
-                let contact = await Contact.findOne({
-                  where: {
-                    [Op.or]: [
-                      { email_contact: contactInfo },
-                      { nom_contact: contactInfo }
-                    ],
-                    cabinet_id: cabinet.id
-                  },
-                  transaction: tnx
-                });
-
+                const { nom, prenom, email } = parseContactField(contactInfo);
+                let contact = null;
+                if (email) {
+                  contact = await Contact.findOne({
+                    where: { email_contact: email, cabinet_id: cabinet.id },
+                    transaction: tnx
+                  });
+                }
+                if (!contact && nom) {
+                  // Recherche par nom/prénom/cabinet uniquement si nom existe
+                  contact = await Contact.findOne({
+                    where: {
+                      nom_contact: nom,
+                      prenom_contact: prenom,
+                      cabinet_id: cabinet.id
+                    },
+                    transaction: tnx
+                  });
+                }
                 if (!contact) {
-                  console.log(`Création nouveau contact procédure pour cabinet ${cabinet.id}`);
+                  // Création du contact uniquement s'il n'existe pas déjà
                   contact = await Contact.create({
-                    nom_contact: contactInfo,
+                    nom_contact: nom,
+                    prenom_contact: prenom,
+                    email_contact: email,
                     cabinet_id: cabinet.id
                   }, { transaction: tnx });
                 }
@@ -1118,7 +1129,6 @@ importFromExcel: async (req, res) => {
         if (excelMapping.cabinet_annuite && row[excelMapping.cabinet_annuite]) {
           const cabinetName = row[excelMapping.cabinet_annuite].toString().trim();
           console.log(`[IMPORT EXCEL] Traitement cabinet annuité: "${cabinetName}" pour refFam="${refFam}"`);
-          // ...existing code...
           if (cabinetName.toLowerCase() !== 'aucune' && cabinetName !== '') {
             let cabinet = await Cabinet.findOne({
               where: sequelize.where(
@@ -1136,28 +1146,35 @@ importFromExcel: async (req, res) => {
               }, { transaction: tnx });
             }
 
-            // Gestion du contact annuité
+            // --- Correction : gestion contact annuité ---
             let contactId = null;
             if (excelMapping.contact_annuite && row[excelMapping.contact_annuite]) {
               const contactInfo = row[excelMapping.contact_annuite].toString().trim();
-              console.log(`Traitement contact annuité: "${contactInfo}"`);
-              
+              console.log(`[IMPORT EXCEL] Traitement contact annuité: "${contactInfo}"`);
               if (contactInfo.toLowerCase() !== 'aucune' && contactInfo !== '') {
-                let contact = await Contact.findOne({
-                  where: {
-                    [Op.or]: [
-                      { email_contact: contactInfo },
-                      { nom_contact: contactInfo }
-                    ],
-                    cabinet_id: cabinet.id
-                  },
-                  transaction: tnx
-                });
-
+                const { nom, prenom, email } = parseContactField(contactInfo);
+                let contact = null;
+                if (email) {
+                  contact = await Contact.findOne({
+                    where: { email_contact: email, cabinet_id: cabinet.id },
+                    transaction: tnx
+                  });
+                }
+                if (!contact && nom) {
+                  contact = await Contact.findOne({
+                    where: {
+                      nom_contact: nom,
+                      prenom_contact: prenom,
+                      cabinet_id: cabinet.id
+                    },
+                    transaction: tnx
+                  });
+                }
                 if (!contact) {
-                  console.log(`Création nouveau contact annuité pour cabinet ${cabinet.id}`);
                   contact = await Contact.create({
-                    nom_contact: contactInfo,
+                    nom_contact: nom,
+                    prenom_contact: prenom,
+                    email_contact: email,
                     cabinet_id: cabinet.id
                   }, { transaction: tnx });
                 }
