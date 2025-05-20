@@ -1,3 +1,9 @@
+// Fonctions utilitaires pour les logs colorés et avec icônes
+const logInfo = (...args) => console.log('\x1b[36m%s\x1b[0m', 'ℹ️', ...args);      // Cyan
+const logSuccess = (...args) => console.log('\x1b[32m%s\x1b[0m', '✅', ...args);   // Vert
+const logWarn = (...args) => console.warn('\x1b[33m%s\x1b[0m', '⚠️', ...args);     // Jaune
+const logError = (...args) => console.error('\x1b[31m%s\x1b[0m', '❌', ...args);   // Rouge
+
 const db = require('../models');
 const Pays = db.Pays;
 const Op = db.Sequelize.Op;
@@ -20,8 +26,10 @@ const PaysController = {
 
     try {
       const data = await Pays.create(pays);
+      logSuccess('Nouveau pays créé:', data.id);
       return res.status(201).json(data);
     } catch (err) {
+      logError('Erreur création pays:', err);
       return res.status(500).json({ message: err.message || "Une erreur est survenue lors de la création du pays." });
     }
   },
@@ -37,8 +45,10 @@ const PaysController = {
           { model: db.NumeroPays }
         ]
       });
+      logSuccess('Liste des pays récupérée');
       return res.status(200).json({ data });
     } catch (err) {
+      logError('Erreur récupération pays:', err);
       return res.status(500).json({ message: err.message || "Une erreur est survenue lors de la récupération des pays." });
     }
   },
@@ -53,10 +63,13 @@ const PaysController = {
         ]
       });
       if (!data) {
+        logWarn(`Impossible de trouver le pays avec id=${id}.`);
         return res.status(404).json({ message: `Impossible de trouver le pays avec id=${id}.` });
       }
+      logSuccess('Pays trouvé:', id);
       return res.status(200).json(data);
     } catch (err) {
+      logError('Erreur récupération pays par ID:', err);
       return res.status(500).json({ message: "Erreur lors de la récupération du pays avec id=" + id });
     }
   },
@@ -67,11 +80,14 @@ const PaysController = {
     try {
       const [num] = await Pays.update(req.body, { where: { id: id } });
       if (num === 1) {
+        logSuccess('Pays mis à jour:', id);
         return res.status(200).json({ message: "Le pays a été mis à jour avec succès." });
       } else {
+        logWarn(`Impossible de mettre à jour le pays avec id=${id}. Peut-être que le pays n'a pas été trouvé ou req.body est vide!`);
         return res.status(400).json({ message: `Impossible de mettre à jour le pays avec id=${id}. Peut-être que le pays n'a pas été trouvé ou req.body est vide!` });
       }
     } catch (err) {
+      logError('Erreur mise à jour pays:', err);
       return res.status(500).json({ message: "Erreur lors de la mise à jour du pays avec id=" + id });
     }
   },
@@ -82,11 +98,14 @@ const PaysController = {
     try {
       const num = await Pays.destroy({ where: { id: id } });
       if (num === 1) {
+        logSuccess('Pays supprimé:', id);
         return res.status(200).json({ message: "Le pays a été supprimé avec succès!" });
       } else {
+        logWarn(`Impossible de supprimer le pays avec id=${id}. Peut-être que le pays n'a pas été trouvé!`);
         return res.status(400).json({ message: `Impossible de supprimer le pays avec id=${id}. Peut-être que le pays n'a pas été trouvé!` });
       }
     } catch (err) {
+      logError('Erreur suppression pays:', err);
       return res.status(500).json({ message: "Impossible de supprimer le pays avec id=" + id });
     }
   }

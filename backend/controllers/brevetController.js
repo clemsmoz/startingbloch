@@ -1,3 +1,9 @@
+// Fonctions utilitaires pour les logs colorés et avec icônes
+const logInfo = (...args) => console.log('\x1b[36m%s\x1b[0m', 'ℹ️', ...args);      // Cyan
+const logSuccess = (...args) => console.log('\x1b[32m%s\x1b[0m', '✅', ...args);   // Vert
+const logWarn = (...args) => console.warn('\x1b[33m%s\x1b[0m', '⚠️', ...args);     // Jaune
+const logError = (...args) => console.error('\x1b[31m%s\x1b[0m', '❌', ...args);   // Rouge
+
 const { Brevet, Client,Contact, Titulaire, Deposant, Inventeur, Cabinet, NumeroPays, Pays, Statuts, sequelize } = require('../models');
   const Op = sequelize.Sequelize.Op;
   const XLSX = require('xlsx');
@@ -48,11 +54,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
       const t = await sequelize.transaction(); // Créer une transaction
       
       try {
-        // Logs de débogage détaillés
-        console.log("=== DÉBUT DE LA REQUÊTE ===");
-        console.log("Content-Type:", req.headers['content-type']);
-        console.log("Body keys:", Object.keys(req.body));
-        console.log("Body (brut):", req.body);
+        logInfo("=== DÉBUT DE LA REQUÊTE ===");
+        logInfo("Content-Type:", req.headers['content-type']);
+        logInfo("Body keys:", Object.keys(req.body));
+        logInfo("Body (brut):", req.body);
         
         // 1. Extraction des données de base du brevet
         const brevetData = {
@@ -64,17 +69,17 @@ const getOrCreateStatut = async (statutName, transaction) => {
         // Suppression de la vérification stricte pour permettre des valeurs nulles
         // On vérifie simplement qu'au moins l'un des champs est renseigné
         if (!req.body || Object.keys(req.body).length === 0) {
-          console.log("ERREUR: Aucune donnée fournie");
+          logError("ERREUR: Aucune donnée fournie");
           return res.status(400).json({
             error: 'Aucune donnée fournie pour créer le brevet'
           });
         }
         
         // 3. Création du brevet avec logs détaillés
-        console.log("Données du brevet à créer:", JSON.stringify(brevetData, null, 2));
+        logInfo("Données du brevet à créer:", JSON.stringify(brevetData, null, 2));
         const brevet = await Brevet.create(brevetData, { transaction: t });
         const brevetId = brevet.id;
-        console.log("Brevet créé avec ID:", brevetId);
+        logSuccess("Brevet créé avec ID:", brevetId);
         
         // 4. Fonction de parsing améliorée pour les données JSON
         const parseJSONSafely = (data) => {
@@ -85,7 +90,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
             if (typeof data === 'object' && data !== null) return data;
             return JSON.parse(data);
           } catch (e) {
-            console.error('Erreur de parsing JSON:', e, 'Données reçues:', data);
+            logError('Erreur de parsing JSON:', e, 'Données reçues:', data);
             // Si le parsing échoue mais que data est une chaîne avec [, on tente de nettoyer
             if (typeof data === 'string' && data.includes('[')) {
               try {
@@ -93,7 +98,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
                 const cleanedData = data.replace(/\\/g, '').replace(/"\[/g, '[').replace(/\]"/g, ']');
                 return JSON.parse(cleanedData);
               } catch (cleanError) {
-                console.error('Échec du nettoyage JSON:', cleanError);
+                logError('Échec du nettoyage JSON:', cleanError);
               }
             }
             return [];
@@ -103,7 +108,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
         // 4.1 Clients avec meilleure gestion des erreurs
         try {
           const clients = parseJSONSafely(req.body.clients);
-          console.log("Clients à associer (après parsing):", clients);
+          logInfo("Clients à associer (après parsing):", clients);
 
           // Correction : supporte aussi un seul client (id_client direct)
           let clientIds = [];
@@ -119,17 +124,17 @@ const getOrCreateStatut = async (statutName, transaction) => {
                 where: { BrevetId: brevetId, ClientId: clientId },
                 transaction: t
               });
-              console.log(`Client associé: ${clientId}`);
+              logInfo(`Client associé: ${clientId}`);
             }
           }
         } catch (clientError) {
-          console.error("Erreur lors du traitement des clients:", clientError);
+          logError("Erreur lors du traitement des clients:", clientError);
         }
         
         // 4.2 Informations de dépôt
         try {
           const informationsDepot = parseJSONSafely(req.body.informations_depot);
-          console.log("Informations de dépôt (après parsing):", informationsDepot);
+          logInfo("Informations de dépôt (après parsing):", informationsDepot);
           
           if (informationsDepot && informationsDepot.length > 0) {
             for (const info of informationsDepot) {
@@ -146,20 +151,20 @@ const getOrCreateStatut = async (statutName, transaction) => {
                   date_delivrance: info.date_delivrance || null,
                   licence: info.licence === '1' || info.licence === 1 || info.licence === true
                 }, { transaction: t });
-                console.log(`Information de dépôt ajoutée pour pays: ${info.id_pays}`);
+                logInfo(`Information de dépôt ajoutée pour pays: ${info.id_pays}`);
               } else {
-                console.warn("Information de dépôt invalide ignorée:", info);
+                logWarn("Information de dépôt invalide ignorée:", info);
               }
             }
           }
         } catch (depotError) {
-          console.error("Erreur lors du traitement des informations de dépôt:", depotError);
+          logError("Erreur lors du traitement des informations de dépôt:", depotError);
         }
         
         // 4.3 Inventeurs avec gestion unique de la colonne PaysId
         try {
           const inventeurs = parseJSONSafely(req.body.inventeurs);
-          console.log("Inventeurs à créer (après parsing):", inventeurs);
+          logInfo("Inventeurs à créer (après parsing):", inventeurs);
           
           if (inventeurs && inventeurs.length > 0) {
             for (const inventeur of inventeurs) {
@@ -194,13 +199,13 @@ const getOrCreateStatut = async (statutName, transaction) => {
             }
           }
         } catch (inventeurError) {
-          console.error("Erreur lors du traitement des inventeurs:", inventeurError);
+          logError("Erreur lors du traitement des inventeurs:", inventeurError);
         }
         
         // 4.4 Titulaires avec gestion unique de la colonne PaysId
         try {
           const titulaires = parseJSONSafely(req.body.titulaires);
-          console.log("Titulaires à créer (après parsing):", titulaires);
+          logInfo("Titulaires à créer (après parsing):", titulaires);
           
           if (titulaires && titulaires.length > 0) {
             for (const titulaire of titulaires) {
@@ -238,13 +243,13 @@ const getOrCreateStatut = async (statutName, transaction) => {
             }
           }
         } catch (titulaireError) {
-          console.error("Erreur lors du traitement des titulaires:", titulaireError);
+          logError("Erreur lors du traitement des titulaires:", titulaireError);
         }
         
         // 4.5 Déposants avec gestion unique de la colonne PaysId
         try {
           const deposants = parseJSONSafely(req.body.deposants);
-          console.log("Déposants à créer (après parsing):", deposants);
+          logInfo("Déposants à créer (après parsing):", deposants);
           
           if (deposants && deposants.length > 0) {
             for (const deposant of deposants) {
@@ -279,13 +284,13 @@ const getOrCreateStatut = async (statutName, transaction) => {
             }
           }
         } catch (deposantError) {
-          console.error("Erreur lors du traitement des déposants:", deposantError);
+          logError("Erreur lors du traitement des déposants:", deposantError);
         }
         
         // 4.6 Cabinets de procédure avec meilleure gestion des erreurs
         try {
           const cabinetsProcedure = parseJSONSafely(req.body.cabinets_procedure);
-          console.log("Cabinets de procédure à associer (après parsing):", cabinetsProcedure);
+          logInfo("Cabinets de procédure à associer (après parsing):", cabinetsProcedure);
           
           if (cabinetsProcedure && cabinetsProcedure.length > 0) {
             for (const cabinet of cabinetsProcedure) {
@@ -316,13 +321,13 @@ const getOrCreateStatut = async (statutName, transaction) => {
             }
           }
         } catch (cabinetProcedureError) {
-          console.error("Erreur lors du traitement des cabinets de procédure:", cabinetProcedureError);
+          logError("Erreur lors du traitement des cabinets de procédure:", cabinetProcedureError);
         }
         
         // 4.7 Cabinets d'annuité avec meilleure gestion des erreurs
         try {
           const cabinetsAnnuite = parseJSONSafely(req.body.cabinets_annuite);
-          console.log("Cabinets d'annuité à associer (après parsing):", cabinetsAnnuite);
+          logInfo("Cabinets d'annuité à associer (après parsing):", cabinetsAnnuite);
           
           if (cabinetsAnnuite && cabinetsAnnuite.length > 0) {
             for (const cabinet of cabinetsAnnuite) {
@@ -353,12 +358,12 @@ const getOrCreateStatut = async (statutName, transaction) => {
             }
           }
         } catch (cabinetAnnuiteError) {
-          console.error("Erreur lors du traitement des cabinets d'annuité:", cabinetAnnuiteError);
+          logError("Erreur lors du traitement des cabinets d'annuité:", cabinetAnnuiteError);
         }
         
         // Valider la transaction et envoyer la réponse
         await t.commit();
-        console.log("=== TRANSACTION VALIDÉE AVEC SUCCÈS ===");
+        logSuccess("=== TRANSACTION VALIDÉE AVEC SUCCÈS ===");
         
         res.status(201).json({
           message: 'Brevet créé avec succès',
@@ -367,9 +372,9 @@ const getOrCreateStatut = async (statutName, transaction) => {
       } catch (error) {
         // Annuler la transaction en cas d'erreur
         await t.rollback();
-        console.error("=== ERREUR LORS DE LA CRÉATION DU BREVET ===");
-        console.error(error.name, error.message);
-        console.error(error.stack);
+        logError("=== ERREUR LORS DE LA CRÉATION DU BREVET ===");
+        logError(error.name, error.message);
+        logError(error.stack);
         
         res.status(500).json({
           error: 'Erreur lors de la création du brevet',
@@ -382,9 +387,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getAllBrevets: async (req, res) => {
       try {
         const results = await Brevet.findAll();
+        logSuccess('Liste de tous les brevets récupérée');
         res.status(200).json({ data: results });
       } catch (error) {
-        console.error('Erreur récupération brevets:', error);
+        logError('Erreur récupération brevets:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des brevets' });
       }
     },
@@ -393,12 +399,14 @@ const getOrCreateStatut = async (statutName, transaction) => {
       try {
         const result = await Brevet.findByPk(req.params.id);
         if (result) {
+          logSuccess('Brevet trouvé:', req.params.id);
           res.status(200).json({ data: result });
         } else {
+          logWarn('Brevet non trouvé:', req.params.id);
           res.status(404).json({ error: 'Brevet non trouvé' });
         }
       } catch (error) {
-        console.error('Erreur récupération brevet:', error);
+        logError('Erreur récupération brevet:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
       }
     },
@@ -407,7 +415,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getByClientId: async (req, res) => {
       try {
         const clientId = req.params.id; // On suppose que la route est /brevets/client/:id
-        console.log(`Recherche des brevets pour le client ID: ${clientId}`);
+        logInfo(`Recherche des brevets pour le client ID: ${clientId}`);
         
         const brevets = await Brevet.findAll({
           include: [{
@@ -416,10 +424,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
           }]
         });
         
-        console.log(`Nombre de brevets trouvés pour le client ${clientId}: ${brevets.length}`);
+        logSuccess(`Nombre de brevets trouvés pour le client ${clientId}: ${brevets.length}`);
         res.status(200).json({ data: brevets || [] }); // Garantit qu'on renvoie toujours un tableau
       } catch (error) {
-        console.error('Erreur récupération brevets par client:', error);
+        logError('Erreur récupération brevets par client:', error);
         res.status(500).json({ error: error.message });
       }
     },
@@ -431,7 +439,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
           return res.status(400).json({ error: 'Aucune donnée fournie pour la mise à jour' });
         }
         
-        console.log(`Mise à jour du brevet ID: ${req.params.id} avec les données:`, req.body);
+        logInfo(`Mise à jour du brevet ID: ${req.params.id} avec les données:`, req.body);
         
         const updatedFields = {
           reference_famille: req.body.reference_famille || null,
@@ -441,9 +449,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
         const [count] = await Brevet.update(updatedFields, { where: { id: req.params.id } });
         if (!count) return res.status(404).json({ error: 'Brevet non trouvé' });
         const updated = await Brevet.findByPk(req.params.id);
+        logSuccess('Brevet mis à jour:', req.params.id);
         res.status(200).json({ message: 'Brevet mis à jour', data: updated });
       } catch (error) {
-        console.error('Erreur mise à jour brevet:', error);
+        logError('Erreur mise à jour brevet:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour du brevet' });
       }
     },
@@ -452,12 +461,14 @@ const getOrCreateStatut = async (statutName, transaction) => {
       try {
         const result = await Brevet.destroy({ where: { id: req.params.id } });
         if (result === 0) {
+          logWarn('Brevet non trouvé pour suppression:', req.params.id);
           res.status(404).json({ error: 'Brevet non trouvé' });
         } else {
+          logSuccess('Brevet supprimé avec succès:', req.params.id);
           res.status(200).json({ message: 'Brevet supprimé avec succès' });
         }
       } catch (error) {
-        console.error('Erreur suppression brevet:', error);
+        logError('Erreur suppression brevet:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression du brevet' });
       }
     },
@@ -483,15 +494,17 @@ const getOrCreateStatut = async (statutName, transaction) => {
             model: NumeroPays
           }]
         });
+        logSuccess('Liste des brevets avec relations récupérée');
         res.status(200).json({ data: results });
       } catch (error) {
-        console.error('Erreur récupération brevets avec relations:', error);
+        logError('Erreur récupération brevets avec relations:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des brevets' });
       }
     },
 
     getBrevetByIdWithRelations: async (req, res) => {
       try {
+        // Récupérer le brevet avec toutes ses relations
         const result = await Brevet.findByPk(req.params.id, {
           include: [{
             model: Client
@@ -506,20 +519,39 @@ const getOrCreateStatut = async (statutName, transaction) => {
           }, {
             model: NumeroPays,
             include: [{
-              model: Pays
+              model: Pays,
+              required: false
             }, {
-              model: Statuts
+              model: Statuts,
+              required: false
             }]
           }]
         });
-        
+    
         if (result) {
-          res.status(200).json({ data: result });
+          logSuccess('Brevet avec relations trouvé:', req.params.id);
+          // Restructuration des données pour inclure le statut dans chaque pays
+          const restructuredResult = {
+            ...result.toJSON(),
+            NumeroPays: result.NumeroPays.map(np => ({
+              ...np.toJSON(),
+              Pay: np.Pay,
+              Statut: np.Statuts || null  // S'assurer que le statut est inclus
+            }))
+          };
+    
+          logInfo("Données restructurées:", {
+            nombrePays: restructuredResult.NumeroPays.length,
+            exemple: restructuredResult.NumeroPays[0]
+          });
+    
+          res.status(200).json({ data: restructuredResult });
         } else {
+          logWarn('Brevet non trouvé:', req.params.id);
           res.status(404).json({ error: 'Brevet non trouvé' });
         }
       } catch (error) {
-        console.error('Erreur récupération brevet avec relations:', error);
+        logError('Erreur récupération brevet avec relations:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération du brevet' });
       }
     },
@@ -536,7 +568,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
         
         res.status(200).json({ message: "Titulaire ajouté au brevet avec succès!" });
       } catch (error) {
-        console.error('Erreur ajout titulaire:', error);
+        logError('Erreur ajout titulaire:', error);
         res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout du titulaire au brevet' });
       }
     },
@@ -553,7 +585,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
         
         res.status(200).json({ message: "Inventeur ajouté au brevet avec succès!" });
       } catch (error) {
-        console.error('Erreur ajout inventeur:', error);
+        logError('Erreur ajout inventeur:', error);
         res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout de l\'inventeur au brevet' });
       }
     },
@@ -570,7 +602,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
         
         res.status(200).json({ message: "Déposant ajouté au brevet avec succès!" });
       } catch (error) {
-        console.error('Erreur ajout déposant:', error);
+        logError('Erreur ajout déposant:', error);
         res.status(500).json({ error: 'Une erreur est survenue lors de l\'ajout du déposant au brevet' });
       }
     },
@@ -578,7 +610,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getClientsByBrevetId: async (req, res) => {
       try {
         const brevetId = req.params.id;
-        console.log(`Recherche des clients pour le brevet ID: ${brevetId}`);
+        logInfo(`Recherche des clients pour le brevet ID: ${brevetId}`);
         
         const brevet = await Brevet.findByPk(brevetId, {
           include: [{
@@ -590,10 +622,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
           return res.status(404).json({ error: 'Brevet non trouvé' });
         }
         
-        console.log(`Nombre de clients trouvés pour le brevet ${brevetId}: ${brevet.Clients?.length || 0}`);
+        logSuccess(`Nombre de clients trouvés pour le brevet ${brevetId}: ${brevet.Clients?.length || 0}`);
         res.status(200).json(brevet.Clients || []);
       } catch (error) {
-        console.error('Erreur récupération clients par brevet:', error);
+        logError('Erreur récupération clients par brevet:', error);
         res.status(500).json({ error: error.message });
       }
     },
@@ -602,7 +634,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getStatutsByBrevetId: async (req, res) => {
       try {
         const brevetId = req.params.id;
-        console.log(`Recherche des statuts pour le brevet ID: ${brevetId}`);
+        logInfo(`Recherche des statuts pour le brevet ID: ${brevetId}`);
         
         const numeros = await NumeroPays.findAll({
           where: { id_brevet: brevetId },
@@ -616,10 +648,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
           .filter(numero => numero.Statut)
           .map(numero => numero.Statut);
         
-        console.log(`Nombre de statuts trouvés pour le brevet ${brevetId}: ${statuts.length}`);
+        logSuccess(`Nombre de statuts trouvés pour le brevet ${brevetId}: ${statuts.length}`);
         res.status(200).json(statuts);
       } catch (error) {
-        console.error('Erreur récupération statuts par brevet:', error);
+        logError('Erreur récupération statuts par brevet:', error);
         res.status(500).json({ error: error.message });
       }
     },
@@ -628,7 +660,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getInventeursByBrevetId: async (req, res) => {
       try {
         const brevetId = req.params.id;
-        console.log(`Recherche des inventeurs pour le brevet ID: ${brevetId}`);
+        logInfo(`Recherche des inventeurs pour le brevet ID: ${brevetId}`);
         
         const brevet = await Brevet.findByPk(brevetId, {
           include: [{
@@ -641,10 +673,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
           return res.status(404).json({ error: 'Brevet non trouvé' });
         }
         
-        console.log(`Nombre d'inventeurs trouvés pour le brevet ${brevetId}: ${brevet.Inventeurs?.length || 0}`);
+        logSuccess(`Nombre d'inventeurs trouvés pour le brevet ${brevetId}: ${brevet.Inventeurs?.length || 0}`);
         res.status(200).json(brevet.Inventeurs || []);
       } catch (error) {
-        console.error('Erreur récupération inventeurs par brevet:', error);
+        logError('Erreur récupération inventeurs par brevet:', error);
         res.status(500).json({ error: error.message });
       }
     },
@@ -653,7 +685,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getTitulairesByBrevetId: async (req, res) => {
       try {
         const brevetId = req.params.id;
-        console.log(`Recherche des titulaires pour le brevet ID: ${brevetId}`);
+        logInfo(`Recherche des titulaires pour le brevet ID: ${brevetId}`);
         
         const brevet = await Brevet.findByPk(brevetId, {
           include: [{
@@ -666,10 +698,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
           return res.status(404).json({ error: 'Brevet non trouvé' });
         }
         
-        console.log(`Nombre de titulaires trouvés pour le brevet ${brevetId}: ${brevet.Titulaires?.length || 0}`);
+        logSuccess(`Nombre de titulaires trouvés pour le brevet ${brevetId}: ${brevet.Titulaires?.length || 0}`);
         res.status(200).json(brevet.Titulaires || []);
       } catch (error) {
-        console.error('Erreur récupération titulaires par brevet:', error);
+        logError('Erreur récupération titulaires par brevet:', error);
         res.status(500).json({ error: error.message });
       }
     },
@@ -678,7 +710,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getDeposantsByBrevetId: async (req, res) => {
       try {
         const brevetId = req.params.id;
-        console.log(`Recherche des déposants pour le brevet ID: ${brevetId}`);
+        logInfo(`Recherche des déposants pour le brevet ID: ${brevetId}`);
         
         const brevet = await Brevet.findByPk(brevetId, {
           include: [{
@@ -691,10 +723,10 @@ const getOrCreateStatut = async (statutName, transaction) => {
           return res.status(404).json({ error: 'Brevet non trouvé' });
         }
         
-        console.log(`Nombre de déposants trouvés pour le brevet ${brevetId}: ${brevet.Deposants?.length || 0}`);
+        logSuccess(`Nombre de déposants trouvés pour le brevet ${brevetId}: ${brevet.Deposants?.length || 0}`);
         res.status(200).json(brevet.Deposants || []);
       } catch (error) {
-        console.error('Erreur récupération déposants par brevet:', error);
+        logError('Erreur récupération déposants par brevet:', error);
         res.status(500).json({ error: error.message });
       }
     },
@@ -703,7 +735,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
     getAllCabinetsByBrevetId: async (req, res) => {
       try {
         const brevetId = req.params.id;
-        console.log(`Recherche de tous les cabinets pour le brevet ID: ${brevetId}`);
+        logInfo(`Recherche de tous les cabinets pour le brevet ID: ${brevetId}`);
         
         // Récupérer d'abord les relations BrevetCabinets
         const brevetCabinets = await sequelize.models.BrevetCabinets.findAll({
@@ -712,7 +744,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
         });
         
         if (!brevetCabinets || brevetCabinets.length === 0) {
-          console.log(`Aucune relation cabinet trouvée pour le brevet ${brevetId}`);
+          logWarn(`Aucune relation cabinet trouvée pour le brevet ${brevetId}`);
           return res.status(200).json({ 
             data: [], 
             procedure: [], 
@@ -721,8 +753,8 @@ const getOrCreateStatut = async (statutName, transaction) => {
         }
         
         // Log détaillé des relations trouvées
-        console.log(`Relations cabinet trouvées: ${brevetCabinets.length}`);
-        console.log("Types trouvés:", [...new Set(brevetCabinets.map(rel => rel.type))]);
+        logInfo(`Relations cabinet trouvées: ${brevetCabinets.length}`);
+        logInfo("Types trouvés:", [...new Set(brevetCabinets.map(rel => rel.type))]);
         
         // Récupérer les cabinets complets
         const cabinetIds = brevetCabinets.map(rel => rel.CabinetId);
@@ -741,7 +773,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
           }
         );
         
-        console.log(`Cabinets récupérés: ${cabinets.length}, relations pays: ${cabinetPaysRelations.length}`);
+        logInfo(`Cabinets récupérés: ${cabinets.length}, relations pays: ${cabinetPaysRelations.length}`);
         
         // Enrichir les cabinets avec les données de la relation et les pays
         const enrichedCabinets = cabinets.map(cabinet => {
@@ -781,7 +813,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
                   cab.BrevetCabinets.type.toLowerCase().includes('annuit'));
         });
         
-        console.log(`Cabinets classés - Total: ${enrichedCabinets.length}, Procédure: ${procedureCabinets.length}, Annuité: ${annuiteCabinets.length}`);
+        logSuccess(`Cabinets classés - Total: ${enrichedCabinets.length}, Procédure: ${procedureCabinets.length}, Annuité: ${annuiteCabinets.length}`);
         
         // Renvoyer toutes les données
         res.status(200).json({ 
@@ -796,7 +828,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
           }
         });
       } catch (error) {
-        console.error('Erreur récupération cabinets par brevet:', error);
+        logError('Erreur récupération cabinets par brevet:', error);
         res.status(500).json({ 
           error: 'Erreur lors de la récupération des cabinets', 
           details: error.message,
@@ -822,7 +854,7 @@ const getOrCreateStatut = async (statutName, transaction) => {
           timestamp: lastUpdate.getTime()
         });
       } catch (error) {
-        console.error('Erreur récupération date de dernière mise à jour:', error);
+        logError('Erreur récupération date de dernière mise à jour:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération de la date de dernière mise à jour' });
       }
     },
@@ -839,8 +871,11 @@ importFromExcel: async (req, res) => {
     if (!rows.length) throw new Error('Excel vide.');
 
     const headers = Object.keys(rows[0]);
-    console.log('[IMPORT EXCEL] Colonnes Excel détectées :', headers);
-    // Mapping explicite des colonnes utiles
+    logInfo('\n=== ANALYSE DU FICHIER EXCEL ===');
+    logInfo('Headers trouvés:', headers);
+    logInfo('\nPremière ligne complète:', JSON.stringify(rows[0], null, 2));
+
+    // Mapping explicite des colonnes utiles avec plus de logs
     const excelMapping = {
       reference_famille: headers.find(h => h.trim().toLowerCase() === "référence famille"),
       titre: headers.find(h => h.trim().toLowerCase() === "titre"),
@@ -856,7 +891,17 @@ importFromExcel: async (req, res) => {
       date_depot: headers.find(h => h.trim().toLowerCase() === "date de dépôt"),
     };
 
-    console.log("Mapping Excel trouvé:", excelMapping);
+    logInfo('\nMapping des colonnes:', JSON.stringify(excelMapping, null, 2));
+
+    // Log détaillé pour chaque ligne
+    rows.forEach((row, index) => {
+      logInfo(`\n=== LIGNE ${index + 1} ===`);
+      logInfo('Pays:', row[excelMapping.pays_depot]);
+      logInfo('Cabinet Procédure:', row[excelMapping.cabinet_procedure]);
+      logInfo('Cabinet Annuité:', row[excelMapping.cabinet_annuite]);
+      logInfo('Contact Procédure:', row[excelMapping.contact_procedure]);
+      logInfo('Contact Annuité:', row[excelMapping.contact_annuite]);
+    });
 
     const [allPays] = await Promise.all([
       Pays.findAll()
@@ -924,7 +969,7 @@ importFromExcel: async (req, res) => {
 
         if (brevetMap.has(refFam)) {
           brevet = brevetMap.get(refFam);
-          console.log(`[IMPORT EXCEL] Brevet déjà existant pour refFam "${refFam}" (id: ${brevet.id})`);
+          logInfo(`[IMPORT EXCEL] Brevet déjà existant pour refFam "${refFam}" (id: ${brevet.id})`);
         } else {
           // Créer le brevet et les entités associées (cabinet, titulaire, etc.) une seule fois
           const [createdBrevet] = await Brevet.findOrCreate({
@@ -938,7 +983,7 @@ importFromExcel: async (req, res) => {
           brevet = createdBrevet;
           brevetMap.set(refFam, brevet);
           isFirstOccurrence = true;
-          console.log(`[IMPORT EXCEL] Nouveau brevet créé pour refFam "${refFam}" (id: ${brevet.id})`);
+          logInfo(`[IMPORT EXCEL] Nouveau brevet créé pour refFam "${refFam}" (id: ${brevet.id})`);
         }
 
         // === AJOUT : Lier le brevet aux clients sélectionnés ===
@@ -988,43 +1033,137 @@ importFromExcel: async (req, res) => {
         // Normalisation pour la recherche du pays
         let paysId = null;
         if (paysDepot) {
-          const normPaysDepot = normalize(paysDepot);
+          // Séparer le pays et le numéro de dépôt (ils sont séparés par \n)
+          const [paysInfo, numeroDepotBrut] = paysDepot.toString().split('\n');
+          const normPaysDepot = normalize(paysInfo);
           paysId = paysMap.get(normPaysDepot);
-          console.log(`[IMPORT EXCEL] Recherche pays: brut="${paysDepot}" norm="${normPaysDepot}" paysId="${paysId}"`);
-          if (!paysId) {
-            for (const [key, id] of paysMap.entries()) {
-              if (normPaysDepot.startsWith(key) || key.startsWith(normPaysDepot)) {
-                paysId = id;
-                console.log(`[IMPORT EXCEL] Correspondance partielle trouvée: key="${key}" id="${id}"`);
-                break;
+
+          // Récupérer le statut
+          let statutId = null;
+          if (excelMapping.statut && row[excelMapping.statut]) {
+            const statutName = row[excelMapping.statut].toString().trim();
+            if (statutName && statutName.toLowerCase() !== 'aucun') {
+              statutId = await getOrCreateStatut(statutName, tnx);
+            }
+          }
+
+          // Formater la date de dépôt
+          let dateDepot = null;
+          if (excelMapping.date_depot && row[excelMapping.date_depot]) {
+            const dateStr = row[excelMapping.date_depot].toString().trim();
+            try {
+              // Mapping des mois en français abrégés
+              const moisFr = {
+                'janv': '01', 'févr': '02', 'mars': '03', 'avr': '04', 
+                'mai': '05', 'juin': '06', 'juil': '07', 'août': '08', 
+                'sept': '09', 'oct': '10', 'nov': '11', 'déc': '12'
+              };
+              
+              // Format d'entrée: "21-févr.-13"
+              const [jour, moisAbr, annee] = dateStr.split('-');
+              const mois = moisFr[moisAbr.toLowerCase().replace('.', '')];
+              const anneeComplete = '20' + annee.replace('.', '');
+              
+              // Formatage au format SQLite : YYYY-MM-DD
+              dateDepot = `${anneeComplete}-${mois}-${jour.padStart(2, '0')}`;
+              
+              logInfo(`[IMPORT EXCEL] Conversion date: ${dateStr} -> ${dateDepot}`);
+            } catch(e) {
+              logWarn('Erreur parsing date:', dateStr, e);
+              dateDepot = null;
+            }
+          }
+
+          if (paysId) {
+            // Récupérer le statut depuis la cellule statut
+            let statutId = null;
+            if (row[excelMapping.statut]) {
+              const statutName = row[excelMapping.statut].toString().trim();
+              logInfo(`[IMPORT EXCEL] Statut trouvé: "${statutName}"`);
+              if (statutName && statutName.toLowerCase() !== 'aucun') {
+                statutId = await getOrCreateStatut(statutName, tnx);
+                logInfo(`[IMPORT EXCEL] ID Statut: ${statutId}`);
+              }
+            }
+
+            logInfo(`[IMPORT EXCEL] Création NumeroPays: brevetId=${brevet.id} paysId=${paysId} refFam="${refFam}" statutId=${statutId}`);
+            await NumeroPays.create({
+              id_brevet: brevet.id,
+              id_pays: paysId,
+              numero_depot: numeroDepotBrut ? numeroDepotBrut.trim() : null,
+              numero_publication: excelMapping.numero_publication ? (row[excelMapping.numero_publication]?.toString().trim() || null) : null,
+              date_depot: dateDepot,
+              id_statuts: statutId, // Ajout du statutId ici
+              date_delivrance: null,
+              numero_delivrance: null
+            }, { transaction: tnx });
+
+            // Liaison du pays avec le cabinet de procédure si présent
+            if (row[excelMapping.cabinet_procedure]) {
+              const cabinetName = row[excelMapping.cabinet_procedure].toString().trim();
+              if (cabinetName.toLowerCase() !== 'aucune' && cabinetName !== '') {
+                const cabinet = await Cabinet.findOne({
+                  where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('nom_cabinet')),
+                    sequelize.fn('LOWER', cabinetName)
+                  ),
+                  transaction: tnx
+                });
+
+                if (cabinet) {
+                  // Vérifier si la liaison existe déjà
+                  const existingLink = await sequelize.models.CabinetPays.findOne({
+                    where: {
+                      CabinetId: cabinet.id,
+                      PaysId: paysId
+                    },
+                    transaction: tnx
+                  });
+
+                  if (!existingLink) {
+                    await sequelize.models.CabinetPays.create({
+                      CabinetId: cabinet.id,
+                      PaysId: paysId
+                    }, { transaction: tnx });
+                    logInfo(`[IMPORT EXCEL] Liaison créée entre cabinet "${cabinetName}" et pays ID ${paysId}`);
+                  }
+                }
+              }
+            }
+
+            // Liaison du pays avec le cabinet d'annuité si présent
+            if (row[excelMapping.cabinet_annuite]) {
+              const cabinetName = row[excelMapping.cabinet_annuite].toString().trim();
+              if (cabinetName.toLowerCase() !== 'aucune' && cabinetName !== '') {
+                const cabinet = await Cabinet.findOne({
+                  where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('nom_cabinet')),
+                    sequelize.fn('LOWER', cabinetName)
+                  ),
+                  transaction: tnx
+                });
+
+                if (cabinet) {
+                  // Vérifier si la liaison existe déjà
+                  const existingLink = await sequelize.models.CabinetPays.findOne({
+                    where: {
+                      CabinetId: cabinet.id,
+                      PaysId: paysId
+                    },
+                    transaction: tnx
+                  });
+
+                  if (!existingLink) {
+                    await sequelize.models.CabinetPays.create({
+                      CabinetId: cabinet.id,
+                      PaysId: paysId
+                    }, { transaction: tnx });
+                    logInfo(`[IMPORT EXCEL] Liaison créée entre cabinet "${cabinetName}" et pays ID ${paysId}`);
+                  }
+                }
               }
             }
           }
-          if (!paysId) {
-            for (const [main, aliases] of Object.entries(specialCountryCases)) {
-              if (aliases.some(alias => normPaysDepot === alias)) {
-                paysId = aliasToPaysId[main];
-                console.log(`[IMPORT EXCEL] Correspondance alias trouvée: main="${main}" id="${aliasToPaysId[main]}"`);
-                break;
-              }
-            }
-          }
-          if (!paysId) {
-            console.warn(`[IMPORT EXCEL] Pays non trouvé pour "${paysDepot}" (normalisé: "${normPaysDepot}")`);
-          }
-        }
-        if (paysId) {
-          console.log(`[IMPORT EXCEL] Création NumeroPays: brevetId=${brevet.id} paysId=${paysId} refFam="${refFam}"`);
-          await NumeroPays.create({
-            id_brevet: brevet.id,
-            id_pays: paysId,
-            numero_depot: numeroDepot,
-            numero_publication: excelMapping.numero_publication ? (row[excelMapping.numero_publication]?.toString().trim() || null) : null,
-            date_depot: excelMapping.date_depot ? (row[excelMapping.date_depot]?.toString().trim() || null) : null,
-            id_statuts: null // Peut être mappé si besoin
-          }, { transaction: tnx });
-        } else {
-          console.warn(`[IMPORT EXCEL] NumeroPays NON créé pour refFam="${refFam}" car paysId introuvable`);
         }
 
         // Les entités suivantes sont ajoutées uniquement lors de la première occurrence
@@ -1048,7 +1187,7 @@ importFromExcel: async (req, res) => {
         // Cabinets de procédure
         if (excelMapping.cabinet_procedure && row[excelMapping.cabinet_procedure]) {
           const cabinetName = row[excelMapping.cabinet_procedure].toString().trim();
-          console.log(`[IMPORT EXCEL] Traitement cabinet procédure: "${cabinetName}" pour refFam="${refFam}"`);
+          logInfo(`[IMPORT EXCEL] Traitement cabinet procédure: "${cabinetName}" pour refFam="${refFam}"`);
           if (cabinetName.toLowerCase() !== 'aucune' && cabinetName !== '') {
             let cabinet = await Cabinet.findOne({
               where: sequelize.where(
@@ -1059,7 +1198,7 @@ importFromExcel: async (req, res) => {
             });
 
             if (!cabinet) {
-              console.log(`[IMPORT EXCEL] Création nouveau cabinet procédure: "${cabinetName}"`);
+              logInfo(`[IMPORT EXCEL] Création nouveau cabinet procédure: "${cabinetName}"`);
               cabinet = await Cabinet.create({
                 nom_cabinet: cabinetName,
                 type: 'procedure'
@@ -1070,7 +1209,7 @@ importFromExcel: async (req, res) => {
             let contactId = null;
             if (excelMapping.contact_procedure && row[excelMapping.contact_procedure]) {
               const contactInfo = row[excelMapping.contact_procedure].toString().trim();
-              console.log(`[IMPORT EXCEL] Traitement contact procédure: "${contactInfo}"`);
+              logInfo(`[IMPORT EXCEL] Traitement contact procédure: "${contactInfo}"`);
               if (contactInfo.toLowerCase() !== 'aucune' && contactInfo !== '') {
                 const { nom, prenom, email } = parseContactField(contactInfo);
                 let contact = null;
@@ -1105,14 +1244,14 @@ importFromExcel: async (req, res) => {
             }
 
             // Création de l'association cabinet-brevet avec le contact
-            console.log(`[IMPORT EXCEL] Avant BrevetCabinets.create: BrevetId=${brevet.id}, CabinetId=${cabinet.id}, type=procedure`);
+            logInfo(`[IMPORT EXCEL] Avant BrevetCabinets.create: BrevetId=${brevet.id}, CabinetId=${cabinet.id}, type=procedure`);
             // Vérification existence avant création pour éviter l'erreur d'unicité
             const exists = await sequelize.models.BrevetCabinets.findOne({
               where: { BrevetId: brevet.id, CabinetId: cabinet.id, type: 'procedure' },
               transaction: tnx
             });
             if (exists) {
-              console.warn(`[IMPORT EXCEL] Association BrevetCabinets déjà existante pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=procedure)`);
+              logWarn(`[IMPORT EXCEL] Association BrevetCabinets déjà existante pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=procedure)`);
             } else {
               await sequelize.models.BrevetCabinets.create({
                 BrevetId: brevet.id,
@@ -1120,7 +1259,7 @@ importFromExcel: async (req, res) => {
                 contact_id: contactId,
                 type: 'procedure'
               }, { transaction: tnx });
-              console.log(`[IMPORT EXCEL] Association BrevetCabinets créée pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=procedure)`);
+              logInfo(`[IMPORT EXCEL] Association BrevetCabinets créée pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=procedure)`);
             }
           }
         }
@@ -1128,7 +1267,7 @@ importFromExcel: async (req, res) => {
         // Même logique pour les cabinets d'annuité
         if (excelMapping.cabinet_annuite && row[excelMapping.cabinet_annuite]) {
           const cabinetName = row[excelMapping.cabinet_annuite].toString().trim();
-          console.log(`[IMPORT EXCEL] Traitement cabinet annuité: "${cabinetName}" pour refFam="${refFam}"`);
+          logInfo(`[IMPORT EXCEL] Traitement cabinet annuité: "${cabinetName}" pour refFam="${refFam}"`);
           if (cabinetName.toLowerCase() !== 'aucune' && cabinetName !== '') {
             let cabinet = await Cabinet.findOne({
               where: sequelize.where(
@@ -1139,7 +1278,7 @@ importFromExcel: async (req, res) => {
             });
 
             if (!cabinet) {
-              console.log(`[IMPORT EXCEL] Création nouveau cabinet annuité: "${cabinetName}"`);
+              logInfo(`[IMPORT EXCEL] Création nouveau cabinet annuité: "${cabinetName}"`);
               cabinet = await Cabinet.create({
                 nom_cabinet: cabinetName,
                 type: 'annuite'
@@ -1150,7 +1289,7 @@ importFromExcel: async (req, res) => {
             let contactId = null;
             if (excelMapping.contact_annuite && row[excelMapping.contact_annuite]) {
               const contactInfo = row[excelMapping.contact_annuite].toString().trim();
-              console.log(`[IMPORT EXCEL] Traitement contact annuité: "${contactInfo}"`);
+              logInfo(`[IMPORT EXCEL] Traitement contact annuité: "${contactInfo}"`);
               if (contactInfo.toLowerCase() !== 'aucune' && contactInfo !== '') {
                 const { nom, prenom, email } = parseContactField(contactInfo);
                 let contact = null;
@@ -1183,14 +1322,13 @@ importFromExcel: async (req, res) => {
             }
 
             // Création de l'association cabinet-brevet avec le contact
-            console.log(`[IMPORT EXCEL] Avant BrevetCabinets.create: BrevetId=${brevet.id}, CabinetId=${cabinet.id}, type=annuite`);
-            // Vérification existence avant création pour éviter l'erreur d'unicité
+            logInfo(`[IMPORT EXCEL] Avant BrevetCabinets.create: BrevetId=${brevet.id}, CabinetId=${cabinet.id}, type=annuite`);
             const exists = await sequelize.models.BrevetCabinets.findOne({
               where: { BrevetId: brevet.id, CabinetId: cabinet.id, type: 'annuite' },
               transaction: tnx
             });
             if (exists) {
-              console.warn(`[IMPORT EXCEL] Association BrevetCabinets déjà existante pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=annuite)`);
+              logWarn(`[IMPORT EXCEL] Association BrevetCabinets déjà existante pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=annuite)`);
             } else {
               await sequelize.models.BrevetCabinets.create({
                 BrevetId: brevet.id,
@@ -1198,19 +1336,16 @@ importFromExcel: async (req, res) => {
                 contact_id: contactId,
                 type: 'annuite'
               }, { transaction: tnx });
-              console.log(`[IMPORT EXCEL] Association BrevetCabinets créée pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=annuite)`);
+              logInfo(`[IMPORT EXCEL] Association BrevetCabinets créée pour BrevetId=${brevet.id} CabinetId=${cabinet.id} (type=annuite)`);
             }
           }
         }
-        // --- FIN DÉPLACEMENT ---
-
-        // ...existing code for titulaires, etc. (laisser dans isFirstOccurrence si besoin)...
 
         await tnx.commit();
         count++;
       } catch (err) {
         await tnx.rollback();
-        console.error(`[IMPORT EXCEL] Erreur pour la référence famille : ${refFam}`, err);
+        logError(`[IMPORT EXCEL] Erreur pour la référence famille : ${refFam}`, err);
       }
 
       importStatusMap[importId] = {

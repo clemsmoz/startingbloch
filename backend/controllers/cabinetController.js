@@ -1,3 +1,9 @@
+// Fonctions utilitaires pour les logs colorés et avec icônes
+const logInfo = (...args) => console.log('\x1b[36m%s\x1b[0m', 'ℹ️', ...args);      // Cyan
+const logSuccess = (...args) => console.log('\x1b[32m%s\x1b[0m', '✅', ...args);   // Vert
+const logWarn = (...args) => console.warn('\x1b[33m%s\x1b[0m', '⚠️', ...args);     // Jaune
+const logError = (...args) => console.error('\x1b[31m%s\x1b[0m', '❌', ...args);   // Rouge
+
 const { Cabinet, Pays, Brevet, sequelize } = require('../models');
 
 const cabinetController = {
@@ -18,9 +24,10 @@ const cabinetController = {
   getAllCabinets: async (req, res) => {
     try {
       const cabinets = await Cabinet.findAll();
+      logSuccess('Récupération de tous les cabinets réussie');
       res.status(200).json({ data: cabinets });
     } catch (error) {
-      console.error('Erreur récupération cabinets:', error);
+      logError('Erreur récupération cabinets:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des cabinets' });
     }
   },
@@ -30,12 +37,14 @@ const cabinetController = {
     try {
       const cabinet = await Cabinet.findByPk(req.params.id);
       if (cabinet) {
+        logSuccess('Cabinet trouvé:', cabinet.id);
         res.status(200).json({ data: cabinet });
       } else {
+        logWarn('Cabinet non trouvé:', req.params.id);
         res.status(404).json({ error: 'Cabinet non trouvé' });
       }
     } catch (error) {
-      console.error('Erreur récupération cabinet par ID:', error);
+      logError('Erreur récupération cabinet par ID:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération du cabinet' });
     }
   },
@@ -60,12 +69,14 @@ const cabinetController = {
     try {
       const deleted = await Cabinet.destroy({ where: { id: req.params.id } });
       if (deleted) {
+        logSuccess('Cabinet supprimé:', req.params.id);
         res.status(200).json({ message: 'Cabinet supprimé' });
       } else {
+        logWarn('Cabinet non trouvé pour suppression:', req.params.id);
         res.status(404).json({ error: 'Cabinet non trouvé' });
       }
     } catch (error) {
-      console.error('Erreur suppression cabinet:', error);
+      logError('Erreur suppression cabinet:', error);
       res.status(500).json({ error: 'Erreur lors de la suppression du cabinet' });
     }
   },
@@ -74,6 +85,7 @@ const cabinetController = {
       const brevetId = req.query.id_brevet;
       
       if (!brevetId) {
+        logWarn('Paramètre id_brevet requis');
         return res.status(400).json({ error: 'Paramètre id_brevet requis' });
       }
       
@@ -84,19 +96,20 @@ const cabinetController = {
           attributes: [] // Don't include brevet data, just filter by it
         }]
       });
-      
+      logSuccess('Cabinets récupérés pour brevet:', brevetId);
       res.status(200).json(cabinets);
     } catch (error) {
-      console.error('Erreur récupération cabinets par brevet:', error);
+      logError('Erreur récupération cabinets par brevet:', error);
       res.status(500).json({ error: error.message });
     }
   },
   getAllCabinetReferences: async (req, res) => {
     try {
       const results = await Cabinet.findAll({ attributes: ['reference'] });
+      logSuccess('Références cabinets récupérées');
       res.status(200).json({ data: results });
     } catch (error) {
-      console.error('Erreur récupération références cabinets:', error);
+      logError('Erreur récupération références cabinets:', error);
       res.status(500).json({ error: 'Erreur lors de la récupération des références de cabinets' });
     }
   }

@@ -173,7 +173,8 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
   const renderPaysChips = useCallback((paysArray) => {
     if (!paysArray || !Array.isArray(paysArray) || paysArray.length === 0) return null;
     
-    console.log("Pays data to render:", paysArray); // Debug log
+    console.log("Pays data pour les chips:", paysArray);
+    console.log("Structure d'un pays:", JSON.stringify(paysArray[0], null, 2));
     
     return (
       <Box mt={1} display="flex" flexWrap="wrap">
@@ -194,7 +195,7 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
             paysInfo.alpha2 || 
             (paysInfo.Pay && paysInfo.Pay.alpha2) || 
             (paysInfo.p && paysInfo.p.alpha2) ||
-            (paysInfo.pays && paysInfo.pays.alpha2);
+            (paysInfo.pays && paysInfo.p.alpha2);
           
           return (
             <FlagChip
@@ -1161,19 +1162,29 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                           {pays && Array.isArray(pays) && paysLength > 0 ? pays.map((p, index) => {
                             if (!p) return null;
                             
-                            // Même logique d'extraction des données
-                            let matchingStatut = null;
-                            if (statutsList && Array.isArray(statutsList)) {
-                              if (p.Statut) {
-                                matchingStatut = p.Statut;
-                              } else if (p.id_statuts) {
-                                matchingStatut = statutsList.find(st => st && st.id === p.id_statuts);
+                            console.log(`=== Pays ${index} - Détails complets ===`);
+                            console.log("Données complètes du pays:", p);
+                            
+                            // Extraire le statut avec plus de robustesse
+                            let statutLabel = 'Non défini';
+                            let statutDebug = null;
+                            if (p.Statut && p.Statut.statuts) {
+                              statutLabel = p.Statut.statuts;
+                              statutDebug = p.Statut;
+                            } else if (p.id_statuts && Array.isArray(statutsList)) {
+                              const matchingStatut = statutsList.find(s => s && (s.id === p.id_statuts || s.id_statuts === p.id_statuts));
+                              if (matchingStatut && matchingStatut.statuts) {
+                                statutLabel = matchingStatut.statuts;
+                                statutDebug = matchingStatut;
                               }
                             }
-                            
-                            const nomPays = p?.nom_fr_fr || p?.Pay?.nom_fr_fr || p?.nom || p?.Pay?.nom || 'N/A';
-                            const alpha2 = p?.alpha2 || p?.Pay?.alpha2;
-                            
+                            // Ajoute un log explicite pour chaque pays
+                            console.log(`[AFFICHAGE] Pays ${index} - Statut affiché:`, statutLabel, statutDebug);
+
+                            // Extraction des données du pays
+                            const nomPays = p?.Pay?.nom_fr_fr || p?.nom_fr_fr || 'N/A';
+                            const alpha2 = p?.Pay?.alpha2 || p?.alpha2;
+
                             return (
                               <Grid item xs={12} md={6} lg={4} key={index}>
                                 <StyledPaper sx={{ 
@@ -1183,26 +1194,28 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
                                 }}>
                                   {/* En-tête du pays avec drapeau */}
                                   <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                                    {alpha2 && (
-                                      <CountryFlag code={alpha2} size={28} />
-                                    )}
+                                    {alpha2 && <CountryFlag code={alpha2} size={28} />}
                                     <Typography variant="h6" fontWeight="600" sx={{ ml: 1.5 }}>
                                       {nomPays}
                                     </Typography>
                                   </Box>
                                   
-                                  {/* Statut sous forme de chip */}
+                                  {/* Affichage du statut avec style amélioré */}
                                   <Box sx={{ mb: 2 }}>
                                     <Chip 
-                                      label={matchingStatut ? (matchingStatut.valeur || matchingStatut.statuts) : 'N/A'} 
-                                      color="primary" 
+                                      label={statutLabel}
+                                      color={statutLabel !== 'Non défini' ? "primary" : "default"}
                                       size="small"
-                                      sx={{ fontWeight: 500 }}
+                                      sx={{ 
+                                        fontWeight: 500,
+                                        backgroundColor: statutLabel !== 'Non défini' ? undefined : 'grey.400'
+                                      }}
                                     />
                                   </Box>
-                                  
+
                                   {/* Grille d'informations */}
                                   <Grid container spacing={1}>
+                                    {/* ... le reste du code pour les informations de dépôt reste inchangé ... */}
                                     {p?.numero_depot && (
                                       <Grid item xs={12}>
                                         <Box sx={{ 

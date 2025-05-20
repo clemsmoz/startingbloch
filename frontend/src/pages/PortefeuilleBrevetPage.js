@@ -319,14 +319,39 @@ const PortefeuilleBrevetPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nom_client: newClientName.trim() })
       });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du client');
-      if (data && (data.id || data.id_client)) {
-        setClientsList(prev => [...prev, data]);
-        setSelectedClientIds(prev => [...prev, data.id || data.id_client]);
-        setNewClientName('');
+      
+      // Récupérer l'ID du client depuis la réponse de l'API
+      const clientId = data.id || data.id_client || data.data?.id || data.data?.id_client;
+      
+      if (!clientId) {
+        throw new Error('ID client non trouvé dans la réponse');
       }
+
+      // Créer le nouveau client avec la même structure que les clients existants
+      const newClient = {
+        id: clientId,
+        id_client: clientId, // Pour la compatibilité
+        nom_client: newClientName.trim()
+      };
+      
+      // Mise à jour de la liste des clients
+      setClientsList(prev => [...prev, newClient]);
+      
+      // Ajouter automatiquement le nouveau client à la sélection
+      setSelectedClientIds(prev => [...prev, clientId]);
+      
+      // Debug
+      console.log('Client créé:', newClient);
+      console.log('Nouvelle liste de clients:', [...clientsList, newClient]);
+      console.log('IDs clients sélectionnés:', [...selectedClientIds, clientId]);
+      
+      setNewClientName('');
+      setClientError('');
     } catch (e) {
+      console.error('Erreur création client:', e);
       setClientError(e.message);
     } finally {
       setCreatingClient(false);

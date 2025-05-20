@@ -6,7 +6,13 @@ const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 
-console.log("🚀 Démarrage de l'application Electron + Express (tout-en-un)");
+// Fonctions utilitaires pour les logs colorés et avec icônes
+const logInfo = (...args) => console.log('\x1b[36m%s\x1b[0m', 'ℹ️', ...args);      // Cyan
+const logSuccess = (...args) => console.log('\x1b[32m%s\x1b[0m', '✅', ...args);   // Vert
+const logWarn = (...args) => console.warn('\x1b[33m%s\x1b[0m', '⚠️', ...args);     // Jaune
+const logError = (...args) => console.error('\x1b[31m%s\x1b[0m', '❌', ...args);   // Rouge
+
+logInfo("🚀 Démarrage de l'application Electron + Express (tout-en-un)");
 
 // ------------------------------
 // Partie Backend : Express
@@ -20,11 +26,11 @@ expressApp.use(bodyParser.json());
 try {
   const routes = require('./routes');
   expressApp.use('/api', routes);
-  console.log("📌 Routes Express chargées.");
+  logSuccess("Routes Express chargées.");
 } catch (err) {
-  console.error("❌ Erreur lors du chargement des routes Express :", err);
+  logError("Erreur lors du chargement des routes Express :", err);
 }
-console.log("📂 __dirname détecté :", __dirname);
+logInfo("__dirname détecté :", __dirname);
 
 // Définition du chemin du frontend
 const isPackaged = process.mainModule.filename.indexOf('app.asar') !== -1;
@@ -35,34 +41,34 @@ expressApp.get('/api/backup', (req, res) => {
   let dbPath = path.join(basePath, 'data', 'database.sqlite');
   const fallback = path.join(basePath, 'database.sqlite');
   if (!fs.existsSync(dbPath)) {
-    console.warn('DB introuvable dans data/, fallback vers:', fallback);
+    logWarn('DB introuvable dans data/, fallback vers:', fallback);
     dbPath = fallback;
   }
-  console.log('Backup DB path:', dbPath);
+  logInfo('Backup DB path:', dbPath);
   res.download(dbPath, 'database.sqlite', err => {
     if (err) {
-      console.error('Erreur export DB:', err);
+      logError('Erreur export DB:', err);
       return res.status(500).send('Erreur lors du téléchargement de la sauvegarde.');
     }
   });
 });
 
 const frontendStaticPath = path.join(basePath, 'frontend', 'build');
-console.log("📂 Chemin utilisé pour le frontend :", frontendStaticPath);
+logInfo("📂 Chemin utilisé pour le frontend :", frontendStaticPath);
 
 if (fs.existsSync(frontendStaticPath)) {
-  console.log("✅ frontend/build trouvé !");
+  logSuccess("frontend/build trouvé !");
   expressApp.use(express.static(frontendStaticPath));
 
   expressApp.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     const indexPath = path.join(frontendStaticPath, 'index.html');
-    console.log(`📌 Requête reçue pour ${req.url}, envoi de ${indexPath}`);
+    logInfo(`Requête reçue pour ${req.url}, envoi de ${indexPath}`);
     res.sendFile(indexPath);
   });
 
 } else {
-  console.warn("⚠️ Dossier frontend/build non trouvé. Vérifiez que le build du frontend est bien généré.");
+  logWarn("Dossier frontend/build non trouvé. Vérifiez que le build du frontend est bien généré.");
 }
 
 
@@ -75,8 +81,10 @@ expressApp.use((req, res) => {
 // ------------------------------
 // Partie Frontend : Electron
 // ------------------------------
+let isQuitting = false;
+
 function createWindow(port) {
-  console.log("📌 Création de la fenêtre Electron...");
+  logInfo("Création de la fenêtre Electron...");
   const win = new BrowserWindow({
     width: 1920,
     height: 1080,
@@ -93,51 +101,95 @@ function createWindow(port) {
     item.setSavePath(savePath);
     item.once('done', (e, state) => {
       if (state === 'completed') {
-        console.log(`Téléchargement terminé : ${savePath}`);
+        logSuccess(`Téléchargement terminé : ${savePath}`);
       } else {
-        console.error(`Échec du téléchargement : ${state}`);
+        logError(`Échec du téléchargement : ${state}`);
       }
     });
   });
 
   const startUrl = `http://127.0.0.1:${port}`;
-  console.log("🔗 Chargement de l'URL :", startUrl);
+  logInfo("🔗 Chargement de l'URL :", startUrl);
   win.loadURL(startUrl)
-    .then(() => console.log("✅ URL chargée avec succès :", startUrl))
-    .catch(err => console.error("❌ Échec du chargement de l'URL :", err.message));
+    .then(() => logSuccess("URL chargée avec succès :", startUrl))
+    .catch(err => logError("Échec du chargement de l'URL :", err.message));
 
   // Ouvrir la console de développement par défaut
   win.webContents.openDevTools({ mode: 'detach' });
 
   // Ajouter des écouteurs d'événements pour les changements de page
   win.webContents.on('did-navigate', (event, url) => {
-    console.log(`📄 Navigation vers : ${url}`);
+    logInfo(`📄 Navigation vers : ${url}`);
   });
 
   win.webContents.on('did-navigate-in-page', (event, url) => {
-    console.log(`📄 Navigation dans la page vers : ${url}`);
+    logInfo(`📄 Navigation dans la page vers : ${url}`);
   });
+
+  // Intercepter la fermeture de la fenêtre principale pour afficher le message de sauvegarde
+  win.on('close', async (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      logInfo("Déclenchement de la sauvegarde automatique avant fermeture (via close)...");
+      backupDatabaseOnExit();
+      isQuitting = true;
+      await dialog.showMessageBox(win, {
+        type: 'info',
+        title: 'Sauvegarde effectuée',
+        message: 'La sauvegarde automatique de la base de données a été réalisée avec succès.\nL\'application va maintenant se fermer.',
+        buttons: ['OK']
+      });
+      win.destroy(); // ferme la fenêtre sans relancer close
+      app.quit();
+    }
+  });
+}
+
+// Fonction utilitaire pour sauvegarder la base SQLite avec timestamp
+function backupDatabaseOnExit() {
+  try {
+    const dbDir = fs.existsSync(path.join(basePath, 'data')) ? path.join(basePath, 'data') : basePath;
+    const dbPath = path.join(dbDir, 'database.sqlite');
+    if (!fs.existsSync(dbPath)) {
+      logWarn('Aucune base de données à sauvegarder:', dbPath);
+      return;
+    }
+    const backupDir = path.join(basePath, 'backups');
+    if (!fs.existsSync(backupDir)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+      logInfo('Dossier de sauvegarde créé:', backupDir);
+    }
+    // Formatage lisible : database_YYYY-MM-DD_HH-mm-ss.sqlite
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    const backupPath = path.join(backupDir, `database_${timestamp}.sqlite`);
+    fs.copyFileSync(dbPath, backupPath);
+    logSuccess('Sauvegarde automatique de la base effectuée:', backupPath);
+  } catch (err) {
+    logError('Erreur lors de la sauvegarde automatique de la base:', err);
+  }
 }
 
 // Démarrage d'Electron une fois prêt
 app.whenReady().then(() => {
-  console.log("📌 Electron prêt.");
+  logInfo("Electron prêt.");
 
   // Démarrer Express et ensuite créer la fenêtre
   portfinder.basePort = 3000;
   portfinder.getPort((err, port) => {
     if (err) {
-      console.error("❌ Erreur lors de la recherche d'un port libre :", err);
+      logError("Erreur lors de la recherche d'un port libre :", err);
       app.quit();
       return;
     }
 
-    console.log(`🚀 Démarrage du serveur Express sur le port ${port}...`);
+    logSuccess(`Démarrage du serveur Express sur le port ${port}...`);
     expressApp.listen(port, () => {
-      console.log(`✅ Serveur Express en écoute sur http://127.0.0.1:${port}`);
+      logSuccess(`Serveur Express en écoute sur http://127.0.0.1:${port}`);
       createWindow(port);
     }).on('error', (err) => {
-      console.error("❌ Erreur lors du démarrage d'Express :", err);
+      logError("Erreur lors du démarrage d'Express :", err);
       app.quit();
     });
   });
@@ -153,7 +205,7 @@ app.whenReady().then(() => {
             // fallback if data/database.sqlite n'existe pas
             let source = path.join(basePath, 'data', 'database.sqlite');
             if (!fs.existsSync(source)) {
-              console.warn('DB introuvable dans data/, fallback vers racine');
+              logWarn('DB introuvable dans data/, fallback vers racine');
               source = path.join(basePath, 'database.sqlite');
             }
 
@@ -184,16 +236,23 @@ app.whenReady().then(() => {
 });
 
 // Gestion de la fermeture de l'application
+app.on('before-quit', (event) => {
+  if (isQuitting) return; // Évite la boucle
+  logInfo("Déclenchement de la sauvegarde automatique avant fermeture...");
+  backupDatabaseOnExit();
+  // On ne bloque plus ici, la fermeture continue normalement
+});
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    console.log("📌 Fermeture de l'application...");
+    logInfo("Fermeture de l'application...");
     app.quit();
   }
 });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    console.log("📌 Réouverture de la fenêtre Electron...");
+    logInfo("Réouverture de la fenêtre Electron...");
     portfinder.basePort = 3000;
     portfinder.getPort((err, port) => {
       if (!err) {
