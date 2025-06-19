@@ -14,9 +14,12 @@
     "axios": "^1.7.2",
     "bootstrap": "^5.3.3",
     "cors": "^2.8.5",
+    "country-flag-icons": "^1.5.19",
     "crypto": "^1.0.1",
+    "glob": "^11.0.3",
     "jspdf": "^2.5.2",
     "mui": "^0.0.1",
+    "pdfmake": "^0.2.20",
     "react": "^18.0.0",
     "react-bootstrap": "^2.10.4",
     "react-dom": "^18.0.0",
@@ -27,6 +30,7 @@
     "react-scripts": "^5.0.1",
     "react-select": "^5.0.0",
     "react-world-flags": "^1.6.0",
+    "sharp": "^0.34.2",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

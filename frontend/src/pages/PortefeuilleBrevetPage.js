@@ -71,25 +71,42 @@ const PortefeuilleBrevetPage = () => {
   const normalizedSearchTerm = normalizeString(searchTerm);
 
   const filteredBrevets = brevets.filter((brevet) => {
+    console.log('Filtrage brevet:', { brevet, searchFilter, normalizedSearchTerm });
+
     if (searchFilter === 'titre') {
-      return safeSearch(brevet.titre, normalizedSearchTerm);
+      const result = safeSearch(brevet.titre, normalizedSearchTerm);
+      console.log('Filtre "titre":', { titre: brevet.titre, result });
+      return result;
     } else if (searchFilter === 'reference_famille') {
-      return safeSearch(brevet.reference_famille, normalizedSearchTerm);
+      const result = safeSearch(brevet.reference_famille, normalizedSearchTerm);
+      console.log('Filtre "reference_famille":', { reference_famille: brevet.reference_famille, result });
+      return result;
     } else if (searchFilter === 'reference_cabinet') {
-      // Rechercher dans les cabinets associés au brevet
-      return brevet.Cabinets && brevet.Cabinets.some(cabinet => 
-        cabinet.BrevetCabinets && safeSearch(cabinet.BrevetCabinets.reference, normalizedSearchTerm)
+      const result = brevet.Cabinets?.some((cabinet) =>
+        cabinet.BrevetCabinets &&
+        safeSearch(cabinet.BrevetCabinets.reference, normalizedSearchTerm)
       );
+      console.log('Filtre "reference_cabinet":', { Cabinets: brevet.Cabinets, result });
+      return result;
     } else if (searchFilter === 'client') {
-      return (
-        brevet.Clients &&
-        brevet.Clients.some((client) =>
-          safeSearch(client.nom_client, normalizedSearchTerm)
-        )
+      const result = brevet.Clients?.some((client) =>
+        safeSearch(client.nom_client, normalizedSearchTerm)
       );
+      console.log('Filtre "client":', { Clients: brevet.Clients, result });
+      return result;
+    } else if (searchFilter === 'cabinet') {
+      const result = brevet.Cabinets?.some((cabinet) =>
+        safeSearch(cabinet.nom_cabinet, normalizedSearchTerm)
+      );
+      console.log('Filtre "cabinet":', { Cabinets: brevet.Cabinets, result });
+      return result;
     }
+
+    console.log('Aucun filtre appliqué, retour par défaut.');
     return true;
   });
+
+  console.log('Brevets après filtrage:', { filteredBrevets, searchFilter, normalizedSearchTerm });
 
   const indexOfLastBrevet = page * rowsPerPage;
   const indexOfFirstBrevet = indexOfLastBrevet - rowsPerPage;
@@ -388,6 +405,7 @@ const PortefeuilleBrevetPage = () => {
             <MenuItem value="reference_famille">Rechercher par Référence Famille</MenuItem>
             <MenuItem value="reference_cabinet">Rechercher par Référence Cabinet</MenuItem>
             <MenuItem value="client">Rechercher par Client</MenuItem>
+            <MenuItem value="cabinet">Rechercher par Cabinet</MenuItem>
           </Select>
         </Box>
 

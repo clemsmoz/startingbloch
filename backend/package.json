@@ -16,6 +16,7 @@
     "body-parser": "^1.20.2",
     "caniuse-lite": "^1.0.30001713",
     "cors": "^2.8.5",
+    "country-flag-icons": "^1.5.19",
     "crypto": "^1.0.1",
     "express": "^4.19.2",
     "express-fileupload": "^1.5.1",
@@ -23,11 +24,13 @@
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.0",
+    "pdfmake": "^0.2.20",
     "portfinder": "^1.0.32",
     "promise": "^8.3.0",
     "qs": "^6.13.0",
     "sequelize": "^6.37.5",
     "sqlite3": "^5.0.2",
+    "tmp": "^0.2.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

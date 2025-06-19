@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Container, TextField, Select, MenuItem, Typography, Button, Paper, IconButton, Pagination, FormControl } from '@mui/material';
+import {
+  Box, Container, TextField, Select, MenuItem, Typography, Button, Paper,
+  IconButton, Pagination, FormControl, Checkbox, FormControlLabel
+} from '@mui/material';
 import { FaEdit, FaTrash, FaInfoCircle, FaPlus, FaArrowUp } from 'react-icons/fa';
 import AddBrevetModal from '../components/AddBrevetModal';
 import BrevetDetailModal from '../components/BrevetDetailModal';
@@ -7,6 +10,9 @@ import EditBrevetModal from '../components/EditBrevetModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
+
+// ----- IMPORT DE FONCTION EXPORT PDF ICI -----
+import { exportBrevetsPDF } from '../hooks/exportPortfolioPDF'; // Adapter le chemin selon ton projet
 
 const BrevetClientPage = () => {
   const { clientId } = useParams();
@@ -18,10 +24,14 @@ const BrevetClientPage = () => {
   const [selectedBrevetId, setSelectedBrevetId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFilter, setSearchFilter] = useState('titre');
-  const [page, setPage] = useState(1); // Page actuelle
-  const [rowsPerPage, setRowsPerPage] = useState(8); // Nombre d'éléments par page
-  const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(8);
 
+  // Sélection multiple de brevets
+  const [selectedBrevets, setSelectedBrevets] = useState([]);
+  const allSelected = selectedBrevets.length === brevets.length && brevets.length > 0;
+
+  const navigate = useNavigate();
   const safe = (val) => val ?? '';
 
   useEffect(() => {
@@ -33,9 +43,9 @@ const BrevetClientPage = () => {
     fetch(`${API_BASE_URL}/api/brevets/client/${clientId}`)
       .then(response => response.json())
       .then(data => {
-        // Supposons que l'API renvoie { data: [...] }
         const brevetsArray = Array.isArray(data.data) ? data.data : data;
         setBrevets(brevetsArray);
+        setSelectedBrevets([]); // Reset la sélection à chaque rafraîchissement
       })
       .catch(error => {
         console.error('There was an error fetching the brevets!', error);
@@ -53,6 +63,37 @@ const BrevetClientPage = () => {
       });
   };
 
+  // ------ GESTION SELECTION ------
+  const handleSelectBrevet = (id) => {
+    setSelectedBrevets((prev) =>
+      prev.includes(id) ? prev.filter(brevetId => brevetId !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedBrevets([]);
+    } else {
+      setSelectedBrevets(brevets.map(b => b.id_brevet));
+    }
+  };
+
+  // ------ EXPORT PDF ------
+  const handleExportAll = async () => {
+  await exportBrevetsPDF(brevets, clientName, logo);
+};
+
+const handleExportSelected = async () => {
+  const brevetsToExport = brevets.filter(b => selectedBrevets.includes(b.id_brevet));
+  if (brevetsToExport.length === 0) {
+    alert('Sélectionne au moins un brevet à exporter !');
+    return;
+  }
+  await exportBrevetsPDF(brevetsToExport, clientName, logo);
+  setSelectedBrevets([]);
+};
+
+  // ------ AUTRES HANDLERS ------
   const handleShowEditModal = (brevet, event) => {
     event.stopPropagation();
     setSelectedBrevetId(brevet.id_brevet);
@@ -60,7 +101,7 @@ const BrevetClientPage = () => {
   };
 
   const handleCloseEditModal = () => setShowEditModal(false);
-  
+
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -77,13 +118,11 @@ const BrevetClientPage = () => {
   const handleCloseAddModal = () => setShowAddModal(false);
 
   const handleDeleteBrevet = async (brevetId, event) => {
-    event.stopPropagation(); // Empêcher la propagation de l'événement
+    event.stopPropagation();
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce brevet ?")) {
       try {
-        await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, {
-          method: 'DELETE',
-        });
-        refreshBrevets(); // Actualiser la liste des brevets après suppression
+        await fetch(`${API_BASE_URL}/api/brevets/${brevetId}`, { method: 'DELETE' });
+        refreshBrevets();
       } catch (error) {
         console.error('Erreur lors de la suppression du brevet', error);
       }
@@ -91,10 +130,7 @@ const BrevetClientPage = () => {
   };
 
   // Fonction de normalisation pour la recherche
-  const normalizeString = (str) => {
-    return str.trim().toLowerCase();
-  };
-
+  const normalizeString = (str) => str.trim().toLowerCase();
   const normalizedSearchTerm = normalizeString(searchTerm);
 
   const filteredBrevets = brevets.filter((brevet) => {
@@ -102,39 +138,28 @@ const BrevetClientPage = () => {
       return normalizeString(brevet.titre)?.includes(normalizedSearchTerm);
     } else if (searchFilter === 'reference_famille') {
       return normalizeString(brevet.reference_famille)?.includes(normalizedSearchTerm);
-    } else if (searchFilter === 'pays') {
-      return (
-        brevet.pays &&
-        brevet.pays.some((p) =>
-          normalizeString(p.nom_fr_fr)?.includes(normalizedSearchTerm)
-        )
-      );
     }
     return true;
   });
 
-  // Pagination : Calcul des brevets affichés par page
   const indexOfLastBrevet = page * rowsPerPage;
   const indexOfFirstBrevet = indexOfLastBrevet - rowsPerPage;
   const currentBrevets = filteredBrevets.slice(indexOfFirstBrevet, indexOfLastBrevet);
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (event, newPage) => setPage(newPage);
   const handleRowsPerPageChange = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(1); // Réinitialiser à la première page
+    setPage(1);
   };
 
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Container sx={{ padding: '40px' }} maxWidth="xl">
-        {/* Logo de l'entreprise */}
+        {/* Logo */}
         <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
         </Box>
-        
+
         <Button variant="contained" color="primary" onClick={() => navigate(-1)} sx={{ mb: 4 }}>
           Retour
         </Button>
@@ -142,7 +167,29 @@ const BrevetClientPage = () => {
           Portefeuille de brevet de {clientName}
         </Typography>
 
-        {/* Barre de recherche et filtre */}
+        {/* ---- EXPORT BUTTONS ---- */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <Button variant="contained" color="primary" onClick={handleExportAll}>
+            Exporter tout
+          </Button>
+          <Button variant="contained" color="secondary" onClick={handleExportSelected} disabled={selectedBrevets.length === 0}>
+            Exporter la sélection ({selectedBrevets.length})
+          </Button>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={allSelected}
+                onChange={handleSelectAll}
+                color="primary"
+                sx={{ ml: 2 }}
+              />
+            }
+            label="Tout sélectionner"
+            sx={{ ml: 3 }}
+          />
+        </Box>
+
+        {/* Recherche et filtre */}
         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
           <TextField
             variant="outlined"
@@ -159,7 +206,6 @@ const BrevetClientPage = () => {
           >
             <MenuItem value="titre">Rechercher par Titre</MenuItem>
             <MenuItem value="reference_famille">Rechercher par Référence Famille</MenuItem>
-            {/* <MenuItem value="pays">Rechercher par Pays</MenuItem> */}
           </Select>
         </Box>
 
@@ -172,11 +218,7 @@ const BrevetClientPage = () => {
             color="primary"
           />
           <FormControl sx={{ width: '150px' }}>
-            <Select
-              value={rowsPerPage}
-              onChange={handleRowsPerPageChange}
-              variant="outlined"
-            >
+            <Select value={rowsPerPage} onChange={handleRowsPerPageChange} variant="outlined">
               <MenuItem value={8}>8 par page</MenuItem>
               <MenuItem value={16}>16 par page</MenuItem>
               <MenuItem value={32}>32 par page</MenuItem>
@@ -185,18 +227,15 @@ const BrevetClientPage = () => {
         </Box>
 
         <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleShowAddModal}
-            startIcon={<FaPlus />}
-          >
+          <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
             Ajouter un brevet
           </Button>
           <Typography variant="h6" sx={{ ml: 2 }}>
             Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}
           </Typography>
         </Box>
+
+        {/* ---- LISTE DES BREVETS ---- */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {currentBrevets && currentBrevets.length > 0 ? (
             currentBrevets.map(brevet => (
@@ -213,6 +252,13 @@ const BrevetClientPage = () => {
                 }}
               >
                 <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+                  {/* Checkbox sélection brevet */}
+                  <Checkbox
+                    checked={selectedBrevets.includes(brevet.id_brevet)}
+                    onChange={() => handleSelectBrevet(brevet.id_brevet)}
+                    color="primary"
+                    sx={{ mr: 1 }}
+                  />
                   <Box>
                     <Typography variant="h6" component="div" fontWeight="bold">
                       {safe(brevet.titre)}
@@ -249,11 +295,7 @@ const BrevetClientPage = () => {
             color="primary"
           />
           <FormControl sx={{ width: '150px' }}>
-            <Select
-              value={rowsPerPage}
-              onChange={handleRowsPerPageChange}
-              variant="outlined"
-            >
+            <Select value={rowsPerPage} onChange={handleRowsPerPageChange} variant="outlined">
               <MenuItem value={8}>8 par page</MenuItem>
               <MenuItem value={16}>16 par page</MenuItem>
               <MenuItem value={32}>32 par page</MenuItem>
@@ -292,9 +334,7 @@ const BrevetClientPage = () => {
             right: 16,
             backgroundColor: 'primary.main',
             color: 'white',
-            '&:hover': {
-              backgroundColor: 'primary.dark',
-            },
+            '&:hover': { backgroundColor: 'primary.dark' },
             zIndex: 1000,
           }}
           aria-label="Retour en haut"

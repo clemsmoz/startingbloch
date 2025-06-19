@@ -5,6 +5,7 @@ const portfinder = require('portfinder');
 const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
+const tmp = require('tmp');
 
 // Fonctions utilitaires pour les logs colorés et avec icônes
 const logInfo = (...args) => console.log('\x1b[36m%s\x1b[0m', 'ℹ️', ...args);      // Cyan
@@ -51,6 +52,27 @@ expressApp.get('/api/backup', (req, res) => {
       return res.status(500).send('Erreur lors du téléchargement de la sauvegarde.');
     }
   });
+});
+
+// Route pour exporter le PDF
+expressApp.get('/api/export-pdf', async (req, res) => {
+  try {
+    // Génère le PDF en buffer (fonction utilitaire à créer)
+    const buffer = await generatePortfolioPDFBuffer(req.query); // req.query doit contenir les infos nécessaires
+    // Crée un fichier temporaire pour l'envoi
+    const tmpFile = tmp.fileSync({ postfix: '.pdf' });
+    fs.writeFileSync(tmpFile.name, buffer);
+    res.download(tmpFile.name, 'portefeuille_brevets.pdf', err => {
+      tmpFile.removeCallback();
+      if (err) {
+        logError('Erreur export PDF:', err);
+        return res.status(500).send('Erreur lors du téléchargement du PDF.');
+      }
+    });
+  } catch (err) {
+    logError('Erreur export PDF:', err);
+    res.status(500).send('Erreur lors de la génération du PDF.');
+  }
 });
 
 const frontendStaticPath = path.join(basePath, 'frontend', 'build');
@@ -131,14 +153,53 @@ function createWindow(port) {
     if (!isQuitting) {
       event.preventDefault();
       logInfo("Déclenchement de la sauvegarde automatique avant fermeture (via close)...");
-      backupDatabaseOnExit();
+      
+      // Demander à l'utilisateur s'il souhaite choisir un dossier personnalisé pour la sauvegarde
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'question',
+        title: 'Sauvegarde de la base de données',
+        message: 'Souhaitez-vous choisir un dossier pour la sauvegarde de la base de données ?',
+        buttons: ['Utiliser le dossier par défaut', 'Choisir un dossier', 'Annuler la fermeture'],
+        defaultId: 0,
+        cancelId: 2
+      });
+      
+      // Si l'utilisateur a choisi d'annuler, ne pas fermer l'application
+      if (response === 2) {
+        return;
+      }
+      
+      let backupPath = null;
+      
+      // Si l'utilisateur veut choisir un dossier
+      if (response === 1) {
+        const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+          title: 'Choisir le dossier de sauvegarde',
+          properties: ['openDirectory']
+        });
+        
+        if (!canceled && filePaths.length > 0) {
+          backupPath = await backupDatabaseOnExit(filePaths[0]);
+        } else {
+          // Si l'utilisateur a annulé la sélection de dossier, utiliser le dossier par défaut
+          backupPath = await backupDatabaseOnExit();
+        }
+      } else {
+        // Utiliser le dossier par défaut
+        backupPath = await backupDatabaseOnExit();
+      }
+      
       isQuitting = true;
+      
       await dialog.showMessageBox(win, {
         type: 'info',
         title: 'Sauvegarde effectuée',
-        message: 'La sauvegarde automatique de la base de données a été réalisée avec succès.\nL\'application va maintenant se fermer.',
+        message: backupPath 
+          ? `La sauvegarde automatique de la base de données a été réalisée avec succès.\nEmplacement: ${backupPath}\nL'application va maintenant se fermer.`
+          : 'Une erreur est survenue lors de la sauvegarde de la base de données.\nL\'application va maintenant se fermer.',
         buttons: ['OK']
       });
+      
       win.destroy(); // ferme la fenêtre sans relancer close
       app.quit();
     }
@@ -146,7 +207,7 @@ function createWindow(port) {
 }
 
 // Fonction utilitaire pour sauvegarder la base SQLite avec timestamp
-function backupDatabaseOnExit() {
+function backupDatabaseOnExit(customPath = null) {
   try {
     const dbDir = fs.existsSync(path.join(basePath, 'data')) ? path.join(basePath, 'data') : basePath;
     const dbPath = path.join(dbDir, 'database.sqlite');
@@ -154,20 +215,33 @@ function backupDatabaseOnExit() {
       logWarn('Aucune base de données à sauvegarder:', dbPath);
       return;
     }
-    const backupDir = path.join(basePath, 'backups');
-    if (!fs.existsSync(backupDir)) {
-      fs.mkdirSync(backupDir, { recursive: true });
-      logInfo('Dossier de sauvegarde créé:', backupDir);
-    }
+    
     // Formatage lisible : database_YYYY-MM-DD_HH-mm-ss.sqlite
     const now = new Date();
     const pad = n => n.toString().padStart(2, '0');
     const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    const backupPath = path.join(backupDir, `database_${timestamp}.sqlite`);
+    const fileName = `database_${timestamp}.sqlite`;
+    
+    // Utiliser le chemin personnalisé si fourni, sinon utiliser le dossier de sauvegarde par défaut
+    let backupPath;
+    if (customPath) {
+      backupPath = path.join(customPath, fileName);
+    } else {
+      // Dossier par défaut
+      const backupDir = path.join(basePath, 'backups');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+        logInfo('Dossier de sauvegarde créé:', backupDir);
+      }
+      backupPath = path.join(backupDir, fileName);
+    }
+    
     fs.copyFileSync(dbPath, backupPath);
     logSuccess('Sauvegarde automatique de la base effectuée:', backupPath);
+    return backupPath;
   } catch (err) {
     logError('Erreur lors de la sauvegarde automatique de la base:', err);
+    return null;
   }
 }
 
