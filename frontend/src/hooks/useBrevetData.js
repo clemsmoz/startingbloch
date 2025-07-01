@@ -124,6 +124,22 @@ const useBrevetData = (brevetId) => {
   }, [brevetId]);
 
   useEffect(() => {
+  // Reset des états à chaque changement d'ID
+  setBrevet(null);
+  setProcedureCabinets([]);
+  setAnnuiteCabinets([]);
+  setContactsProcedure([]);
+  setContactsAnnuite([]);
+  setClients([]);
+  setInventeurs([]);
+  setDeposants([]);
+  setTitulaires([]);
+  setPays([]);
+  setStatut(null);
+  setStatutsList([]);
+  setError(null);
+  setLoading(true);
+
     // Éviter les appels inutiles si brevetId est null
     if (!brevetId) {
       console.log("Aucun ID de brevet fourni à useBrevetData");
@@ -137,7 +153,7 @@ const useBrevetData = (brevetId) => {
       setLoading(true);
       setError(null); // Réinitialiser les erreurs
 
-      const fetchBrevetData = async () => {
+      const fetchBrevetData = async (signal) => {
         try {
           // Vérifier si les données du brevet sont en cache
           const cachedBrevet = await cacheService.getBrevetById(brevetId);
@@ -335,7 +351,13 @@ const useBrevetData = (brevetId) => {
         }
       };
 
-      fetchBrevetData();
+      
+  const abortController = new AbortController();
+  fetchBrevetData(abortController.signal);
+  return () => {
+    abortController.abort();
+  };
+
     } else {
       console.error('Aucun ID de brevet fourni à useBrevetData');
       setLoading(false);

@@ -647,12 +647,15 @@ const PortefeuilleBrevetPage = () => {
 
         <AddBrevetModal show={showAddModal} handleClose={handleCloseAddModal} />
 
-        <BrevetDetailModal 
-          show={showDetailModal} 
-          handleClose={handleCloseDetailModal} 
-          brevetId={selectedBrevetId} 
-          onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
-        />
+        {showDetailModal && selectedBrevetId !== null && (
+          <BrevetDetailModal
+            key={selectedBrevetId}
+            show={showDetailModal}
+            handleClose={handleCloseDetailModal}
+            brevetId={selectedBrevetId}
+            onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
+          />
+        )}
 
         <EditBrevetModal 
           show={showEditModal} 

@@ -53,7 +53,7 @@ export async function getBrevetDataForExport(brevetId) {
     deposants = safeArray(dep.data);
     titulaires = safeArray(tit.data);
 
-    // 3. Cabinets & classification
+    // 3. Cabinets 
     const cb = await axios.get(`${API_BASE_URL}/api/brevets/${brevetId}/cabinets`);
     const allC = safeArray(cb.data.data);
     procedureCabinets = allC.filter(c => (c.type || '').toLowerCase().includes('proced') || (c.BrevetCabinets?.type || '').toLowerCase().includes('proced'));

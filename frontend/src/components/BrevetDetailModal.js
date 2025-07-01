@@ -387,6 +387,27 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
   const paysLength = Array.isArray(pays) ? pays.length : 0;
 
   // Contenu principal si tout est bien chargé
+  
+  if (loading || !brevet) {
+    
+  if (loading || !brevet) {
+    return (
+      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
+        <Box p={5} textAlign="center">
+          <Typography variant="h6" color="primary">Chargement des informations du brevet...</Typography>
+        </Box>
+      </Dialog>
+    );
+  }
+  return (
+      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
+        <Box p={5} textAlign="center">
+          <Typography variant="h6" color="primary">Chargement des informations du brevet...</Typography>
+        </Box>
+      </Dialog>
+    );
+  }
+
   return (
     <>
       <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
@@ -1508,3 +1529,5 @@ const BrevetDetailModal = ({ show = false, handleClose = () => {}, brevetId = nu
 };
 
 export default BrevetDetailModal;
+
+
