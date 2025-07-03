@@ -8,6 +8,7 @@ import ContactsPage from './pages/ContactsPage';
 import CabinetsPage from './pages/CabinetsPage';
 import ClientsPage from './pages/ClientsPage';
 import BrevetClientPage from './pages/BrevetClientPage';
+import AdminUserManagementPage from './pages/AdminUserManagementPage';
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
         
         {/* Pour compatibilité avec les anciennes routes */}
         <Route path="/acceuil" element={<Navigate to="/home" replace />} />
+        <Route path='user-management' element={<AdminUserManagementPage />} />
         
         {/* Autres routes */}
         <Route path="/register" element={<RegisterPage />} />

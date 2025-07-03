@@ -35,6 +35,7 @@ import {
 import usePortefeuilleBrevet from '../hooks/usePortefeuilleBrevet';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
+import cacheService from '../services/cacheService'; // Ajoute ceci
 
 const PortefeuilleBrevetPage = () => {
   // On récupère les données et fonctions depuis le hook personnalisé
@@ -375,6 +376,15 @@ const PortefeuilleBrevetPage = () => {
     }
   };
 
+  // Supprime toute redéclaration de 'user' et 'canWrite' dans le composant, il ne doit y avoir qu'UNE SEULE déclaration :
+
+  const user = typeof cacheService.get === "function"
+    ? cacheService.get('user')
+    : (typeof window !== "undefined" && window.localStorage
+        ? JSON.parse(window.localStorage.getItem('user') || 'null')
+        : null);
+  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
@@ -421,24 +431,27 @@ const PortefeuilleBrevetPage = () => {
         </Box>
 
         <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
-          <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
-            Ajouter un brevet
-          </Button>
-          {/* Bouton pour ajout via Excel */}
-          <Button
-            variant="outlined"
-            color="success"
-            sx={{ ml: 2 }}
-            startIcon={
-              <svg width="20" height="20" viewBox="0 0 20 20" style={{ verticalAlign: 'middle' }}>
-                <rect width="20" height="20" rx="3" fill="#217346"/>
-                <text x="50%" y="60%" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">X</text>
-              </svg>
-            }
-            onClick={handleExcelButtonClick}
-          >
-            Ajouter via Excel
-          </Button>
+          {canWrite && (
+            <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
+              Ajouter un brevet
+            </Button>
+          )}
+          {canWrite && (
+            <Button
+              variant="outlined"
+              color="success"
+              sx={{ ml: 2 }}
+              startIcon={
+                <svg width="20" height="20" viewBox="0 0 20 20" style={{ verticalAlign: 'middle' }}>
+                  <rect width="20" height="20" rx="3" fill="#217346"/>
+                  <text x="50%" y="60%" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">X</text>
+                </svg>
+              }
+              onClick={handleExcelButtonClick}
+            >
+              Ajouter via Excel
+            </Button>
+          )}
           <Typography variant="h6" sx={{ ml: 2 }}>
             Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}
           </Typography>
@@ -581,7 +594,6 @@ const PortefeuilleBrevetPage = () => {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {currentBrevets.length > 0 ? (
             currentBrevets.map((brevet) => {
-              // S'assurer que l'ID est correctement extrait
               const brevetId = safe(brevet.id) || safe(brevet.id_brevet);
               console.log('Rendu de la carte brevet:', { brevetId, titre: brevet.titre });
               
@@ -615,16 +627,20 @@ const PortefeuilleBrevetPage = () => {
                     >
                       <FaInfoCircle size={24} />
                     </IconButton>
-                    <IconButton 
-                      color="warning" 
-                      onClick={() => handleEditClick(brevetId)}   // <-- remplacé ici
-                      aria-label="Modifier"
-                    >
-                      <FaEdit size={24} />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => handleDeleteBrevet(brevet.id_brevet)}>
-                      <FaTrash size={24} />
-                    </IconButton>
+                    {canWrite && (
+                      <>
+                        <IconButton 
+                          color="warning" 
+                          onClick={() => handleEditClick(brevetId)}
+                          aria-label="Modifier"
+                        >
+                          <FaEdit size={24} />
+                        </IconButton>
+                        <IconButton color="error" onClick={() => handleDeleteBrevet(brevetId)}>
+                          <FaTrash size={24} />
+                        </IconButton>
+                      </>
+                    )}
                   </Box>
                 </Paper>
               );

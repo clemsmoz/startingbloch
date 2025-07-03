@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CardContent, Typography, Container, Button, Avatar, Box, Paper } from '@mui/material';
 import Sidebar from '../components/Sidebar';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import AddContactModal from '../components/AddContactModal';
 import DeleteContactModal from '../components/DeleteContactModal';
 import EditContactModal from '../components/EditContactModal';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
+import cacheService from '../services/cacheService';
 
 const ContactsPage = () => {
   const [contacts, setContacts] = useState([]);
@@ -74,6 +75,13 @@ const ContactsPage = () => {
   };
   const handleCloseEditModal = () => setShowEditModal(false);
 
+  const user = typeof cacheService.get === "function"
+    ? cacheService.get('user')
+    : (typeof window !== "undefined" && window.localStorage
+        ? JSON.parse(window.localStorage.getItem('user') || 'null')
+        : null);
+  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
@@ -88,39 +96,36 @@ const ContactsPage = () => {
         </Typography>
 
         {/* Boutons d'action */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+        <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
+          {canWrite && (
+            <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
+              Ajouter un contact
+            </Button>
+          )}
           <Button 
             variant="outlined" 
             color="primary" 
             onClick={() => navigate(-1)} 
-            sx={{ fontWeight: 'bold', padding: '12px 20px' }}
+            sx={{ fontWeight: 'bold', padding: '12px 20px', marginLeft: '16px' }}
           >
             Retour
           </Button>
-          <Button 
-            variant="outlined" 
-            color="primary" 
-            onClick={handleShowAddModal} 
-            sx={{ fontWeight: 'bold', padding: '12px 20px' }}
-          >
-            Ajouter un nouveau Contact
-          </Button>
         </Box>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {Array.isArray(contacts) && contacts.length > 0 ? (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {contacts && contacts.length > 0 ? (
             contacts.map(contact => (
-              <Box
+              <Paper
                 key={safe(contact.id) || safe(contact.id_contact)}
-                component={Paper}
-                elevation={6}
                 sx={{
-                  width: 300,
                   padding: 3,
                   borderRadius: 3,
                   transition: 'transform 0.3s',
                   '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
                   position: 'relative',
+                  width: '100%',
+                  maxWidth: 360,
+                  margin: '0 auto',
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -147,7 +152,7 @@ const ContactsPage = () => {
                     <strong>Email :</strong> {safe(contact.email_contact)}
                   </Typography>
                 </CardContent>
-              </Box>
+              </Paper>
             ))
           ) : (
             <Typography variant="body1" sx={{ width: '100%', textAlign: 'center', mt: 3 }}>

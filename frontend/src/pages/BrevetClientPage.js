@@ -13,6 +13,7 @@ import { API_BASE_URL } from '../config';
 
 // ----- IMPORT DE FONCTION EXPORT PDF ICI -----
 import { exportBrevetsPDF } from '../hooks/exportPortfolioPDF'; // Adapter le chemin selon ton projet
+import cacheService from '../services/cacheService';
 
 const BrevetClientPage = () => {
   const { clientId } = useParams();
@@ -152,6 +153,14 @@ const handleExportSelected = async () => {
     setPage(1);
   };
 
+  // Récupère le rôle de l'utilisateur connecté
+  const user = typeof cacheService.get === "function"
+    ? cacheService.get('user')
+    : (typeof window !== "undefined" && window.localStorage
+        ? JSON.parse(window.localStorage.getItem('user') || 'null')
+        : null);
+  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+
   return (
     <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
       <Container sx={{ padding: '40px' }} maxWidth="xl">
@@ -227,9 +236,11 @@ const handleExportSelected = async () => {
         </Box>
 
         <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
-          <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
-            Ajouter un brevet
-          </Button>
+          {canWrite && (
+            <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
+              Ajouter un brevet
+            </Button>
+          )}
           <Typography variant="h6" sx={{ ml: 2 }}>
             Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}
           </Typography>
@@ -258,6 +269,7 @@ const handleExportSelected = async () => {
                     onChange={() => handleSelectBrevet(brevet.id_brevet)}
                     color="primary"
                     sx={{ mr: 1 }}
+                    disabled={!canWrite}
                   />
                   <Box>
                     <Typography variant="h6" component="div" fontWeight="bold">
@@ -272,12 +284,16 @@ const handleExportSelected = async () => {
                   <IconButton color="info" onClick={(event) => handleShowDetailModal(brevet.id_brevet, event)}>
                     <FaInfoCircle size={24} />
                   </IconButton>
-                  <IconButton color="warning" onClick={(event) => handleShowEditModal(brevet, event)}>
-                    <FaEdit size={24} />
-                  </IconButton>
-                  <IconButton color="error" onClick={(event) => handleDeleteBrevet(brevet.id_brevet, event)}>
-                    <FaTrash size={24} />
-                  </IconButton>
+                  {canWrite && (
+                    <>
+                      <IconButton color="warning" onClick={(event) => handleShowEditModal(brevet, event)}>
+                        <FaEdit size={24} />
+                      </IconButton>
+                      <IconButton color="error" onClick={(event) => handleDeleteBrevet(brevet.id_brevet, event)}>
+                        <FaTrash size={24} />
+                      </IconButton>
+                    </>
+                  )}
                 </Box>
               </Paper>
             ))

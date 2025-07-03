@@ -8,6 +8,7 @@ import DeleteClientModal from '../components/DeleteClientModal';
 import AddClientModal from '../components/AddClientModal';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
+import cacheService from '../services/cacheService';
 
 const ClientsPage = () => {
   const [clients, setClients] = useState([]);
@@ -62,6 +63,14 @@ const ClientsPage = () => {
     navigate(`/contacts?client_id=${clientId}`);
   };
 
+  // Ajout de la vérification des droits d'écriture (sans supprimer le reste)
+  const user = typeof cacheService.get === "function"
+    ? cacheService.get('user')
+    : (typeof window !== "undefined" && window.localStorage
+        ? JSON.parse(window.localStorage.getItem('user') || 'null')
+        : null);
+  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
@@ -74,14 +83,16 @@ const ClientsPage = () => {
         <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
           Portefeuille Clients
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleShowAddModal}
-          sx={{ mb: 4, textTransform: 'uppercase', fontWeight: 'bold' }}
-        >
-          Ajouter un nouveau client
-        </Button>
+        {canWrite && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleShowAddModal}
+            sx={{ mb: 4, textTransform: 'uppercase', fontWeight: 'bold' }}
+          >
+            Ajouter un nouveau client
+          </Button>
+        )}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {clients.map(client => (
             <Paper
@@ -102,16 +113,18 @@ const ClientsPage = () => {
                   {client.nom_client ? client.nom_client.charAt(0) : ''}
                   {client.prenom_client ? client.prenom_client.charAt(0) : ''}
                 </Avatar>
-                <Box>
-                  <FaEdit
-                    style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#3f51b5' }}
-                    onClick={(event) => handleShowEditModal(client, event)}
-                  />
-                  <FaTrash
-                    style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336', marginLeft: '1rem' }}
-                    onClick={(event) => handleShowDeleteModal(client, event)}
-                  />
-                </Box>
+                {canWrite && (
+                  <Box>
+                    <FaEdit
+                      style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#3f51b5' }}
+                      onClick={(event) => handleShowEditModal(client, event)}
+                    />
+                    <FaTrash
+                      style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336', marginLeft: '1rem' }}
+                      onClick={(event) => handleShowDeleteModal(client, event)}
+                    />
+                  </Box>
+                )}
               </Box>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" component="div" fontWeight="bold" sx={{ mt: 2 }}>
@@ -137,23 +150,29 @@ const ClientsPage = () => {
             </Paper>
           ))}
         </Box>
-        <EditClientModal
-          show={showEditModal}
-          handleClose={handleCloseEditModal}
-          refreshClients={refreshClients}
-          client={selectedClient}
-        />
-        <DeleteClientModal
-          show={showDeleteModal}
-          handleClose={handleCloseDeleteModal}
-          refreshClients={refreshClients}
-          client={selectedClient}
-        />
-        <AddClientModal
-          show={showAddModal}
-          handleClose={handleCloseAddModal}
-          refreshClients={refreshClients}
-        />
+        {canWrite && (
+          <AddClientModal
+            show={showAddModal}
+            handleClose={handleCloseAddModal}
+            refreshClients={refreshClients}
+          />
+        )}
+        {canWrite && (
+          <EditClientModal
+            show={showEditModal}
+            handleClose={handleCloseEditModal}
+            refreshClients={refreshClients}
+            client={selectedClient}
+          />
+        )}
+        {canWrite && (
+          <DeleteClientModal
+            show={showDeleteModal}
+            handleClose={handleCloseDeleteModal}
+            refreshClients={refreshClients}
+            client={selectedClient}
+          />
+        )}
       </Container>
     </Box>
   );

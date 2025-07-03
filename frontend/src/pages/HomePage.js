@@ -27,12 +27,6 @@ const HomePage = () => {
       icon: <FaFileContract size={40} color="primary" />,
       navigateTo: '/portefeuille-brevet',
     },
-    // {
-    //   title: 'Portefeuille brevets TEST',
-    //   description: 'Accédez à votre portefeuille de brevets test.',
-    //   icon: <FaFlask size={40} color="primary" />,
-    //   navigateTo: '/BrevetsList',
-    // },
   ];
 
   return (

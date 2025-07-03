@@ -6,6 +6,7 @@ import { FaPlus } from 'react-icons/fa';
 import AddCabinetModal from '../components/AddCabinetModal';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Vérifiez que le chemin est correct
 import { API_BASE_URL } from '../config';
+import cacheService from '../services/cacheService';
 
 const CabinetsPage = () => {
   const [annuiteCabinets, setAnnuiteCabinets] = useState([]);
@@ -37,10 +38,18 @@ const CabinetsPage = () => {
   const handleShowModal = () => setShowModal(true);
   const handleCloseModal = () => setShowModal(false);
 
+  // Vérification des droits d'écriture
+  const user = typeof cacheService.get === "function"
+    ? cacheService.get('user')
+    : (typeof window !== "undefined" && window.localStorage
+        ? JSON.parse(window.localStorage.getItem('user') || 'null')
+        : null);
+  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
-      <Container sx={{ padding: '20px' }} maxWidth="xl">
+      <Container sx={{ padding: '20px', marginLeft: '0px' }} maxWidth="xl">
         {/* Logo de l'entreprise */}
         <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
@@ -50,9 +59,11 @@ const CabinetsPage = () => {
           <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
             Gestion des Cabinets
           </Typography>
-          <Button variant="contained" color="primary" onClick={handleShowModal} startIcon={<FaPlus />}>
-            Ajouter un nouveau Cabinet
-          </Button>
+          {canWrite && (
+            <Button variant="contained" color="primary" onClick={handleShowModal} startIcon={<FaPlus />}>
+              Ajouter un nouveau Cabinet
+            </Button>
+          )}
         </Box>
 
         <Box display="flex" gap={2} sx={{ mb: 4 }}>
@@ -85,6 +96,7 @@ const CabinetsPage = () => {
                     borderRadius: 3,
                     transition: 'transform 0.3s',
                     '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                    position: 'relative',
                   }}
                 >
                   <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
@@ -114,6 +126,15 @@ const CabinetsPage = () => {
                       </ul>
                     </Box>
                   </CardContent>
+                  {/* Ajoute ici les boutons d'édition/suppression si canWrite */}
+                  {canWrite && (
+                    <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                      {/* Ajoute ici tes boutons FaEdit, FaTrash, etc. */}
+                      {/* Exemple : */}
+                      {/* <IconButton color="warning" onClick={...}><FaEdit /></IconButton>
+                          <IconButton color="error" onClick={...}><FaTrash /></IconButton> */}
+                    </Box>
+                  )}
                 </Box>
               ))}
             </Box>
@@ -138,6 +159,7 @@ const CabinetsPage = () => {
                     borderRadius: 3,
                     transition: 'transform 0.3s',
                     '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                    position: 'relative',
                   }}
                 >
                   <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
@@ -166,13 +188,19 @@ const CabinetsPage = () => {
                       </ul>
                     </Box>
                   </CardContent>
+                  {canWrite && (
+                    <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                      {/* Ajoute ici tes boutons FaEdit, FaTrash, etc. */}
+                    </Box>
+                  )}
                 </Box>
               ))}
             </Box>
           </Box>
         )}
-
-        <AddCabinetModal show={showModal} handleClose={handleCloseModal} refreshCabinets={refreshCabinets} />
+        {canWrite && (
+          <AddCabinetModal show={showModal} handleClose={handleCloseModal} refreshCabinets={refreshCabinets} />
+        )}
       </Container>
     </Box>
   );

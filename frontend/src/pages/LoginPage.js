@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button as MuiButton, Container, Typography, Box, Modal, CircularProgress, LinearProgress } from '@mui/material';
+import { Button as MuiButton, Container, Typography, Box, Modal, CircularProgress, LinearProgress, TextField, InputAdornment, IconButton, MenuItem } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
 import cacheService from '../services/cacheService';
@@ -87,83 +88,110 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState({ message: '', percent: 0 });
   const [loadingStage, setLoadingStage] = useState(0); // Étape actuelle du chargement (0-4)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showAdminForm, setShowAdminForm] = useState(false);
+  const [adminForm, setAdminForm] = useState({
+    nom_user: '',
+    prenom_user: '',
+    email_user: '',
+    password: '',
+  });
+  const [adminExists, setAdminExists] = useState(true);
+  const [adminFormLoading, setAdminFormLoading] = useState(false);
+  const [emailList, setEmailList] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  // Vérifie s'il existe déjà un admin
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/users`)
+      .then(res => res.json())
+      .then(data => {
+        const users = Array.isArray(data.data) ? data.data : [];
+        setEmailList(users.map(u => u.email_user).filter(Boolean));
+        setAdminExists(users.some(u => u.role === 'admin'));
+        // Si un admin vient d'être créé, on ferme le formulaire si besoin
+        if (users.some(u => u.role === 'admin')) setShowAdminForm(false);
+      })
+      .catch(() => setAdminExists(true)); // Par défaut, cache le bouton si erreur
+  }, [showAdminForm]); // <-- Ajoute showAdminForm comme dépendance pour rafraîchir après création
 
   const handleLogin = async () => {
     setIsLoading(true);
-    setLoadingStage(0);
-    
+    setLoadingStage(1);
+    setModalMessage("Connexion en cours...");
+    setShowModal(true);
+
     try {
-      // Message de chargement initial
-      setModalMessage("Connexion en cours, chargement des données...");
-      setShowModal(true);
-      setLoadingProgress({ message: 'Préparation du chargement...', percent: 10 });
-      
-      // Première étape: authentification
-      setLoadingStage(1);
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Deuxième étape: préchargement des données avec progression détaillée
-      setLoadingStage(2);
-      
-      // Utilisation du callback de progression pour mettre à jour l'interface
-      const preloadResult = await cacheService.preloadBrevets((progress) => {
-        // Transformer le pourcentage pour qu'il soit entre 30 et 80
-        const adjustedPercent = 30 + (progress.percent * 0.5);
-        setLoadingProgress({ 
-          message: progress.message, 
-          percent: adjustedPercent 
-        });
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email_user: email, password }),
       });
-      
-      // Troisième étape: analyse des données
-      setLoadingStage(3);
-      if (preloadResult.success) {
-        if (preloadResult.fromCache) {
-          setLoadingProgress({ message: 'Utilisation des données en cache', percent: 80 });
-        } else {
-          // Afficher un récapitulatif des données chargées
-          const counts = preloadResult.counts || {};
-          const summary = [
-            `${counts.brevets || 0} brevets`,
-            `${counts.cabinets || 0} cabinets`,
-            `${counts.clients || 0} clients`
-          ].join(', ');
-          
-          setLoadingProgress({ 
-            message: `Données chargées avec succès: ${summary}`, 
-            percent: 80 
-          });
-        }
-      } else {
-        console.warn('Préchargement des données non réussi:', preloadResult.error);
-        setLoadingProgress({ 
-          message: 'Certaines données n\'ont pas pu être préchargées. L\'application fonctionnera malgré tout.', 
-          percent: 70 
-        });
+      const data = await response.json();
+      if (!response.ok) {
+        setModalMessage(data.error || "Erreur de connexion");
+        setIsLoading(false);
+        setTimeout(() => setShowModal(false), 2000);
+        return;
       }
-      
-      // Quatrième étape: finalisation
-      setLoadingStage(4);
-      setLoadingProgress({ message: 'Redirection vers la page d\'accueil...', percent: 100 });
-      
-      // Petit délai pour afficher le message de finalisation
+      if (data.user && data.user.isBlocked) {
+        setModalMessage("Votre compte est bloqué. Contactez l'administrateur.");
+        setIsLoading(false);
+        setTimeout(() => setShowModal(false), 3000);
+        return;
+      }
+      // Correction ici : vérifier que cacheService.set existe bien avant de l'appeler
+      if (typeof cacheService.set === "function") {
+        cacheService.set('user', data.user);
+      } else if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      setLoadingProgress({ message: 'Connexion réussie', percent: 100 });
       setTimeout(() => {
         setShowModal(false);
         setIsLoading(false);
-        navigate('/home'); // Redirection vers HomePage
+        navigate('/home');
       }, 1000);
-      
     } catch (error) {
-      console.error("Erreur lors de la connexion", error);
       setModalMessage("Erreur lors de la connexion: " + (error.message || "Erreur inconnue"));
-      setShowModal(true);
       setIsLoading(false);
-      
-      setTimeout(() => {
-        setShowModal(false);
-      }, 3000);
+      setTimeout(() => setShowModal(false), 3000);
     }
+  };
+
+  // Création d'un admin
+  const handleCreateAdmin = async () => {
+    if (!adminForm.nom_user || !adminForm.prenom_user || !adminForm.email_user || !adminForm.password) {
+      alert('Tous les champs sont obligatoires');
+      return;
+    }
+    setAdminFormLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...adminForm,
+          role: 'admin',
+          canRead: true,
+          canWrite: true,
+          isBlocked: false
+        })
+      });
+      if (res.ok) {
+        alert('Compte admin créé avec succès ! Connectez-vous.');
+        setShowAdminForm(false);
+        setAdminExists(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Erreur lors de la création du compte admin');
+      }
+    } catch (e) {
+      alert('Erreur réseau');
+    }
+    setAdminFormLoading(false);
   };
 
   // Définir les étapes du chargement
@@ -235,7 +263,56 @@ const LoginPage = () => {
             >
               Bienvenue
             </Typography>
-
+            {/* Champ email avec liste déroulante */}
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              select={emailList.length > 0}
+              SelectProps={{
+                MenuProps: { PaperProps: { style: { maxHeight: 200 } } }
+              }}
+              InputProps={{
+                endAdornment: emailList.length > 0 ? (
+                  <InputAdornment position="end">
+                    <IconButton tabIndex={-1} edge="end" disabled>
+                      {/* Icône d'utilisateur ou rien */}
+                    </IconButton>
+                  </InputAdornment>
+                ) : null
+              }}
+            >
+              {emailList.map((mail, idx) => (
+                <MenuItem key={mail} value={mail}>
+                  {mail}
+                </MenuItem>
+              ))}
+            </TextField>
+            {/* Champ mot de passe avec icône visibilité */}
+            <TextField
+              label="Mot de passe"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                      onClick={() => setShowPassword(v => !v)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+            />
             <LoginButton
               variant="contained"
               color="primary"
@@ -245,125 +322,169 @@ const LoginPage = () => {
             >
               Se connecter
             </LoginButton>
+            {/* Bouton première connexion admin */}
+            {!adminExists && !showAdminForm && (
+              <MuiButton
+                variant="outlined"
+                color="secondary"
+                fullWidth
+                sx={{ mt: 3 }}
+                onClick={() => setShowAdminForm(true)}
+              >
+                Première connexion (créer le compte admin)
+              </MuiButton>
+            )}
           </>
-        ) : (
-          /* Affichage pendant le chargement */
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            width: '100%', 
-            pt: 2, 
-            pb: 3 
-          }}>
-            <Typography 
-              variant="h5" 
-              fontWeight="bold" 
-              color="primary" 
-              sx={{ mb: 3, textAlign: 'center' }}
-            >
-              Chargement en cours
-            </Typography>
+        ) : null}
 
-            {/* Circle progress avec pourcentage */}
-            <CircularProgressWithLabel value={loadingProgress.percent} />
-            
-            <Box sx={{ mt: 4, width: '100%' }}>
-              <Typography variant="subtitle1" color="primary" fontWeight="600" sx={{ mb: 1 }}>
-                État du chargement :
+        {/* Formulaire de création d'admin */}
+        {showAdminForm && (
+          <Modal
+            open={showAdminForm}
+            onClose={() => setShowAdminForm(false)}
+            aria-labelledby="admin-modal-title"
+            aria-describedby="admin-modal-description"
+          >
+            <Box
+              sx={{
+                width: 400,
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                boxShadow: 24,
+                p: 4,
+                mx: 'auto',
+                mt: '10vh',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}
+            >
+              <Typography id="admin-modal-title" variant="h6" component="h2" sx={{ mb: 2 }}>
+                Création du compte administrateur
               </Typography>
-              
-              {/* Liste des étapes de chargement */}
-              <Box sx={{ pl: 2 }}>
-                {loadingStages.map(stage => (
-                  <LoadingStage 
-                    key={stage.id}
-                    message={stage.message} 
-                    isActive={stage.id === loadingStage} 
-                  />
-                ))}
-              </Box>
+              <TextField
+                label="Nom"
+                value={adminForm.nom_user}
+                onChange={e => setAdminForm({ ...adminForm, nom_user: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Prénom"
+                value={adminForm.prenom_user}
+                onChange={e => setAdminForm({ ...adminForm, prenom_user: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Email"
+                type="email"
+                value={adminForm.email_user}
+                onChange={e => setAdminForm({ ...adminForm, email_user: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                label="Mot de passe"
+                type="password"
+                value={adminForm.password}
+                onChange={e => setAdminForm({ ...adminForm, password: e.target.value })}
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+              <MuiButton
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={handleCreateAdmin}
+                disabled={adminFormLoading}
+                sx={{ mt: 2 }}
+              >
+                {adminFormLoading ? <CircularProgress size={24} /> : "Créer le compte admin"}
+              </MuiButton>
+              <MuiButton
+                variant="text"
+                color="secondary"
+                fullWidth
+                onClick={() => setShowAdminForm(false)}
+                sx={{ mt: 1 }}
+              >
+                Annuler
+              </MuiButton>
             </Box>
-            
-            <Typography 
-              variant="body2" 
-              color="text.secondary" 
-              sx={{ mt: 2, fontStyle: 'italic', textAlign: 'center' }}
-            >
-              Merci de patienter pendant la préparation de vos données...
-            </Typography>
-          </Box>
+          </Modal>
         )}
-      </Box>
 
-      <Modal
-        open={showModal}
-        onClose={() => !isLoading && setShowModal(false)}
-        aria-labelledby="modal-title"
-        aria-describedby="modal-description"
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 400,
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-          }}
+        {/* Modal de chargement et messages */}
+        <Modal
+          open={showModal}
+          onClose={() => setShowModal(false)}
+          aria-labelledby="modal-title"
+          aria-describedby="modal-description"
         >
-          <Typography id="modal-description" sx={{ mt: 2, mb: 2 }}>
-            {modalMessage}
-          </Typography>
-          
-          {isLoading && (
-            <Box sx={{ width: '100%', mt: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {loadingProgress.message}
-                </Typography>
-                <Typography variant="body2" fontWeight="bold" color="primary">
-                  {`${Math.round(loadingProgress.percent)}%`}
-                </Typography>
+          <Box
+            sx={{
+              width: 400,
+              bgcolor: 'background.paper',
+              borderRadius: 2,
+              boxShadow: 24,
+              p: 4,
+              mx: 'auto',
+              mt: '10vh'
+            }}
+          >
+            <Typography id="modal-description" sx={{ mt: 2, mb: 2 }}>
+              {modalMessage}
+            </Typography>
+
+            {isLoading && (
+              <Box sx={{ width: '100%', mt: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {loadingProgress.message}
+                  </Typography>
+                  <Typography variant="body2" fontWeight="bold" color="primary">
+                    {`${Math.round(loadingProgress.percent)}%`}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ width: '100%', backgroundColor: '#e0e0e0', borderRadius: 1, height: 10, overflow: 'hidden' }}>
+                  <Box
+                    sx={{
+                      width: `${loadingProgress.percent}%`,
+                      background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+                      height: '100%',
+                      borderRadius: 1,
+                      transition: 'width 0.5s ease-in-out',
+                      animation: loadingProgress.percent < 100 ? 'pulse 1.5s infinite' : 'none',
+                      '@keyframes pulse': {
+                        '0%': { opacity: 0.7 },
+                        '50%': { opacity: 1 },
+                        '100%': { opacity: 0.7 }
+                      }
+                    }}
+                  />
+                </Box>
               </Box>
-              
-              <Box sx={{ width: '100%', backgroundColor: '#e0e0e0', borderRadius: 1, height: 10, overflow: 'hidden' }}>
-                <Box 
-                  sx={{ 
-                    width: `${loadingProgress.percent}%`, 
-                    background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
-                    height: '100%',
-                    borderRadius: 1,
-                    transition: 'width 0.5s ease-in-out',
-                    animation: loadingProgress.percent < 100 ? 'pulse 1.5s infinite' : 'none',
-                    '@keyframes pulse': {
-                      '0%': { opacity: 0.7 },
-                      '50%': { opacity: 1 },
-                      '100%': { opacity: 0.7 }
-                    }
-                  }} 
-                />
-              </Box>
-            </Box>
-          )}
-          
-          {!isLoading && (
-            <MuiButton 
-              onClick={() => setShowModal(false)} 
-              sx={{ mt: 2 }} 
-              variant="contained" 
-              color="secondary"
-            >
-              Fermer
-            </MuiButton>
-          )}
-        </Box>
-      </Modal>
+            )}
+
+            {!isLoading && (
+              <MuiButton
+                onClick={() => setShowModal(false)}
+                sx={{ mt: 2 }}
+                variant="contained"
+                color="secondary"
+              >
+                Fermer
+              </MuiButton>
+            )}
+          </Box>
+        </Modal>
+      </Box>
     </Container>
   );
 };
 
 export default LoginPage;
+
+
