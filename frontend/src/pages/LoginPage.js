@@ -487,4 +487,11 @@ const LoginPage = () => {
 
 export default LoginPage;
 
+// Ceci est bien la page de login, avec le champ mot de passe éditable et stylisé.
+// Si tu ne peux pas écrire dans le champ mot de passe, vérifie :
+// - Qu'il n'y a pas d'autre composant LoginPage dans un autre fichier qui écrase celui-ci
+// - Que tu n'as pas un overlay ou un bug CSS qui bloque le champ
+// - Que le state password est bien utilisé : ici, il l'est : value={password} onChange={e => setPassword(e.target.value)}
+// - Que tu n'as pas de composant LoginPage parasite dans une autre page (ex : PortefeuilleClientPage.js)
+
 

@@ -89,8 +89,12 @@ const userController = {
         console.log('Stored password in database:', user.password_user); // Log du hash de la base
 
         // Compare le hash calculé avec celui stocké en base
-        if (hashedPassword === user.password_user) {  // Utilise user.password_user
-          console.log('Authentication successful');
+        if (hashedPassword === user.password_user) {
+          // Met à jour la date de dernière connexion
+          User.update(
+            { lastLoginAt: new Date() },
+            { where: { id: user.id } }
+          ).catch(() => {});
           res.status(200).json({ message: 'User authenticated successfully', user });
         } else {
           console.warn('Authentication failed: Incorrect password');
