@@ -17,6 +17,7 @@
     "country-flag-icons": "^1.5.19",
     "crypto": "^1.0.1",
     "date-fns": "^4.1.0",
+    "file-saver": "^2.0.5",
     "glob": "^11.0.3",
     "jspdf": "^2.5.2",
     "mui": "^0.0.1",

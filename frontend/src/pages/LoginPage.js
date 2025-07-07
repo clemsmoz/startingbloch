@@ -110,12 +110,22 @@ const LoginPage = () => {
       .then(data => {
         const users = Array.isArray(data.data) ? data.data : [];
         setEmailList(users.map(u => u.email_user).filter(Boolean));
-        setAdminExists(users.some(u => u.role === 'admin'));
-        // Si un admin vient d'être créé, on ferme le formulaire si besoin
-        if (users.some(u => u.role === 'admin')) setShowAdminForm(false);
+        // Ajoute des logs pour comprendre le contenu des users et leur rôle
+        console.log("=== DEBUG ADMIN EXISTENCE ===");
+        console.log("Liste des users récupérés:", users);
+        users.forEach((u, i) => {
+          console.log(`User[${i}] - email: ${u.email_user}, role:`, u.role, typeof u.role);
+        });
+        const adminFound = users.some(u => (u.role && String(u.role).toLowerCase() === 'admin'));
+        console.log("adminFound:", adminFound);
+        setAdminExists(adminFound);
+        if (adminFound) setShowAdminForm(false);
       })
-      .catch(() => setAdminExists(true)); // Par défaut, cache le bouton si erreur
-  }, [showAdminForm]); // <-- Ajoute showAdminForm comme dépendance pour rafraîchir après création
+      .catch((err) => {
+        console.log("Erreur lors du fetch des users:", err);
+        setAdminExists(true);
+      });
+  }, [showAdminForm]);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -323,17 +333,20 @@ const LoginPage = () => {
               Se connecter
             </LoginButton>
             {/* Bouton première connexion admin */}
-            {!adminExists && !showAdminForm && (
-              <MuiButton
-                variant="outlined"
-                color="secondary"
-                fullWidth
-                sx={{ mt: 3 }}
-                onClick={() => setShowAdminForm(true)}
-              >
-                Première connexion (créer le compte admin)
-              </MuiButton>
-            )}
+            {(() => {
+              console.log("RENDER: adminExists =", adminExists, "| showAdminForm =", showAdminForm);
+              return (!adminExists && !showAdminForm) ? (
+                <MuiButton
+                  variant="outlined"
+                  color="secondary"
+                  fullWidth
+                  sx={{ mt: 3 }}
+                  onClick={() => setShowAdminForm(true)}
+                >
+                  Première connexion (créer le compte admin)
+                </MuiButton>
+              ) : null;
+            })()}
           </>
         ) : null}
 

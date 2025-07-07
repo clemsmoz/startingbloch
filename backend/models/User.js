@@ -28,55 +28,30 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: null
     },
+    lastLoginAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null
+    },
     role: {
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'user', // 'admin' ou 'user'
     },
-    isBlocked: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
     canWrite: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: false, // true = droit d'écriture
+      defaultValue: false
     },
     canRead: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true, // true = droit de lecture
-    },
-    lastLoginAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      defaultValue: null
+      defaultValue: true
     }
   }, {
     tableName: 'users',
     timestamps: true, // gère createdAt et updatedAt automatiquement
   });
-
-  // Ajout de la méthode statique findByEmail pour Sequelize
-  User.findByEmail = async function(email, callback) {
-    try {
-      const user = await User.findOne({ where: { email_user: email } });
-      callback(null, user ? user.get({ plain: true }) : null);
-    } catch (err) {
-      callback(err, null);
-    }
-  };
-
-  // Ajout de la méthode statique getAll pour Sequelize
-  User.getAll = async function(callback) {
-    try {
-      const users = await User.findAll();
-      callback(null, users.map(u => u.get({ plain: true })));
-    } catch (err) {
-      callback(err, null);
-    }
-  };
 
   return User;
 };

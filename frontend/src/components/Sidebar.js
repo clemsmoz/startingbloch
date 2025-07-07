@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { saveAs } from 'file-saver';
 
-import { Drawer, IconButton, List, ListItem, ListItemText, ListItemIcon, Box, Typography } from '@mui/material';
+import { Drawer, IconButton, List, ListItem, ListItemText, ListItemIcon, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button as MuiButton } from '@mui/material';
 import { FaBars, FaBuilding, FaUser, FaFileContract, FaHome, FaSignOutAlt, FaUsersCog } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
@@ -27,6 +28,67 @@ const Sidebar = ({ onLogout }) => {
   const handleLogout = () => {
     navigate('/deconnection');
     // Logic for logout
+  };
+
+  // Nouveaux états pour la modale de téléchargement
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+
+  // Fonction pour télécharger la base de données (admin uniquement)
+  const handleDownloadDb = async () => {
+    if (!isAdmin) return;
+    setShowDownloadModal(true);
+  };
+
+  // Fonction appelée lors de la confirmation dans la modale
+  const confirmDownloadDb = async () => {
+    setShowDownloadModal(false);
+    try {
+      const user = typeof cacheService.get === "function"
+        ? cacheService.get('user')
+        : (typeof window !== "undefined" && window.localStorage
+            ? JSON.parse(window.localStorage.getItem('user') || 'null')
+            : null);
+
+      const response = await fetch('/api/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        alert(data.error || "Erreur lors du téléchargement de la base.");
+        return;
+      }
+      // Récupère le blob et déclenche le téléchargement
+      const blob = await response.blob();
+
+      // Demande à l'utilisateur où enregistrer le fichier (si possible)
+      let fileName = 'database.sqlite';
+      // Pour Electron ou navigateurs supportant showSaveFilePicker
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{ description: 'Fichier SQLite', accept: { 'application/octet-stream': ['.sqlite'] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          setDownloadSuccess(true);
+          return;
+        } catch (e) {
+          // Si l'utilisateur annule, ne rien faire
+          return;
+        }
+      } else {
+        // Fallback classique navigateur
+        saveAs(blob, fileName);
+        setDownloadSuccess(true);
+      }
+    } catch (e) {
+      alert("Erreur lors du téléchargement de la base : " + (e.message || e));
+    }
   };
 
   return (
@@ -87,6 +149,14 @@ const Sidebar = ({ onLogout }) => {
                 <ListItemText primary="Gestion des utilisateurs" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
               </ListItem>
             )}
+            {isAdmin && (
+              <ListItem button onClick={handleDownloadDb} sx={{ padding: 3 }}>
+                <ListItemIcon>
+                  <FaFileContract size={40} color="#1976D2" />
+                </ListItemIcon>
+                <ListItemText primary="Télécharger la base SQLite" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+              </ListItem>
+            )}
             <ListItem button onClick={handleLogout} sx={{ padding: 3 }}>
               <ListItemIcon>
                 <FaSignOutAlt size={40}  color="#1976D2" />
@@ -96,6 +166,40 @@ const Sidebar = ({ onLogout }) => {
           </List>
         </Box>
       </Drawer>
+
+      {/* Modale de confirmation de téléchargement */}
+      <Dialog open={showDownloadModal} onClose={() => setShowDownloadModal(false)}>
+        <DialogTitle>Choisir le dossier de téléchargement</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Le fichier <b>database.sqlite</b> va être téléchargé.<br />
+            Cliquez sur "Télécharger" pour choisir le dossier de destination.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setShowDownloadModal(false)} color="secondary">
+            Annuler
+          </MuiButton>
+          <MuiButton onClick={confirmDownloadDb} color="primary" variant="contained">
+            Télécharger
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Message de succès */}
+      <Dialog open={downloadSuccess} onClose={() => setDownloadSuccess(false)}>
+        <DialogTitle>Téléchargement terminé</DialogTitle>
+        <DialogContent>
+          <Typography>
+            La base de données a bien été téléchargée.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setDownloadSuccess(false)} color="primary" autoFocus>
+            OK
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

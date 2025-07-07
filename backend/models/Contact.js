@@ -5,46 +5,38 @@ const Contact = sequelize.define('Contact', {
   nom_contact: {
     type: DataTypes.STRING,
     allowNull: true,
+    defaultValue: null
   },
   prenom_contact: {
     type: DataTypes.STRING,
     allowNull: true,
-  },
-  email_contact: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  telephone_contact: {
-    type: DataTypes.STRING,
-    allowNull: true,
+    defaultValue: null
   },
   poste_contact: {
     type: DataTypes.STRING,
     allowNull: true,
+    defaultValue: null
   },
   client_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references: {
-      model: 'client',
-      key: 'id'
-    }
+    defaultValue: null
   },
   cabinet_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    references: {
-      model: 'cabinet',
-      key: 'id'
-    }
+    defaultValue: null
   }
 }, {
-  tableName: 'contact',
+  tableName: 'contacts',
   timestamps: false
-  // La validation d'exclusivité a été supprimée ici
 });
 
+// Associations pour emails, téléphones et rôles
 Contact.associate = (models) => {
+  Contact.hasMany(models.ContactEmail, { foreignKey: 'contact_id', as: 'emails', onDelete: 'CASCADE' });
+  Contact.hasMany(models.ContactPhone, { foreignKey: 'contact_id', as: 'phones', onDelete: 'CASCADE' });
+  Contact.hasMany(models.ContactRole, { foreignKey: 'contact_id', as: 'roles', onDelete: 'CASCADE' });
   Contact.belongsTo(models.Client, { foreignKey: 'client_id' });
   Contact.belongsTo(models.Cabinet, { foreignKey: 'cabinet_id' });
 };

@@ -56,64 +56,57 @@ const userController = {
     const { email_user, password } = req.body;
     console.log('Authenticating user with email:', email_user);
 
-    // Utilise la méthode actuelle `findByEmail` pour récupérer l'utilisateur par email
-    User.findByEmail(email_user, (err, user) => {
-      if (err) {
+    // Utilise la méthode Sequelize standard pour récupérer l'utilisateur par email
+    User.findOne({ where: { email_user } })
+      .then(user => {
+        if (!user) {
+          console.warn('Authentication failed: User not found');
+          return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        // Utilise le sel stocké pour vérifier le mot de passe
+        const salt = user.salt;
+        const iterations = 10000;
+        const keyLength = 64;
+
+        // Re-hash le mot de passe entré pour le comparer au hash stocké
+        crypto.pbkdf2(password, salt, iterations, keyLength, 'sha256', (err, derivedKey) => {
+          if (err) {
+            console.error('Error verifying password:', err);
+            return res.status(500).json({ error: 'Failed to verify password' });
+          }
+
+          const hashedPassword = derivedKey.toString('hex');
+          if (hashedPassword === user.password_user) {
+            // Met à jour la date de dernière connexion EN BASE
+            User.update(
+              { lastLoginAt: new Date() },
+              { where: { id: user.id } }
+            ).catch(() => {});
+            res.status(200).json({ message: 'User authenticated successfully', user: { ...user.toJSON(), lastLoginAt: new Date() } });
+          } else {
+            console.warn('Authentication failed: Incorrect password');
+            res.status(401).json({ error: 'Invalid email or password' });
+          }
+        });
+      })
+      .catch(err => {
         console.error('Error fetching user:', err);
         return res.status(500).json({ error: 'Internal server error' });
-      }
-
-      if (!user) {
-        console.warn('Authentication failed: User not found');
-        return res.status(401).json({ error: 'Invalid email or password' });
-      }
-
-      console.log('User found:', user); // Affiche les données utilisateur récupérées
-
-      // Utilise le sel stocké pour vérifier le mot de passe
-      const salt = user.salt;
-      console.log('Salt retrieved for user:', salt); // Log du sel
-
-      const iterations = 10000;
-      const keyLength = 64;
-
-      // Re-hash le mot de passe entré pour le comparer au hash stocké
-      crypto.pbkdf2(password, salt, iterations, keyLength, 'sha256', (err, derivedKey) => {
-        if (err) {
-          console.error('Error verifying password:', err);
-          return res.status(500).json({ error: 'Failed to verify password' });
-        }
-
-        const hashedPassword = derivedKey.toString('hex');
-        console.log('Derived key (hashed password) for comparison:', hashedPassword);
-        console.log('Stored password in database:', user.password_user); // Log du hash de la base
-
-        // Compare le hash calculé avec celui stocké en base
-        if (hashedPassword === user.password_user) {
-          // Met à jour la date de dernière connexion
-          User.update(
-            { lastLoginAt: new Date() },
-            { where: { id: user.id } }
-          ).catch(() => {});
-          res.status(200).json({ message: 'User authenticated successfully', user });
-        } else {
-          console.warn('Authentication failed: Incorrect password');
-          res.status(401).json({ error: 'Invalid email or password' });
-        }
       });
-    });
   },
 
 
 
-  getAllUsers: (req, res) => {
-    User.getAll((err, results) => {
-      if (err) {
-        console.error('Error getting users:', err);
-        return res.status(500).json({ error: err.message });
-      }
-      res.status(200).json({ data: results });
-    });
+  getAllUsers: async (req, res) => {
+    try {
+      // Utilise la méthode Sequelize standard pour récupérer tous les utilisateurs
+      const users = await User.findAll();
+      res.status(200).json({ data: users });
+    } catch (err) {
+      console.error('Error getting users:', err);
+      res.status(500).json({ error: err.message });
+    }
   },
 
   getUserById: (req, res) => {
@@ -205,5 +198,7 @@ const userController = {
     });
   },
 };
+
+
 
 module.exports = userController;

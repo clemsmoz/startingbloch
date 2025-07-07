@@ -22,11 +22,14 @@ import {
   Grid,
   Chip,
   Divider,
-  CircularProgress
+  CircularProgress,
+  InputAdornment
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { FaEdit, FaTrash, FaPlus, FaLock, FaUnlock, FaUserShield } from 'react-icons/fa';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { API_BASE_URL } from '../config';
+import Sidebar from '../components/Sidebar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -63,6 +66,7 @@ const AdminUserManagementPage = () => {
     isBlocked: false,
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Récupérer la liste des utilisateurs
   const fetchUsers = async () => {
@@ -105,6 +109,7 @@ const AdminUserManagementPage = () => {
       });
     }
     setShowForm(true);
+    setShowPassword(false);
   };
 
   // Ferme le formulaire
@@ -121,6 +126,7 @@ const AdminUserManagementPage = () => {
       canWrite: false,
       isBlocked: false,
     });
+    setShowPassword(false);
   };
 
   // Gère la modification des champs du formulaire
@@ -191,6 +197,7 @@ const AdminUserManagementPage = () => {
   // Affichage stylisé
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+      <Sidebar />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Box sx={{ mb: 5, textAlign: 'center' }}>
           <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
@@ -348,9 +355,22 @@ const AdminUserManagementPage = () => {
                   value={form.password}
                   onChange={handleChange}
                   fullWidth
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   sx={{ mb: 2 }}
                   required={!editId}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                          onClick={() => setShowPassword(v => !v)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

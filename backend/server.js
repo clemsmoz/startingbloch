@@ -5,15 +5,8 @@ const portfinder = require('portfinder');
 const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
-const tmp = require('tmp');
 
-// Fonctions utilitaires pour les logs colorés et avec icônes
-const logInfo = (...args) => console.log('\x1b[36m%s\x1b[0m', 'ℹ️', ...args);      // Cyan
-const logSuccess = (...args) => console.log('\x1b[32m%s\x1b[0m', '✅', ...args);   // Vert
-const logWarn = (...args) => console.warn('\x1b[33m%s\x1b[0m', '⚠️', ...args);     // Jaune
-const logError = (...args) => console.error('\x1b[31m%s\x1b[0m', '❌', ...args);   // Rouge
-
-logInfo("🚀 Démarrage de l'application Electron + Express (tout-en-un)");
+console.log("🚀 Démarrage de l'application Electron + Express (tout-en-un)");
 
 // ------------------------------
 // Partie Backend : Express
@@ -27,11 +20,11 @@ expressApp.use(bodyParser.json());
 try {
   const routes = require('./routes');
   expressApp.use('/api', routes);
-  logSuccess("Routes Express chargées.");
+  console.log("📌 Routes Express chargées.");
 } catch (err) {
-  logError("Erreur lors du chargement des routes Express :", err);
+  console.error("❌ Erreur lors du chargement des routes Express :", err);
 }
-logInfo("__dirname détecté :", __dirname);
+console.log("📂 __dirname détecté :", __dirname);
 
 // Définition du chemin du frontend
 const isPackaged = process.mainModule.filename.indexOf('app.asar') !== -1;
@@ -42,55 +35,55 @@ expressApp.get('/api/backup', (req, res) => {
   let dbPath = path.join(basePath, 'data', 'database.sqlite');
   const fallback = path.join(basePath, 'database.sqlite');
   if (!fs.existsSync(dbPath)) {
-    logWarn('DB introuvable dans data/, fallback vers:', fallback);
+    console.warn('DB introuvable dans data/, fallback vers:', fallback);
     dbPath = fallback;
   }
-  logInfo('Backup DB path:', dbPath);
+  console.log('Backup DB path:', dbPath);
   res.download(dbPath, 'database.sqlite', err => {
     if (err) {
-      logError('Erreur export DB:', err);
+      console.error('Erreur export DB:', err);
       return res.status(500).send('Erreur lors du téléchargement de la sauvegarde.');
     }
   });
 });
 
-// Route pour exporter le PDF
-expressApp.get('/api/export-pdf', async (req, res) => {
-  try {
-    // Génère le PDF en buffer (fonction utilitaire à créer)
-    const buffer = await generatePortfolioPDFBuffer(req.query); // req.query doit contenir les infos nécessaires
-    // Crée un fichier temporaire pour l'envoi
-    const tmpFile = tmp.fileSync({ postfix: '.pdf' });
-    fs.writeFileSync(tmpFile.name, buffer);
-    res.download(tmpFile.name, 'portefeuille_brevets.pdf', err => {
-      tmpFile.removeCallback();
-      if (err) {
-        logError('Erreur export PDF:', err);
-        return res.status(500).send('Erreur lors du téléchargement du PDF.');
-      }
-    });
-  } catch (err) {
-    logError('Erreur export PDF:', err);
-    res.status(500).send('Erreur lors de la génération du PDF.');
+// Ajoute une route API sécurisée pour la sauvegarde, accessible uniquement à l'admin
+expressApp.post('/api/backup', (req, res) => {
+  // Vérifie que l'utilisateur est admin (par exemple via un champ dans le body)
+  const { user } = req.body;
+  if (!user || user.role !== 'admin') {
+    return res.status(403).json({ error: 'Accès réservé à l\'administrateur.' });
   }
+
+  let dbPath = path.join(basePath, 'data', 'database.sqlite');
+  const fallback = path.join(basePath, 'database.sqlite');
+  if (!fs.existsSync(dbPath)) {
+    dbPath = fallback;
+  }
+  res.download(dbPath, 'database.sqlite', err => {
+    if (err) {
+      console.error('Erreur export DB:', err);
+      return res.status(500).send('Erreur lors du téléchargement de la sauvegarde.');
+    }
+  });
 });
 
 const frontendStaticPath = path.join(basePath, 'frontend', 'build');
-logInfo("📂 Chemin utilisé pour le frontend :", frontendStaticPath);
+console.log("📂 Chemin utilisé pour le frontend :", frontendStaticPath);
 
 if (fs.existsSync(frontendStaticPath)) {
-  logSuccess("frontend/build trouvé !");
+  console.log("✅ frontend/build trouvé !");
   expressApp.use(express.static(frontendStaticPath));
 
   expressApp.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     const indexPath = path.join(frontendStaticPath, 'index.html');
-    logInfo(`Requête reçue pour ${req.url}, envoi de ${indexPath}`);
+    console.log(`📌 Requête reçue pour ${req.url}, envoi de ${indexPath}`);
     res.sendFile(indexPath);
   });
 
 } else {
-  logWarn("Dossier frontend/build non trouvé. Vérifiez que le build du frontend est bien généré.");
+  console.warn("⚠️ Dossier frontend/build non trouvé. Vérifiez que le build du frontend est bien généré.");
 }
 
 
@@ -103,10 +96,8 @@ expressApp.use((req, res) => {
 // ------------------------------
 // Partie Frontend : Electron
 // ------------------------------
-let isQuitting = false;
-
 function createWindow(port) {
-  logInfo("Création de la fenêtre Electron...");
+  console.log("📌 Création de la fenêtre Electron...");
   const win = new BrowserWindow({
     width: 1920,
     height: 1080,
@@ -123,147 +114,51 @@ function createWindow(port) {
     item.setSavePath(savePath);
     item.once('done', (e, state) => {
       if (state === 'completed') {
-        logSuccess(`Téléchargement terminé : ${savePath}`);
+        console.log(`Téléchargement terminé : ${savePath}`);
       } else {
-        logError(`Échec du téléchargement : ${state}`);
+        console.error(`Échec du téléchargement : ${state}`);
       }
     });
   });
 
   const startUrl = `http://127.0.0.1:${port}`;
-  logInfo("🔗 Chargement de l'URL :", startUrl);
+  console.log("🔗 Chargement de l'URL :", startUrl);
   win.loadURL(startUrl)
-    .then(() => logSuccess("URL chargée avec succès :", startUrl))
-    .catch(err => logError("Échec du chargement de l'URL :", err.message));
+    .then(() => console.log("✅ URL chargée avec succès :", startUrl))
+    .catch(err => console.error("❌ Échec du chargement de l'URL :", err.message));
 
   // Ouvrir la console de développement par défaut
   win.webContents.openDevTools({ mode: 'detach' });
 
   // Ajouter des écouteurs d'événements pour les changements de page
   win.webContents.on('did-navigate', (event, url) => {
-    logInfo(`📄 Navigation vers : ${url}`);
+    console.log(`📄 Navigation vers : ${url}`);
   });
 
   win.webContents.on('did-navigate-in-page', (event, url) => {
-    logInfo(`📄 Navigation dans la page vers : ${url}`);
+    console.log(`📄 Navigation dans la page vers : ${url}`);
   });
-
-  // Intercepter la fermeture de la fenêtre principale pour afficher le message de sauvegarde
-  win.on('close', async (event) => {
-    if (!isQuitting) {
-      event.preventDefault();
-      logInfo("Déclenchement de la sauvegarde automatique avant fermeture (via close)...");
-      
-      // Demander à l'utilisateur s'il souhaite choisir un dossier personnalisé pour la sauvegarde
-      const { response } = await dialog.showMessageBox(win, {
-        type: 'question',
-        title: 'Sauvegarde de la base de données',
-        message: 'Souhaitez-vous choisir un dossier pour la sauvegarde de la base de données ?',
-        buttons: ['Utiliser le dossier par défaut', 'Choisir un dossier', 'Annuler la fermeture'],
-        defaultId: 0,
-        cancelId: 2
-      });
-      
-      // Si l'utilisateur a choisi d'annuler, ne pas fermer l'application
-      if (response === 2) {
-        return;
-      }
-      
-      let backupPath = null;
-      
-      // Si l'utilisateur veut choisir un dossier
-      if (response === 1) {
-        const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-          title: 'Choisir le dossier de sauvegarde',
-          properties: ['openDirectory']
-        });
-        
-        if (!canceled && filePaths.length > 0) {
-          backupPath = await backupDatabaseOnExit(filePaths[0]);
-        } else {
-          // Si l'utilisateur a annulé la sélection de dossier, utiliser le dossier par défaut
-          backupPath = await backupDatabaseOnExit();
-        }
-      } else {
-        // Utiliser le dossier par défaut
-        backupPath = await backupDatabaseOnExit();
-      }
-      
-      isQuitting = true;
-      
-      await dialog.showMessageBox(win, {
-        type: 'info',
-        title: 'Sauvegarde effectuée',
-        message: backupPath 
-          ? `La sauvegarde automatique de la base de données a été réalisée avec succès.\nEmplacement: ${backupPath}\nL'application va maintenant se fermer.`
-          : 'Une erreur est survenue lors de la sauvegarde de la base de données.\nL\'application va maintenant se fermer.',
-        buttons: ['OK']
-      });
-      
-      win.destroy(); // ferme la fenêtre sans relancer close
-      app.quit();
-    }
-  });
-}
-
-// Fonction utilitaire pour sauvegarder la base SQLite avec timestamp
-function backupDatabaseOnExit(customPath = null) {
-  try {
-    const dbDir = fs.existsSync(path.join(basePath, 'data')) ? path.join(basePath, 'data') : basePath;
-    const dbPath = path.join(dbDir, 'database.sqlite');
-    if (!fs.existsSync(dbPath)) {
-      logWarn('Aucune base de données à sauvegarder:', dbPath);
-      return;
-    }
-    
-    // Formatage lisible : database_YYYY-MM-DD_HH-mm-ss.sqlite
-    const now = new Date();
-    const pad = n => n.toString().padStart(2, '0');
-    const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-    const fileName = `database_${timestamp}.sqlite`;
-    
-    // Utiliser le chemin personnalisé si fourni, sinon utiliser le dossier de sauvegarde par défaut
-    let backupPath;
-    if (customPath) {
-      backupPath = path.join(customPath, fileName);
-    } else {
-      // Dossier par défaut
-      const backupDir = path.join(basePath, 'backups');
-      if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true });
-        logInfo('Dossier de sauvegarde créé:', backupDir);
-      }
-      backupPath = path.join(backupDir, fileName);
-    }
-    
-    fs.copyFileSync(dbPath, backupPath);
-    logSuccess('Sauvegarde automatique de la base effectuée:', backupPath);
-    return backupPath;
-  } catch (err) {
-    logError('Erreur lors de la sauvegarde automatique de la base:', err);
-    return null;
-  }
 }
 
 // Démarrage d'Electron une fois prêt
 app.whenReady().then(() => {
-  logInfo("Electron prêt.");
+  console.log("📌 Electron prêt.");
 
   // Démarrer Express et ensuite créer la fenêtre
   portfinder.basePort = 3000;
   portfinder.getPort((err, port) => {
     if (err) {
-      logError("Erreur lors de la recherche d'un port libre :", err);
+      console.error("❌ Erreur lors de la recherche d'un port libre :", err);
       app.quit();
       return;
     }
 
-    logSuccess(`Démarrage du serveur Express sur le port ${port}...`);
+    console.log(`🚀 Démarrage du serveur Express sur le port ${port}...`);
     expressApp.listen(port, () => {
-      logSuccess(`Serveur Express en écoute sur http://127.0.0.1:${port}`);
+      console.log(`✅ Serveur Express en écoute sur http://127.0.0.1:${port}`);
       createWindow(port);
     }).on('error', (err) => {
-      logError("Erreur lors du démarrage d'Express :", err);
+      console.error("❌ Erreur lors du démarrage d'Express :", err);
       app.quit();
     });
   });
@@ -279,7 +174,7 @@ app.whenReady().then(() => {
             // fallback if data/database.sqlite n'existe pas
             let source = path.join(basePath, 'data', 'database.sqlite');
             if (!fs.existsSync(source)) {
-              logWarn('DB introuvable dans data/, fallback vers racine');
+              console.warn('DB introuvable dans data/, fallback vers racine');
               source = path.join(basePath, 'database.sqlite');
             }
 
@@ -310,23 +205,16 @@ app.whenReady().then(() => {
 });
 
 // Gestion de la fermeture de l'application
-app.on('before-quit', (event) => {
-  if (isQuitting) return; // Évite la boucle
-  logInfo("Déclenchement de la sauvegarde automatique avant fermeture...");
-  backupDatabaseOnExit();
-  // On ne bloque plus ici, la fermeture continue normalement
-});
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    logInfo("Fermeture de l'application...");
+    console.log("📌 Fermeture de l'application...");
     app.quit();
   }
 });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    logInfo("Réouverture de la fenêtre Electron...");
+    console.log("📌 Réouverture de la fenêtre Electron...");
     portfinder.basePort = 3000;
     portfinder.getPort((err, port) => {
       if (!err) {

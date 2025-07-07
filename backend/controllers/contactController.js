@@ -1,13 +1,31 @@
-const { Contact, Client, Cabinet, Sequelize } = require('../models');
+const { Contact, Client, Cabinet, ContactEmail, ContactPhone, ContactRole, Sequelize } = require('../models');
 const Op = Sequelize.Op;
 
 const contactController = {
   // Création d'un contact pour un cabinet
   createContactForCabinet: async (req, res) => {
     try {
-      const result = await Contact.create({ ...req.body });
-      console.log('Contact pour cabinet créé', result);
-      res.status(201).json({ message: 'Contact créé avec succès', data: result });
+      const { emails, phones, roles, ...contactData } = req.body;
+      const contact = await Contact.create(contactData);
+      // Ajoute les emails
+      if (Array.isArray(emails)) {
+        await Promise.all(emails.map(email =>
+          ContactEmail.create({ contact_id: contact.id, email })
+        ));
+      }
+      // Ajoute les téléphones
+      if (Array.isArray(phones)) {
+        await Promise.all(phones.map(phone =>
+          ContactPhone.create({ contact_id: contact.id, phone })
+        ));
+      }
+      // Ajoute les rôles
+      if (Array.isArray(roles)) {
+        await Promise.all(roles.map(role =>
+          ContactRole.create({ contact_id: contact.id, role })
+        ));
+      }
+      res.status(201).json({ message: 'Contact créé avec succès', data: contact });
     } catch (error) {
       console.error('Erreur création contact cabinet:', error);
       res.status(500).json({ error: 'Erreur lors de la création du contact pour cabinet' });
@@ -86,9 +104,24 @@ const contactController = {
   // Création d'un contact pour un client
   createContactForClient: async (req, res) => {
     try {
-      const result = await Contact.create({ ...req.body });
-      console.log('Contact pour client créé', result);
-      res.status(201).json({ message: 'Contact créé avec succès', data: result });
+      const { emails, phones, roles, ...contactData } = req.body;
+      const contact = await Contact.create(contactData);
+      if (Array.isArray(emails)) {
+        await Promise.all(emails.map(email =>
+          ContactEmail.create({ contact_id: contact.id, email })
+        ));
+      }
+      if (Array.isArray(phones)) {
+        await Promise.all(phones.map(phone =>
+          ContactPhone.create({ contact_id: contact.id, phone })
+        ));
+      }
+      if (Array.isArray(roles)) {
+        await Promise.all(roles.map(role =>
+          ContactRole.create({ contact_id: contact.id, role })
+        ));
+      }
+      res.status(201).json({ message: 'Contact créé avec succès', data: contact });
     } catch (error) {
       console.error('Erreur création contact client:', error);
       res.status(500).json({ error: 'Erreur lors de la création du contact pour client' });
@@ -194,13 +227,15 @@ const contactController = {
       const nom = req.query.nom;
       const condition = nom ? { nom_contact: { [Op.like]: `%${nom}%` } } : null;
 
-      const data = await Contact.findAll({ 
+      const data = await Contact.findAll({
         where: condition,
-        include: [{
-          model: Client
-        }, {
-          model: Cabinet
-        }]
+        include: [
+          { model: ContactEmail, as: 'emails' },
+          { model: ContactPhone, as: 'phones' },
+          { model: ContactRole, as: 'roles' },
+          { model: Client },
+          { model: Cabinet }
+        ]
       });
       
       res.status(200).json(data);
@@ -211,16 +246,18 @@ const contactController = {
     }
   },
 
-  // Récupération d'un contact par son ID, avec les associations
+  // Récupération d'un contact par son ID, avec les emails et téléphones associés
   findOne: async (req, res) => {
     try {
       const id = req.params.id;
       const data = await Contact.findByPk(id, {
-        include: [{
-          model: Client
-        }, {
-          model: Cabinet
-        }]
+        include: [
+          { model: ContactEmail, as: 'emails' },
+          { model: ContactPhone, as: 'phones' },
+          { model: ContactRole, as: 'roles' },
+          { model: Client },
+          { model: Cabinet }
+        ]
       });
 
       if (data) {
@@ -273,26 +310,30 @@ const contactController = {
   update: async (req, res) => {
     try {
       const id = req.params.id;
-
-      if (req.body.client_id && req.body.cabinet_id) {
-        return res.status(400).json({
-          message: "Un contact ne peut pas être à la fois associé à un client et à un cabinet."
-        });
+      const { emails, phones, roles, ...contactData } = req.body;
+      await Contact.update(contactData, { where: { id } });
+      // Met à jour les emails
+      if (Array.isArray(emails)) {
+        await ContactEmail.destroy({ where: { contact_id: id } });
+        await Promise.all(emails.map(email =>
+          ContactEmail.create({ contact_id: id, email })
+        ));
       }
-
-      const [num] = await Contact.update(req.body, {
-        where: { id: id }
-      });
-
-      if (num == 1) {
-        res.status(200).json({
-          message: "Le contact a été mis à jour avec succès."
-        });
-      } else {
-        res.status(404).json({
-          message: `Impossible de mettre à jour le contact avec id=${id}. Peut-être que le contact n'a pas été trouvé ou req.body est vide!`
-        });
+      // Met à jour les téléphones
+      if (Array.isArray(phones)) {
+        await ContactPhone.destroy({ where: { contact_id: id } });
+        await Promise.all(phones.map(phone =>
+          ContactPhone.create({ contact_id: id, phone })
+        ));
       }
+      // Met à jour les rôles
+      if (Array.isArray(roles)) {
+        await ContactRole.destroy({ where: { contact_id: id } });
+        await Promise.all(roles.map(role =>
+          ContactRole.create({ contact_id: id, role })
+        ));
+      }
+      res.status(200).json({ message: "Le contact a été mis à jour avec succès." });
     } catch (error) {
       res.status(500).json({
         message: "Erreur lors de la mise à jour du contact avec id=" + req.params.id

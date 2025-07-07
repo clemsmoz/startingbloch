@@ -6,6 +6,7 @@ import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import AddContactModal from '../components/AddContactModal';
 import DeleteContactModal from '../components/DeleteContactModal';
 import EditContactModal from '../components/EditContactModal';
+import ContactDetailModal from '../components/ContactDetailModal';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
 import cacheService from '../services/cacheService';
@@ -19,6 +20,7 @@ const ContactsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const navigate = useNavigate();
 
   const safe = (val) => val ?? '';
@@ -74,6 +76,22 @@ const ContactsPage = () => {
     setShowEditModal(true);
   };
   const handleCloseEditModal = () => setShowEditModal(false);
+
+  const handleShowDetail = (contact) => {
+    setSelectedContact(contact);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetailModal(false);
+    setSelectedContact(null);
+  };
+
+  const handleGoToContactDetailPage = (contact) => {
+    if (contact && contact.id) {
+      navigate(`/contacts/${contact.id}`);
+    }
+  };
 
   const user = typeof cacheService.get === "function"
     ? cacheService.get('user')
@@ -152,6 +170,17 @@ const ContactsPage = () => {
                     <strong>Email :</strong> {safe(contact.email_contact)}
                   </Typography>
                 </CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => handleShowDetail(contact)}
+                    sx={{ mr: 1 }}
+                  >
+                    Détails
+                  </Button>
+                
+                </Box>
               </Paper>
             ))
           ) : (
@@ -179,6 +208,11 @@ const ContactsPage = () => {
           handleClose={handleCloseEditModal} 
           refreshContacts={refreshContacts} 
           contact={selectedContact} 
+        />
+        <ContactDetailModal
+          open={showDetailModal}
+          contact={selectedContact}
+          onClose={handleCloseDetail}
         />
       </Container>
     </Box>

@@ -123,14 +123,10 @@ const PortefeuilleBrevetPage = () => {
 
   // Améliorer la fonction handleShowDetailModal avec des logs de débogage
   const handleDetailClick = (brevetId) => {
-    console.log('Ouverture du détail pour le brevet ID:', brevetId);
+    console.log('[PortefeuilleBrevetPage] handleDetailClick brevetId:', brevetId);
     handleShowDetailModal(brevetId);
-    // Vérification que l'état a bien été mis à jour
     setTimeout(() => {
-      console.log('État après clic sur détail:', {
-        selectedId: selectedBrevetId,
-        modalVisible: showDetailModal
-      });
+      console.log('[PortefeuilleBrevetPage] selectedBrevetId:', selectedBrevetId, 'showDetailModal:', showDetailModal);
     }, 100);
   };
 
@@ -595,8 +591,7 @@ const PortefeuilleBrevetPage = () => {
           {currentBrevets.length > 0 ? (
             currentBrevets.map((brevet) => {
               const brevetId = safe(brevet.id) || safe(brevet.id_brevet);
-              console.log('Rendu de la carte brevet:', { brevetId, titre: brevet.titre });
-              
+              console.log('[PortefeuilleBrevetPage] Render brevet card:', { brevetId, titre: brevet.titre });
               return (
                 <Paper
                   key={brevetId}
@@ -622,7 +617,10 @@ const PortefeuilleBrevetPage = () => {
                   <Box display="flex" justifyContent="space-between">
                     <IconButton 
                       color="info" 
-                      onClick={() => handleDetailClick(brevetId)}
+                      onClick={() => {
+                        console.log('[PortefeuilleBrevetPage] IconButton clicked for brevetId:', brevetId);
+                        handleDetailClick(brevetId);
+                      }}
                       aria-label="Voir les détails"
                     >
                       <FaInfoCircle size={24} />
@@ -664,13 +662,16 @@ const PortefeuilleBrevetPage = () => {
         <AddBrevetModal show={showAddModal} handleClose={handleCloseAddModal} />
 
         {showDetailModal && selectedBrevetId !== null && (
-          <BrevetDetailModal
-            key={selectedBrevetId}
-            show={showDetailModal}
-            handleClose={handleCloseDetailModal}
-            brevetId={selectedBrevetId}
-            onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
-          />
+          <>
+            {console.log('[PortefeuilleBrevetPage] showDetailModal:', showDetailModal, 'selectedBrevetId:', selectedBrevetId)}
+            <BrevetDetailModal
+              key={selectedBrevetId}
+              show={showDetailModal}
+              handleClose={handleCloseDetailModal}
+              brevetId={selectedBrevetId}
+              onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
+            />
+          </>
         )}
 
         <EditBrevetModal 
