@@ -10,6 +10,8 @@ import EditBrevetModal from '../components/EditBrevetModal';
 import { useNavigate, useParams } from 'react-router-dom';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
+import T from '../components/T';
+import useTranslation from '../hooks/useTranslation';
 
 // ----- IMPORT DE FONCTION EXPORT PDF ICI -----
 import { exportBrevetsPDF } from '../hooks/exportPortfolioPDF'; // Adapter le chemin selon ton projet
@@ -17,6 +19,7 @@ import cacheService from '../services/cacheService';
 
 const BrevetClientPage = () => {
   const { clientId } = useParams();
+  const { alert } = useTranslation();
   const [brevets, setBrevets] = useState([]);
   const [clientName, setClientName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -170,19 +173,19 @@ const handleExportSelected = async () => {
         </Box>
 
         <Button variant="contained" color="primary" onClick={() => navigate(-1)} sx={{ mb: 4 }}>
-          Retour
+          <T>Retour</T>
         </Button>
         <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
-          Portefeuille de brevet de {clientName}
+          <T>Portefeuille de brevet de</T> {clientName}
         </Typography>
 
         {/* ---- EXPORT BUTTONS ---- */}
         <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
           <Button variant="contained" color="primary" onClick={handleExportAll}>
-            Exporter tout
+            <T>Exporter tout</T>
           </Button>
           <Button variant="contained" color="secondary" onClick={handleExportSelected} disabled={selectedBrevets.length === 0}>
-            Exporter la sélection ({selectedBrevets.length})
+            <T>Exporter la sélection</T> ({selectedBrevets.length})
           </Button>
           <FormControlLabel
             control={
@@ -193,7 +196,7 @@ const handleExportSelected = async () => {
                 sx={{ ml: 2 }}
               />
             }
-            label="Tout sélectionner"
+            label={<T>Tout sélectionner</T>}
             sx={{ ml: 3 }}
           />
         </Box>
@@ -202,7 +205,7 @@ const handleExportSelected = async () => {
         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
           <TextField
             variant="outlined"
-            label="Rechercher des brevets..."
+            label={<T>Rechercher des brevets...</T>}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             sx={{ width: '70%', backgroundColor: 'white', borderRadius: 1 }}
@@ -213,8 +216,8 @@ const handleExportSelected = async () => {
             variant="outlined"
             sx={{ width: '25%', backgroundColor: 'white', borderRadius: 1 }}
           >
-            <MenuItem value="titre">Rechercher par Titre</MenuItem>
-            <MenuItem value="reference_famille">Rechercher par Référence Famille</MenuItem>
+            <MenuItem value="titre"><T>Rechercher par Titre</T></MenuItem>
+            <MenuItem value="reference_famille"><T>Rechercher par Référence Famille</T></MenuItem>
           </Select>
         </Box>
 
@@ -228,9 +231,9 @@ const handleExportSelected = async () => {
           />
           <FormControl sx={{ width: '150px' }}>
             <Select value={rowsPerPage} onChange={handleRowsPerPageChange} variant="outlined">
-              <MenuItem value={8}>8 par page</MenuItem>
-              <MenuItem value={16}>16 par page</MenuItem>
-              <MenuItem value={32}>32 par page</MenuItem>
+              <MenuItem value={8}><T>8 par page</T></MenuItem>
+              <MenuItem value={16}><T>16 par page</T></MenuItem>
+              <MenuItem value={32}><T>32 par page</T></MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -238,11 +241,11 @@ const handleExportSelected = async () => {
         <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
           {canWrite && (
             <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
-              Ajouter un brevet
+              <T>Ajouter un brevet</T>
             </Button>
           )}
           <Typography variant="h6" sx={{ ml: 2 }}>
-            Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}
+            <T>Le portefeuille contient</T> {brevets.length} <T>brevet</T>{brevets.length > 1 ? 's' : ''}
           </Typography>
         </Box>
 
@@ -276,7 +279,7 @@ const handleExportSelected = async () => {
                       {safe(brevet.titre)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Référence Famille: {safe(brevet.reference_famille)}
+                      <T>Référence Famille</T>: {safe(brevet.reference_famille)}
                     </Typography>
                   </Box>
                 </Box>
@@ -298,7 +301,7 @@ const handleExportSelected = async () => {
               </Paper>
             ))
           ) : (
-            <Typography>Aucun brevet disponible.</Typography>
+            <Typography><T>Aucun brevet disponible.</T></Typography>
           )}
         </Box>
 
@@ -312,9 +315,9 @@ const handleExportSelected = async () => {
           />
           <FormControl sx={{ width: '150px' }}>
             <Select value={rowsPerPage} onChange={handleRowsPerPageChange} variant="outlined">
-              <MenuItem value={8}>8 par page</MenuItem>
-              <MenuItem value={16}>16 par page</MenuItem>
-              <MenuItem value={32}>32 par page</MenuItem>
+              <MenuItem value={8}><T>8 par page</T></MenuItem>
+              <MenuItem value={16}><T>16 par page</T></MenuItem>
+              <MenuItem value={32}><T>32 par page</T></MenuItem>
             </Select>
           </FormControl>
         </Box>

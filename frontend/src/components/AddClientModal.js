@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import T from './T';
 import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import { API_BASE_URL } from '../config';
-import axios from 'axios';
 
 const AddClientModal = ({ show, handleClose, refreshClients }) => {
   const [formData, setFormData] = useState({
-    nom_client: '',
+    nom_client: "",
     reference_client: '',
     adresse_client: '',
     code_postal: '',
@@ -56,83 +56,83 @@ const AddClientModal = ({ show, handleClose, refreshClients }) => {
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Ajouter nouveau client</Modal.Title>
+        <Modal.Title><T>Ajouter nouveau client</T></Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <Alert variant="danger">{error}</Alert>}  {/* Affichage de l'erreur */}
         <Form onSubmit={handleSubmit}>
           <Form.Group controlId="formClientName" className="mt-3">
-            <Form.Label>Nom</Form.Label>
+            <Form.Label><T>Nom</T></Form.Label>
             <Form.Control
               type="text"
               name="nom_client"
               value={formData.nom_client}
               onChange={handleChange}
-              
+              required 
             />
           </Form.Group>
           <Form.Group controlId="formClientReference" className="mt-3">
-            <Form.Label>Référence</Form.Label>
+            <Form.Label><T>Référence</T></Form.Label>
             <Form.Control
               type="text"
               name="reference_client"
               value={formData.reference_client}
               onChange={handleChange}
-              
+              required 
             />
           </Form.Group>
           <Form.Group controlId="formClientAdresse" className="mt-3">
-            <Form.Label>Adresse</Form.Label>
+            <Form.Label><T>Adresse</T></Form.Label>
             <Form.Control
               type="text"
               name="adresse_client"
               value={formData.adresse_client}
               onChange={handleChange}
-              
+              required 
             />
           </Form.Group>
           <Form.Group controlId="formClientCodePostal" className="mt-3">
-            <Form.Label>Code Postal</Form.Label>
+            <Form.Label><T>Code Postal</T></Form.Label>
             <Form.Control
               type="text"
               name="code_postal"
               value={formData.code_postal}
               onChange={handleChange}
-              
+              required 
             />
           </Form.Group>
           <Form.Group controlId="formClientPays" className="mt-3">
-            <Form.Label>Pays</Form.Label>
+            <Form.Label><T>Pays</T></Form.Label>
             <Form.Control
               type="text"
               name="pays_client"
               value={formData.pays_client}
               onChange={handleChange}
-              
+              required 
             />
           </Form.Group>
           <Form.Group controlId="formClientEmail" className="mt-3">
-            <Form.Label>Email</Form.Label>
+            <Form.Label><T>Email</T></Form.Label>
             <Form.Control
               type="email"
               name="email_client"
               value={formData.email_client}
               onChange={handleChange}
-    
+              required 
             />
           </Form.Group>
           <Form.Group controlId="formClientTelephone" className="mt-3">
-            <Form.Label>Téléphone</Form.Label>
+            <Form.Label><T>Téléphone</T></Form.Label>
             <Form.Control
               type="text"
               name="telephone_client"
               value={formData.telephone_client}
               onChange={handleChange}
-              
+              required 
             />
           </Form.Group>
           <Button variant="primary" type="submit" className="mt-3" disabled={loading}>
-            {loading ? 'Ajout en cours...' : 'Ajouter client'}
+            {loading ? <T>Ajout en cours...</T> : <T>Ajouter client</T>}
           </Button>
         </Form>
       </Modal.Body>

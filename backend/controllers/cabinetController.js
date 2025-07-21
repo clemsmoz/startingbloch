@@ -5,6 +5,7 @@ const logWarn = (...args) => console.warn('\x1b[33m%s\x1b[0m', '⚠️', ...args
 const logError = (...args) => console.error('\x1b[31m%s\x1b[0m', '❌', ...args);   // Rouge
 
 const { Cabinet, Pays, Brevet, sequelize } = require('../models');
+const logController = require('./logController');
 
 const cabinetController = {
   createCabinet: async (req, res) => {
@@ -16,6 +17,12 @@ const cabinetController = {
         reference_cabinet: req.body.reference_cabinet || null,
         type:              req.body.type              || null
       });
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+        req.user && req.user.email_user ? req.user.email_user : 'admin',
+        'Création cabinet',
+        `Cabinet créé : ${data.nom_cabinet || data.id}`
+      );
       res.status(201).json(data);
     } catch (e) { res.status(500).json({ error: e.message }); }
   },
@@ -59,6 +66,12 @@ const cabinetController = {
       }, { where: { id: req.params.id } });
       if (cnt) {
         const updatedCabinet = await Cabinet.findByPk(req.params.id);
+        await logController.createLog(
+          req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+          req.user && req.user.email_user ? req.user.email_user : 'admin',
+          'Modification cabinet',
+          `Cabinet modifié : ${req.params.id}`
+        );
         res.status(200).json({ message: 'Cabinet mis à jour', data: updatedCabinet });
       } else {
         res.status(404).json({ error: 'Cabinet non trouvé' });
@@ -69,14 +82,17 @@ const cabinetController = {
     try {
       const deleted = await Cabinet.destroy({ where: { id: req.params.id } });
       if (deleted) {
-        logSuccess('Cabinet supprimé:', req.params.id);
+        await logController.createLog(
+          req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+          req.user && req.user.email_user ? req.user.email_user : 'admin',
+          'Suppression cabinet',
+          `Cabinet supprimé : ${req.params.id}`
+        );
         res.status(200).json({ message: 'Cabinet supprimé' });
       } else {
-        logWarn('Cabinet non trouvé pour suppression:', req.params.id);
         res.status(404).json({ error: 'Cabinet non trouvé' });
       }
     } catch (error) {
-      logError('Erreur suppression cabinet:', error);
       res.status(500).json({ error: 'Erreur lors de la suppression du cabinet' });
     }
   },

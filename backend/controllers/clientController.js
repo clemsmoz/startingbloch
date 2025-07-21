@@ -1,5 +1,6 @@
 const { Client, Contact, Brevet, sequelize } = require('../models');
 const Op = sequelize.Sequelize.Op;
+const logController = require('./logController');
 
 const clientController = {
   createClient: async (req, res) => {
@@ -13,11 +14,17 @@ const clientController = {
         email_client:     req.body.email_client     || null,
         telephone_client: req.body.telephone_client || null
       };
-      const result = await Client.create(clientData);
-      res.status(201).json({ message: 'Client créé', data: result });
-    } catch (error) {
-      console.error('Erreur création client :', error);
-      res.status(500).json({ error: 'Erreur création client' });
+      const client = await Client.create(req.body);
+      // Log action
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+        req.user && req.user.email_user ? req.user.email_user : 'admin',
+        'Création client',
+        `Client créé : ${client.nom_client || client.id}`
+      );
+      res.status(201).json({ data: client });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   },
   getAllClients: async (req, res) => {
@@ -58,22 +65,16 @@ const clientController = {
   },
   updateClient: async (req, res) => {
     try {
-      const [updated] = await Client.update({
-        nom_client:       req.body.nom_client       || null,
-        reference_client: req.body.reference_client || null,
-        adresse_client:   req.body.adresse_client   || null,
-        code_postal:      req.body.code_postal      || null,
-        pays_client:      req.body.pays_client      || null,
-        email_client:     req.body.email_client     || null,
-        telephone_client: req.body.telephone_client || null
-      }, { where: { id: req.params.id } });
-
-      if (!updated) return res.status(404).json({ error: 'Client non trouvé' });
-      const updatedClient = await Client.findByPk(req.params.id);
-      res.json({ message: 'Client mis à jour', data: updatedClient });
-    } catch (error) {
-      console.error('Erreur maj client :', error);
-      res.status(500).json({ error: 'Erreur maj client' });
+      await Client.update(req.body, { where: { id: req.params.id } });
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+        req.user && req.user.email_user ? req.user.email_user : 'admin',
+        'Modification client',
+        `Client modifié : ${req.params.id}`
+      );
+      res.status(200).json({ message: "Client mis à jour" });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   },
   getClientsByBrevetId: async (req, res) => {
@@ -87,15 +88,16 @@ const clientController = {
   },
   deleteClient: async (req, res) => {
     try {
-      const deleted = await Client.destroy({ where: { id: req.params.id } });
-      if (deleted) {
-        res.status(200).json({ message: 'Client supprimé' });
-      } else {
-        res.status(404).json({ error: 'Client non trouvé' });
-      }
-    } catch (error) {
-      console.error("Erreur suppression client:", error);
-      res.status(500).json({ error: 'Erreur lors de la suppression du client' });
+      await Client.destroy({ where: { id: req.params.id } });
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+        req.user && req.user.email_user ? req.user.email_user : 'admin',
+        'Suppression client',
+        `Client supprimé : ${req.params.id}`
+      );
+      res.status(200).json({ message: "Client supprimé" });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
   },
   addBrevet: async (req, res) => {

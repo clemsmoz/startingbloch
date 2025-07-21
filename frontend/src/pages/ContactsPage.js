@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CardContent, Typography, Container, Button, Avatar, Box, Paper } from '@mui/material';
+import { Container, Typography, Box, Button, Paper, CardContent, Avatar } from '@mui/material';
 import Sidebar from '../components/Sidebar';
+import T from '../components/T';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import AddContactModal from '../components/AddContactModal';
-import DeleteContactModal from '../components/DeleteContactModal';
 import EditContactModal from '../components/EditContactModal';
-import ContactDetailModal from '../components/ContactDetailModal';
+import DeleteContactModal from '../components/DeleteContactModal';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
 import cacheService from '../services/cacheService';
@@ -20,10 +20,16 @@ const ContactsPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const navigate = useNavigate();
 
   const safe = (val) => val ?? '';
+
+  // Vérification des droits d'écriture
+  const user = typeof cacheService?.get === "function" ? cacheService.get('user')
+    : (typeof window !== "undefined" && window.localStorage
+        ? JSON.parse(window.localStorage.getItem('user') || 'null')
+        : null);
+  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
 
   useEffect(() => {
     if (cabinetId) {
@@ -77,60 +83,36 @@ const ContactsPage = () => {
   };
   const handleCloseEditModal = () => setShowEditModal(false);
 
-  const handleShowDetail = (contact) => {
-    setSelectedContact(contact);
-    setShowDetailModal(true);
-  };
-
-  const handleCloseDetail = () => {
-    setShowDetailModal(false);
-    setSelectedContact(null);
-  };
-
-  const handleGoToContactDetailPage = (contact) => {
-    if (contact && contact.id) {
-      navigate(`/contacts/${contact.id}`);
-    }
-  };
-
-  const user = typeof cacheService.get === "function"
-    ? cacheService.get('user')
-    : (typeof window !== "undefined" && window.localStorage
-        ? JSON.parse(window.localStorage.getItem('user') || 'null')
-        : null);
-  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
-
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
       <Container sx={{ padding: '20px' }} maxWidth="xl">
         {/* Logo de l'entreprise */}
-        <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
           <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
         </Box>
 
         <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
-          Contacts
+          <T>Gestion des Contacts</T>
         </Typography>
 
-        {/* Boutons d'action */}
         <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
           {canWrite && (
             <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
-              Ajouter un contact
+              <T>Ajouter un contact</T>
             </Button>
           )}
           <Button 
             variant="outlined" 
             color="primary" 
             onClick={() => navigate(-1)} 
-            sx={{ fontWeight: 'bold', padding: '12px 20px', marginLeft: '16px' }}
+            sx={{ ml: 2 }}
           >
-            Retour
+            <T>Retour</T>
           </Button>
         </Box>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {contacts && contacts.length > 0 ? (
             contacts.map(contact => (
               <Paper
@@ -138,7 +120,7 @@ const ContactsPage = () => {
                 sx={{
                   padding: 3,
                   borderRadius: 3,
-                  transition: 'transform 0.3s',
+                  transition: 'transform 0.3s', 
                   '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
                   position: 'relative',
                   width: '100%',
@@ -146,50 +128,45 @@ const ContactsPage = () => {
                   margin: '0 auto',
                 }}
               >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
                     {safe(contact.nom_contact).charAt(0)}{safe(contact.prenom_contact).charAt(0)}
                   </Avatar>
-                  <Box>
-                    <FaEdit
-                      style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#3f51b5' }}
-                      onClick={() => handleShowEditModal(contact)}
-                    />
-                    <FaTrash
-                      style={{ cursor: 'pointer', fontSize: '1.5rem', color: '#f44336', marginLeft: '1rem' }}
-                      onClick={() => handleShowDeleteModal(contact)}
-                    />
-                  </Box>
+                  {canWrite && (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <FaEdit
+                        style={{ cursor: 'pointer', color: '#3f51b5' }}
+                        onClick={() => handleShowEditModal(contact)}
+                      />
+                      <FaTrash
+                        style={{ cursor: 'pointer', color: '#f44336' }}
+                        onClick={() => handleShowDeleteModal(contact)}
+                      />
+                    </Box>
+                  )}
                 </Box>
                 <CardContent sx={{ textAlign: 'center', mt: 2 }}>
                   <Typography variant="h5" component="div" fontWeight="bold">
                     {safe(contact.nom_contact)} {safe(contact.prenom_contact)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    <strong>Téléphone :</strong> {safe(contact.telephone_contact)}<br />
-                    <strong>Email :</strong> {safe(contact.email_contact)}
+                    <strong><T>Téléphone :</T></strong> {safe(contact.telephone_contact)}<br />
+                    <strong><T>Email :</T></strong> {safe(contact.email_contact)}<br />
+                    <strong><T>Adresse :</T></strong> {safe(contact.adresse_contact)}<br />
+                    <strong><T>Code Postal :</T></strong> {safe(contact.code_postal_contact)}<br />
+                    <strong><T>Pays :</T></strong> {safe(contact.pays_contact)}
                   </Typography>
                 </CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => handleShowDetail(contact)}
-                    sx={{ mr: 1 }}
-                  >
-                    Détails
-                  </Button>
-                
-                </Box>
               </Paper>
             ))
           ) : (
             <Typography variant="body1" sx={{ width: '100%', textAlign: 'center', mt: 3 }}>
-              Aucun contact trouvé
+              <T>Aucun contact trouvé.</T>
             </Typography>
           )}
         </Box>
 
+        {/* Modaux */}
         <AddContactModal 
           show={showAddModal} 
           handleClose={handleCloseAddModal} 
@@ -197,22 +174,21 @@ const ContactsPage = () => {
           cabinetId={cabinetId} 
           clientId={clientId} 
         />
-        <DeleteContactModal 
-          show={showDeleteModal} 
-          handleClose={handleCloseDeleteModal} 
-          refreshContacts={refreshContacts} 
-          contact={selectedContact} 
-        />
         <EditContactModal 
           show={showEditModal} 
           handleClose={handleCloseEditModal} 
-          refreshContacts={refreshContacts} 
           contact={selectedContact} 
+          refreshContacts={refreshContacts}
+          cabinetId={cabinetId}
+          clientId={clientId}
         />
-        <ContactDetailModal
-          open={showDetailModal}
-          contact={selectedContact}
-          onClose={handleCloseDetail}
+        <DeleteContactModal 
+          show={showDeleteModal} 
+          handleClose={handleCloseDeleteModal} 
+          contact={selectedContact} 
+          refreshContacts={refreshContacts}
+          cabinetId={cabinetId}
+          clientId={clientId}
         />
       </Container>
     </Box>

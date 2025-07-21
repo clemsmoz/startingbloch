@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
 import { saveAs } from 'file-saver';
-
 import { Drawer, IconButton, List, ListItem, ListItemText, ListItemIcon, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button as MuiButton } from '@mui/material';
-import { FaBars, FaBuilding, FaUser, FaFileContract, FaHome, FaSignOutAlt, FaUsersCog } from 'react-icons/fa';
+import { FaBars, FaBuilding, FaUser, FaFileContract, FaHome, FaSignOutAlt, FaUsersCog, FaListAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/startigbloch_transparent_corrected.png'; // Assurez-vous que le chemin du logo est correct
-import { blue, blueGrey } from '@mui/material/colors';
-import cacheService from '../services/cacheService'; // Ajout pour récupérer l'utilisateur connecté
-
+import logo from '../assets/startigbloch_transparent_corrected.png';
+import cacheService from '../services/cacheService';
+import T, { LanguageSwitch } from '../components/T';
 const Sidebar = ({ onLogout }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   // Récupère l'utilisateur connecté (depuis le cache/localStorage)
-  const user = typeof cacheService.get === "function"
-    ? cacheService.get('user')
-    : (typeof window !== "undefined" && window.localStorage
+  const user = typeof cacheService.get ==="function"? cacheService.get('user')
+    : (typeof window !=="undefined"&& window.localStorage
         ? JSON.parse(window.localStorage.getItem('user') || 'null')
         : null);
 
@@ -44,9 +41,8 @@ const Sidebar = ({ onLogout }) => {
   const confirmDownloadDb = async () => {
     setShowDownloadModal(false);
     try {
-      const user = typeof cacheService.get === "function"
-        ? cacheService.get('user')
-        : (typeof window !== "undefined" && window.localStorage
+      const user = typeof cacheService.get ==="function"? cacheService.get('user')
+        : (typeof window !=="undefined"&& window.localStorage
             ? JSON.parse(window.localStorage.getItem('user') || 'null')
             : null);
 
@@ -57,7 +53,7 @@ const Sidebar = ({ onLogout }) => {
       });
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Erreur lors du téléchargement de la base.");
+        alert(data.error || <T>Erreur lors du téléchargement de la base.</T>);
         return;
       }
       // Récupère le blob et déclenche le téléchargement
@@ -87,13 +83,13 @@ const Sidebar = ({ onLogout }) => {
         setDownloadSuccess(true);
       }
     } catch (e) {
-      alert("Erreur lors du téléchargement de la base : " + (e.message || e));
+      alert(<T>Erreur lors du téléchargement de la base :</T> + (e.message || e));
     }
   };
 
   return (
     <>
-      <IconButton color="primary" onClick={toggleDrawer(true)} sx={{ fontSize: 32 }}>
+      <IconButton color="primary"onClick={toggleDrawer(true)} sx={{ fontSize: 32 }}>
         <FaBars />
       </IconButton>
       <Drawer anchor="left" open={open} onClose={toggleDrawer(false)}>
@@ -106,62 +102,76 @@ const Sidebar = ({ onLogout }) => {
           {user && (
             <Box sx={{ mb: 3, textAlign: 'center' }}>
               <Typography variant="h6" color="primary" fontWeight="bold">
-                Bienvenue {user.prenom_user || ''} {user.nom_user || ''}
+                <T>Bienvenue</T> {user.prenom_user || ''} {user.nom_user || ''}
               </Typography>
             </Box>
           )}
+          
+          {/* Sélecteur de langue */}
+          <Box sx={{ mb: 3, textAlign: 'center' }}>
+            <LanguageSwitch />
+          </Box>
+          
           <List>
             <ListItem button onClick={() => { navigate('/cabinets'); setOpen(false); }} sx={{ padding: 3 }}>
               <ListItemIcon>
-                <FaBuilding size={40}  color="#1976D2" />
+                <FaBuilding size={40}  color="#1976D2"/>
               </ListItemIcon>
-              <ListItemText primary="Portefeuille de Cabinets" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+              <ListItemText primary={<T>Portefeuille de Cabinets</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
             </ListItem>
             <ListItem button onClick={() => { navigate('/clients'); setOpen(false); }} sx={{ padding: 3 }}>
               <ListItemIcon>
-                <FaUser size={40} color="#1976D2" />
+                <FaUser size={40} color="#1976D2"/>
               </ListItemIcon>
-              <ListItemText primary="Portefeuille Clients" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+              <ListItemText primary={<T>Portefeuille Clients</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
             </ListItem>
             <ListItem button onClick={() => { navigate('/portefeuille-brevet'); setOpen(false); }} sx={{ padding: 3 }}>
               <ListItemIcon>
-                <FaFileContract size={40}  color="#1976D2" />
+                <FaFileContract size={40}  color="#1976D2"/>
               </ListItemIcon>
-              <ListItemText primary="Portefeuille de Brevets" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+              <ListItemText primary={<T>Portefeuille de Brevets</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
             </ListItem>
             {/* <ListItem button onClick={() => { navigate('/BrevetsList'); setOpen(false); }} sx={{ padding: 3 }}>
               <ListItemIcon>
-                <FaFlask size={28} color="primary" />
+                <FaFlask size={28} color="primary"/>
               </ListItemIcon>
-              <ListItemText primary="Portefeuille de Brevets TEST" primaryTypographyProps={{ fontSize: 20, color: 'primary.main' }} />
+              <ListItemText primary={<T><T>Portefeuille de Brevets TEST</T></T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main' }} />
             </ListItem> */}
             <ListItem button onClick={() => { navigate('/home'); setOpen(false); }} sx={{ padding: 3 }}>
               <ListItemIcon>
-                <FaHome size={40}  color="#1976D2" />
+                <FaHome size={40}  color="#1976D2"/>
               </ListItemIcon>
-              <ListItemText primary="Accueil" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+              <ListItemText primary={<T>Accueil</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
             </ListItem>
             {isAdmin && (
               <ListItem button onClick={() => { navigate('/user-management'); setOpen(false); }} sx={{ padding: 3 }}>
                 <ListItemIcon>
-                  <FaUsersCog size={40} color="#1976D2" />
+                  <FaUsersCog size={40} color="#1976D2"/>
                 </ListItemIcon>
-                <ListItemText primary="Gestion des utilisateurs" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+                <ListItemText primary={<T>Gestion des utilisateurs</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
               </ListItem>
             )}
             {isAdmin && (
               <ListItem button onClick={handleDownloadDb} sx={{ padding: 3 }}>
                 <ListItemIcon>
-                  <FaFileContract size={40} color="#1976D2" />
+                  <FaFileContract size={40} color="#1976D2"/>
                 </ListItemIcon>
-                <ListItemText primary="Télécharger la base SQLite" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+                <ListItemText primary={<T>Télécharger la base SQLite</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
+              </ListItem>
+            )}
+            {isAdmin && (
+              <ListItem button onClick={() => { navigate('/admin-statuts'); setOpen(false); }} sx={{ padding: 3 }}>
+                <ListItemIcon>
+                  <FaListAlt size={40} color="#1976D2"/>
+                </ListItemIcon>
+                <ListItemText primary={<T>Gestion des statuts</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
               </ListItem>
             )}
             <ListItem button onClick={handleLogout} sx={{ padding: 3 }}>
               <ListItemIcon>
-                <FaSignOutAlt size={40}  color="#1976D2" />
+                <FaSignOutAlt size={40}  color="#1976D2"/>
               </ListItemIcon>
-              <ListItemText primary="Déconnexion" primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold" }} />
+              <ListItemText primary={<T>Déconnexion</T>} primaryTypographyProps={{ fontSize: 20, color: 'primary.main', fontWeight:"bold"}} />
             </ListItem>
           </List>
         </Box>
@@ -169,35 +179,27 @@ const Sidebar = ({ onLogout }) => {
 
       {/* Modale de confirmation de téléchargement */}
       <Dialog open={showDownloadModal} onClose={() => setShowDownloadModal(false)}>
-        <DialogTitle>Choisir le dossier de téléchargement</DialogTitle>
+        <DialogTitle><T>Choisir le dossier de téléchargement</T></DialogTitle>
         <DialogContent>
           <Typography>
-            Le fichier <b>database.sqlite</b> va être téléchargé.<br />
-            Cliquez sur "Télécharger" pour choisir le dossier de destination.
+            <T>Le fichier </T><b><T>database.sqlite</T></b><T> va être téléchargé.</T><br />
+            <T>Cliquez sur </T><T>Télécharger</T><T> pour choisir le dossier de destination.</T>
           </Typography>
         </DialogContent>
         <DialogActions>
-          <MuiButton onClick={() => setShowDownloadModal(false)} color="secondary">
-            Annuler
-          </MuiButton>
-          <MuiButton onClick={confirmDownloadDb} color="primary" variant="contained">
-            Télécharger
-          </MuiButton>
+          <MuiButton onClick={() => setShowDownloadModal(false)} color="secondary"><T>Annuler</T></MuiButton>
+          <MuiButton onClick={confirmDownloadDb} color="primary" variant="contained"><T>Télécharger</T></MuiButton>
         </DialogActions>
       </Dialog>
 
       {/* Message de succès */}
       <Dialog open={downloadSuccess} onClose={() => setDownloadSuccess(false)}>
-        <DialogTitle>Téléchargement terminé</DialogTitle>
+        <DialogTitle><T>Téléchargement terminé</T></DialogTitle>
         <DialogContent>
-          <Typography>
-            La base de données a bien été téléchargée.
-          </Typography>
+          <Typography><T>La base de données a bien été téléchargée.</T></Typography>
         </DialogContent>
         <DialogActions>
-          <MuiButton onClick={() => setDownloadSuccess(false)} color="primary" autoFocus>
-            OK
-          </MuiButton>
+          <MuiButton onClick={() => setDownloadSuccess(false)} color="primary" autoFocus><T>OK</T></MuiButton>
         </DialogActions>
       </Dialog>
     </>

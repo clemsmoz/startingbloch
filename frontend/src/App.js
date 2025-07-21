@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import './i18n'; // Import de la configuration i18n
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
@@ -9,7 +10,7 @@ import CabinetsPage from './pages/CabinetsPage';
 import ClientsPage from './pages/ClientsPage';
 import BrevetClientPage from './pages/BrevetClientPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
-
+import AdminStatutsPage from './pages/AdminStatutsPage';
 const App = () => {
   return (
     <Router>
@@ -22,6 +23,7 @@ const App = () => {
         {/* Pour compatibilité avec les anciennes routes */}
         <Route path="/acceuil" element={<Navigate to="/home" replace />} />
         <Route path='user-management' element={<AdminUserManagementPage />} />
+        <Route path='/admin-statuts' element={<AdminStatutsPage />} />
         
         {/* Autres routes */}
         <Route path="/register" element={<RegisterPage />} />

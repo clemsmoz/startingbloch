@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CardContent, Typography, Container, Button, Avatar, Box, Paper } from '@mui/material';
+import T from '../components/T';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { FaPlus } from 'react-icons/fa';
@@ -39,12 +40,48 @@ const CabinetsPage = () => {
   const handleCloseModal = () => setShowModal(false);
 
   // Vérification des droits d'écriture
-  const user = typeof cacheService.get === "function"
-    ? cacheService.get('user')
-    : (typeof window !== "undefined" && window.localStorage
+  const user = typeof cacheService?.get ==="function"? cacheService.get('user')
+    : (typeof window !=="undefined"&& window.localStorage
         ? JSON.parse(window.localStorage.getItem('user') || 'null')
         : null);
-  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+  const token = user?.token;
+
+  // Création d'un cabinet
+  const createCabinet = async (cabinetData) => {
+    await fetch(`${API_BASE_URL}/api/cabinets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ ...cabinetData })
+    });
+  };
+
+  // Détermine si l'utilisateur a les droits d'écriture
+  const canWrite = !!user && (user.role === 'admin' || user.permissions?.includes('write'));
+
+  // Modification d'un cabinet
+  const updateCabinet = async (cabinetId, cabinetData) => {
+    await fetch(`${API_BASE_URL}/api/cabinets/${cabinetId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ ...cabinetData })
+    });
+  };
+
+  // Suppression d'un cabinet
+  const deleteCabinet = async (cabinetId) => {
+    await fetch(`${API_BASE_URL}/api/cabinets/${cabinetId}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+  };
 
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
@@ -57,31 +94,31 @@ const CabinetsPage = () => {
 
         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
           <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
-            Gestion des Cabinets
+            <T>Gestion des Cabinets</T>
           </Typography>
           {canWrite && (
             <Button variant="contained" color="primary" onClick={handleShowModal} startIcon={<FaPlus />}>
-              Ajouter un nouveau Cabinet
+              <T>Ajouter un nouveau Cabinet</T>
             </Button>
           )}
         </Box>
 
         <Box display="flex" gap={2} sx={{ mb: 4 }}>
           <Button variant={filter === 'all' ? 'contained' : 'outlined'} onClick={() => setFilter('all')}>
-            Tous
+            <T>Tous</T>
           </Button>
           <Button variant={filter === 'annuite' ? 'contained' : 'outlined'} onClick={() => setFilter('annuite')}>
-            Cabinets Annuité
+            <T>Cabinets Annuité</T>
           </Button>
           <Button variant={filter === 'procedure' ? 'contained' : 'outlined'} onClick={() => setFilter('procedure')}>
-            Cabinets Procédure
+            <T>Cabinets Procédure</T>
           </Button>
         </Box>
 
         {(filter === 'all' || filter === 'annuite') && (
           <Box sx={{ mb: 5 }}>
             <Typography variant="h5" color="primary" fontWeight="bold" gutterBottom>
-              Cabinets Annuité
+              <T>Cabinets Annuité</T>
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
               {annuiteCabinets.map((cabinet) => (
@@ -94,8 +131,7 @@ const CabinetsPage = () => {
                     width: 300,
                     padding: 3,
                     borderRadius: 3,
-                    transition: 'transform 0.3s',
-                    '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                    transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
                     position: 'relative',
                   }}
                 >
@@ -146,7 +182,7 @@ const CabinetsPage = () => {
             <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
               Cabinets Procédure
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               {procedureCabinets.map((cabinet) => (
                 <Box
                   key={cabinet.id}
@@ -157,8 +193,7 @@ const CabinetsPage = () => {
                     width: 300,
                     padding: 3,
                     borderRadius: 3,
-                    transition: 'transform 0.3s',
-                    '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                    transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
                     position: 'relative',
                   }}
                 >

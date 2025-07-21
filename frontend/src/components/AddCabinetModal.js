@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import T from '../components/T';
 import {
   Modal,
   Button,
@@ -13,14 +14,12 @@ import {
 import { API_BASE_URL } from '../config';
 
 const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
-  // Modifiez ici les clés pour qu'elles correspondent au modèle
   const [formData, setFormData] = useState({
-    type: 'annuite',
+    type: "",
     nom_cabinet: '',
     reference_cabinet: '',
     email_cabinet: '',
     telephone_cabinet: '',
-    // Suppression du champ pays
   });
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -44,13 +43,23 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
         body: JSON.stringify(formData),
       });
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'ajout du cabinet');
+        const errorData = await response.json();
+        setErrorMessage(errorData.message || 'Erreur lors de l\'ajout');
+        return;
       }
+      await response.json();
       refreshCabinets();
       handleClose();
+      setFormData({
+        type: "",
+        nom_cabinet: '',
+        reference_cabinet: '',
+        email_cabinet: '',
+        telephone_cabinet: '',
+      });
+      setErrorMessage('');
     } catch (error) {
-      console.error('There was an error adding the cabinet!', error);
-      setErrorMessage('Error: ' + error.message);
+      setErrorMessage('Erreur de connexion');
     }
   };
 
@@ -58,84 +67,87 @@ const AddCabinetModal = ({ show, handleClose, refreshCabinets }) => {
     <Modal open={show} onClose={handleClose}>
       <Box
         sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 600,
           bgcolor: 'background.paper',
-          padding: 4,
-          borderRadius: 2,
+          border: '2px solid #000',
           boxShadow: 24,
-          maxWidth: 600,
-          mx: 'auto',
+          p: 4,
+          borderRadius: 2,
           mt: '10%',
-          maxHeight: '80vh',
-          overflowY: 'auto',
         }}
       >
-        <Typography variant="h6" color="primary" component="h2" gutterBottom>
-          Ajouter un nouveau Cabinet
+        <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+          <T>Ajouter un nouveau cabinet</T>
         </Typography>
-        {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+        {errorMessage && (
+          <Typography color="error" sx={{ mb: 2 }}>
+            {errorMessage}
+          </Typography>
+        )}
         <form onSubmit={handleSubmit}>
-          <Box sx={{ mb: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Type</InputLabel>
-              <Select name="type" value={formData.type} onChange={handleChange}>
-                <MenuItem value="annuite">Annuité</MenuItem>
-                <MenuItem value="procedure">Procédure</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              label="Nom"
-              name="nom_cabinet"
-              value={formData.nom_cabinet}
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel><T>Type</T></InputLabel>
+            <Select
+              name="type"
+              value={formData.type}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-            />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              label="Référence"
-              name="reference_cabinet"
-              value={formData.reference_cabinet}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-            />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              label="Email"
-              name="email_cabinet"
-              type="email"
-              value={formData.email_cabinet}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-            />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              label="Téléphone"
-              name="telephone_cabinet"
-              value={formData.telephone_cabinet}
-              onChange={handleChange}
-              fullWidth
-              variant="outlined"
-            />
-          </Box>
-          {/* Section pays supprimée */}
-          <Button
-            variant="contained"
-            type="submit"
+              required
+            >
+              <MenuItem value="annuite"><T>Annuité</T></MenuItem>
+              <MenuItem value="procedure"><T>Procédure</T></MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
             fullWidth
+            label={<T>Nom du Cabinet</T>}
+            name="nom_cabinet"
+            value={formData.nom_cabinet}
+            onChange={handleChange}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label={<T>Référence Cabinet</T>}
+            name="reference_cabinet"
+            value={formData.reference_cabinet}
+            onChange={handleChange}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label={<T>Email Cabinet</T>}
+            name="email_cabinet"
+            type="email"
+            value={formData.email_cabinet}
+            onChange={handleChange}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label={<T>Téléphone Cabinet</T>}
+            name="telephone_cabinet"
+            value={formData.telephone_cabinet}
+            onChange={handleChange}
+            required
+            sx={{ mb: 2 }}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
             sx={{
               mt: 2,
-              transition: '0.3s',
               '&:hover': { boxShadow: 6 },
             }}
           >
-            Ajouter cabinet
+            <T>Ajouter</T>
           </Button>
         </form>
       </Box>

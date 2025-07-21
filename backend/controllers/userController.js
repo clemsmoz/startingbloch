@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const { User } = require('../models');
+const logController = require('./logController');
 
 const userController = {
   createUser: (req, res) => {
@@ -38,6 +39,18 @@ const userController = {
           // Création de l'utilisateur
           User.create(userData)
             .then(results => {
+              // Correction : vérifie que req.user existe ET possède un email_user
+              let logUser = req.user;
+              if (!logUser || !logUser.email_user) {
+                // Si pas d'utilisateur connecté, fallback sur "admin" ou l'utilisateur créé
+                logUser = { email_user: 'admin', prenom_user: 'admin' };
+              }
+              logController.createLog(
+                logUser,
+                logUser.email_user,
+                'Création utilisateur',
+                `Utilisateur créé : ${userData.email_user}`
+              );
               res.status(201).json({ message: 'User created successfully', data: results });
             })
             .catch(err => {
@@ -56,7 +69,6 @@ const userController = {
     const { email_user, password } = req.body;
     console.log('Authenticating user with email:', email_user);
 
-    // Utilise la méthode Sequelize standard pour récupérer l'utilisateur par email
     User.findOne({ where: { email_user } })
       .then(user => {
         if (!user) {
@@ -83,6 +95,15 @@ const userController = {
               { lastLoginAt: new Date() },
               { where: { id: user.id } }
             ).catch(() => {});
+            // Ajoute req.user pour les middlewares suivants
+            req.user = user.toJSON();
+            // Utilise toujours l'email de l'utilisateur connecté pour les logs
+            logController.createLog(
+              user.prenom_user,
+              user.email_user,
+              'Connexion',
+              `Connexion réussie`
+            );
             res.status(200).json({ message: 'User authenticated successfully', user: { ...user.toJSON(), lastLoginAt: new Date() } });
           } else {
             console.warn('Authentication failed: Incorrect password');
@@ -141,7 +162,15 @@ const userController = {
 
         // Mise à jour de l'utilisateur avec le nouveau mot de passe hashé
         User.update(userData, { where: { id: userId } })
-          .then(() => res.status(200).json({ message: 'User updated successfully' }))
+          .then(() => {
+            logController.createLog(
+              req.user,
+              req.user?.email_user,
+              'Modification utilisateur',
+              `Utilisateur modifié : ${userId}`
+            );
+            res.status(200).json({ message: 'User updated successfully' });
+          })
           .catch(err => {
             console.error('Error updating user:', err);
             res.status(500).json({ error: err.message });
@@ -151,7 +180,15 @@ const userController = {
       // Mise à jour sans changement de mot de passe
       delete userData.password; // On ne veut jamais stocker le mot de passe en clair
       User.update(userData, { where: { id: userId } })
-        .then(() => res.status(200).json({ message: 'User updated successfully' }))
+        .then(() => {
+          logController.createLog(
+            req.user,
+            req.user?.email_user,
+            'Modification utilisateur',
+            `Utilisateur modifié : ${userId}`
+          );
+          res.status(200).json({ message: 'User updated successfully' });
+        })
         .catch(err => {
           console.error('Error updating user:', err);
           res.status(500).json({ error: err.message });
@@ -166,6 +203,12 @@ const userController = {
         console.error('Error deleting user:', err);
         return res.status(500).json({ error: err.message });
       }
+      logController.createLog(
+        req.user,
+        req.user?.email_user,
+        'Suppression utilisateur',
+        `Utilisateur supprimé : ${userId}`
+      );
       res.status(200).json({ message: 'User deleted successfully', data: results });
     });
   },
@@ -175,7 +218,15 @@ const userController = {
     const userId = req.params.id;
     const { isBlocked } = req.body;
     User.update({ isBlocked }, { where: { id: userId } })
-      .then(() => res.status(200).json({ message: `User ${isBlocked ? 'bloqué' : 'débloqué'}` }))
+      .then(() => {
+        logController.createLog(
+          req.user,
+          req.user?.email_user,
+          isBlocked ? 'Blocage utilisateur' : 'Déblocage utilisateur',
+          `Utilisateur ${isBlocked ? 'bloqué' : 'débloqué'} : ${userId}`
+        );
+        res.status(200).json({ message: `User ${isBlocked ? 'bloqué' : 'débloqué'}` });
+      })
       .catch(err => res.status(500).json({ error: err.message }));
   },
 
@@ -193,7 +244,15 @@ const userController = {
       if (err) return res.status(500).json({ error: 'Erreur lors du hash du mot de passe' });
       const password_user = derivedKey.toString('hex');
       User.update({ password_user, salt }, { where: { id: userId } })
-        .then(() => res.status(200).json({ message: "Mot de passe réinitialisé avec succès" }))
+        .then(() => {
+          logController.createLog(
+            req.user,
+            req.user?.email_user,
+            'Réinitialisation mot de passe',
+            `Mot de passe réinitialisé pour utilisateur : ${userId}`
+          );
+          res.status(200).json({ message: "Mot de passe réinitialisé avec succès" });
+        })
         .catch(err => res.status(500).json({ error: err.message }));
     });
   },
@@ -201,4 +260,5 @@ const userController = {
 
 
 
+module.exports = userController;
 module.exports = userController;

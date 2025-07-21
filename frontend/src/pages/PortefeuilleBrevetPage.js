@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import AddBrevetModal from '../components/AddBrevetModal';
-import BrevetDetailModal from '../components/BrevetDetailModal';
-import EditBrevetModal from '../components/EditBrevetModal';
+import T from '../components/T';
 import {
   Box,
   Container,
@@ -35,7 +33,7 @@ import {
 import usePortefeuilleBrevet from '../hooks/usePortefeuilleBrevet';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
-import cacheService from '../services/cacheService'; // Ajoute ceci
+import cacheService from '../services/cacheService';
 
 const PortefeuilleBrevetPage = () => {
   // On récupère les données et fonctions depuis le hook personnalisé
@@ -76,48 +74,58 @@ const PortefeuilleBrevetPage = () => {
 
     if (searchFilter === 'titre') {
       const result = safeSearch(brevet.titre, normalizedSearchTerm);
-      console.log('Filtre "titre":', { titre: brevet.titre, result });
+      console.log('Filtre titre:', { titre: brevet.titre, result });
       return result;
     } else if (searchFilter === 'reference_famille') {
       const result = safeSearch(brevet.reference_famille, normalizedSearchTerm);
-      console.log('Filtre "reference_famille":', { reference_famille: brevet.reference_famille, result });
+      console.log('Filtre reference_famille:', { reference_famille: brevet.reference_famille, result });
       return result;
     } else if (searchFilter === 'reference_cabinet') {
       const result = brevet.Cabinets?.some((cabinet) =>
         cabinet.BrevetCabinets &&
         safeSearch(cabinet.BrevetCabinets.reference, normalizedSearchTerm)
       );
-      console.log('Filtre "reference_cabinet":', { Cabinets: brevet.Cabinets, result });
+      console.log('Filtre reference_cabinet:', { Cabinets: brevet.Cabinets, result });
       return result;
     } else if (searchFilter === 'client') {
       const result = brevet.Clients?.some((client) =>
         safeSearch(client.nom_client, normalizedSearchTerm)
       );
-      console.log('Filtre "client":', { Clients: brevet.Clients, result });
+      console.log('Filtre client:', { Clients: brevet.Clients, result });
       return result;
     } else if (searchFilter === 'cabinet') {
       const result = brevet.Cabinets?.some((cabinet) =>
         safeSearch(cabinet.nom_cabinet, normalizedSearchTerm)
       );
-      console.log('Filtre "cabinet":', { Cabinets: brevet.Cabinets, result });
+      console.log('Filtre cabinet:', { Cabinets: brevet.Cabinets, result });
+      return result;
+    } else if (searchFilter === 'inventeur') {
+      const result = brevet.Inventeurs?.some((inventeur) =>
+        safeSearch(inventeur.nom_inventeur, normalizedSearchTerm)
+      );
+      console.log('Filtre inventeur:', { Inventeurs: brevet.Inventeurs, result });
+      return result;
+    } else if (searchFilter === 'deposant') {
+      const result = brevet.Deposants?.some((deposant) =>
+        safeSearch(deposant.nom_deposant, normalizedSearchTerm)
+      );
+      console.log('Filtre deposant:', { Deposants: brevet.Deposants, result });
+      return result;
+    } else if (searchFilter === 'titulaire') {
+      const result = brevet.Titulaires?.some((titulaire) =>
+        safeSearch(titulaire.nom_titulaire, normalizedSearchTerm)
+      );
+      console.log('Filtre titulaire:', { Titulaires: brevet.Titulaires, result });
       return result;
     }
-
-    console.log('Aucun filtre appliqué, retour par défaut.');
-    return true;
+    return false;
   });
 
-  console.log('Brevets après filtrage:', { filteredBrevets, searchFilter, normalizedSearchTerm });
+  console.log('filteredBrevets:', filteredBrevets);
 
-  const indexOfLastBrevet = page * rowsPerPage;
-  const indexOfFirstBrevet = indexOfLastBrevet - rowsPerPage;
-  const currentBrevets = filteredBrevets.slice(indexOfFirstBrevet, indexOfLastBrevet);
-
-  const handleChangePage = (event, newPage) => setPage(newPage);
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(1);
-  };
+  // Pagination
+  const paginatedBrevets = filteredBrevets.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const totalPages = Math.ceil(filteredBrevets.length / rowsPerPage);
 
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -150,553 +158,455 @@ const PortefeuilleBrevetPage = () => {
   const [showClientSelectModal, setShowClientSelectModal] = useState(false);
   const [excelFileToImport, setExcelFileToImport] = useState(null);
   const [clientsList, setClientsList] = useState([]);
-  const [selectedClientIds, setSelectedClientIds] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
 
-  // Buffer pour l'import Excel
-  const [importLoading, setImportLoading] = useState(false);
-  const [importPhase, setImportPhase] = useState('idle'); // 'idle' | 'upload' | 'processing'
-  const [importPercent, setImportPercent] = useState(0);
-  const [importEstimatedTotal, setImportEstimatedTotal] = useState(0);
+  // États pour le traitement d'import avec indicateur de progression
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importedCount, setImportedCount] = useState(0);
+  const [totalToImport, setTotalToImport] = useState(0);
+  const [importedBrevets, setImportedBrevets] = useState([]);
+  const [importErrors, setImportErrors] = useState([]);
+  const [processingStartTime, setProcessingStartTime] = useState(null);
   const [processingElapsed, setProcessingElapsed] = useState(0);
-  const [importStatus, setImportStatus] = useState(null);
-  const [importId, setImportId] = useState(null);
+  const [importEstimatedTotal, setImportEstimatedTotal] = useState(0);
 
-  // Charger la liste des clients au montage (pour la modale)
+  // Effet pour calculer le temps écoulé pendant l'import
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/clients`)
-      .then(res => res.json())
-      .then(data => setClientsList(Array.isArray(data.data) ? data.data : []))
-      .catch(() => setClientsList([]));
-  }, []);
+    let interval;
+    if (isImporting && processingStartTime) {
+      interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - processingStartTime) / 1000);
+        setProcessingElapsed(elapsed);
+        
+        // Estimation basée sur les brevets traités
+        if (importedCount > 0 && totalToImport > importedCount) {
+          const averageTimePerBrevet = elapsed / importedCount;
+          const remainingBrevets = totalToImport - importedCount;
+          const estimatedRemaining = Math.ceil(averageTimePerBrevet * remainingBrevets);
+          setImportEstimatedTotal(elapsed + estimatedRemaining);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isImporting, processingStartTime, importedCount, totalToImport]);
 
-  // Handler pour le bouton Excel
-  const handleExcelButtonClick = () => {
-    setShowClientSelectModal(true);
+  // Fonction pour charger les clients
+  const loadClients = async () => {
+    setIsLoadingClients(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/clients`);
+      if (response.ok) {
+        const clients = await response.json();
+        setClientsList(clients);
+      } else {
+        console.error('Erreur lors du chargement des clients');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des clients:', error);
+    } finally {
+      setIsLoadingClients(false);
+    }
   };
 
-  // Handler pour la sélection du fichier dans la modale
-  const handleExcelFileChange = (event) => {
-    const file = event.target.files?.[0];
-    setExcelFileToImport(file || null);
-  };
+  // Fonction pour gérer l'import Excel
+  const handleExcelImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  // Handler pour la sélection des clients dans la modale
-  const handleClientSelectChange = (event) => {
-    setSelectedClientIds(event.target.value);
-  };
-
-  // Handler pour valider l'import Excel avec clients (remplacé par XMLHttpRequest)
-  const handleValidateExcelImport = async () => {
-    if (!excelFileToImport || selectedClientIds.length === 0) {
-      alert('Veuillez sélectionner un fichier Excel et au moins un client.');
+    const fileName = file.name.toLowerCase();
+    const isExcelFile = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+    
+    if (!isExcelFile) {
+      alert('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)');
+      event.target.value = '';
       return;
     }
-    const formData = new FormData();
-    formData.append('file', excelFileToImport);
-    formData.append('client_ids', JSON.stringify(selectedClientIds));
 
-    setImportLoading(true);
-    setImportPhase('upload');
+    setExcelFileToImport(file);
+    await loadClients();
+    setShowClientSelectModal(true);
+    event.target.value = '';
+  };
+
+  // Fonction pour lancer l'import avec le client sélectionné
+  const launchImportWithClient = async () => {
+    if (!selectedClientId || !excelFileToImport) {
+      alert('Veuillez sélectionner un client');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('excel', excelFileToImport);
+    formData.append('clientId', selectedClientId);
+
+    setIsImporting(true);
+    setImportProgress(0);
+    setImportedCount(0);
+    setTotalToImport(0);
+    setImportedBrevets([]);
+    setImportErrors([]);
+    setProcessingStartTime(Date.now());
     setProcessingElapsed(0);
     setImportEstimatedTotal(0);
-    setImportPercent(0);
-    setProcessingElapsed(0);
-    setImportStatus(null);
-    setImportId(null);
+    setShowClientSelectModal(false);
 
-    let uploadStart = Date.now();
-    let uploadTimer = setInterval(() => {
-      setProcessingElapsed(Math.floor((Date.now() - uploadStart) / 1000));
-    }, 500);
-
-    const xhr = new window.XMLHttpRequest();
-    xhr.open('POST', `${API_BASE_URL}/api/brevets/import-excel`, true);
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const percent = (event.loaded / event.total) * 100;
-        setImportPercent(percent);
-        const elapsed = (Date.now() - uploadStart) / 1000;
-        setProcessingElapsed(Math.round(elapsed));
-        // Estimation dynamique du temps total d'upload
-        if (event.loaded > 0 && elapsed > 0) {
-          const speed = event.loaded / 1024 / 1024 / elapsed; // Mo/s
-          const estimatedTotal = (event.total / 1024 / 1024) / speed;
-          setImportEstimatedTotal(Math.round(estimatedTotal));
-        }
-      }
-    };
-
-    xhr.onload = () => {
-      clearInterval(uploadTimer);
-      setImportPhase('processing');
-      setImportPercent(100);
-      setProcessingElapsed(Math.round((Date.now() - uploadStart) / 1000));
-      // Démarre le timer pour la phase de traitement serveur
-      let processingStart = Date.now();
-      setProcessingElapsed(0);
-      let processingTimer = setInterval(() => {
-        setProcessingElapsed(Math.floor((Date.now() - processingStart) / 1000));
-      }, 500);
-
-      let result = {};
-      try {
-        result = JSON.parse(xhr.responseText);
-      } catch (e) {
-        result = {};
-      }
-
-      // Récupère l'importId pour le polling
-      if (result.importId) {
-        setImportId(result.importId);
-        // Polling sur l'état d'avancement du backend
-        let pollInterval = setInterval(async () => {
-          try {
-            const resp = await fetch(`${API_BASE_URL}/api/brevets/import-status/${result.importId}`);
-            const status = await resp.json();
-            setImportStatus(status);
-            if (status.status === 'done' || status.status === 'error') {
-              clearInterval(pollInterval);
-              clearInterval(processingTimer);
-              setTimeout(() => {
-                setImportLoading(false);
-                setShowClientSelectModal(false);
-                setExcelFileToImport(null);
-                setSelectedClientIds([]);
-                setImportPhase('idle');
-                setProcessingElapsed(0);
-                setImportStatus(null);
-                setImportId(null);
-                if (status.status === 'done') {
-                  alert('Import Excel réussi');
-                  window.location.reload();
-                } else {
-                  alert(status.message || 'Erreur lors de l\'import Excel');
-                }
-              }, 1000);
-            }
-          } catch (err) {
-            // ignore polling errors
-          }
-        }, 1000);
-      } else {
-        // fallback : pas d'importId, on termine comme avant
-        setTimeout(() => {
-          clearInterval(processingTimer);
-          setImportLoading(false);
-          setShowClientSelectModal(false);
-          setExcelFileToImport(null);
-          setSelectedClientIds([]);
-          setImportPhase('idle');
-          setProcessingElapsed(0);
-          setImportStatus(null);
-          setImportId(null);
-          if (xhr.status === 200) {
-            alert(result.message || 'Import Excel réussi');
-            window.location.reload();
-          } else {
-            alert(result.error || 'Erreur lors de l\'import Excel');
-          }
-        }, 500);
-      }
-    };
-
-    xhr.onerror = () => {
-      clearInterval(uploadTimer);
-      setImportLoading(false);
-      setImportPhase('idle');
-      setProcessingElapsed(0);
-      setImportStatus(null);
-      setImportId(null);
-      alert('Erreur lors de l\'import Excel');
-    };
-
-    xhr.send(formData);
-  };
-
-  // Pour la création d'un nouveau client dans la modale Excel
-  const [newClientName, setNewClientName] = useState('');
-  const [creatingClient, setCreatingClient] = useState(false);
-  const [clientError, setClientError] = useState('');
-
-  // Correction : fonction complète pour créer un client à la volée
-  const handleCreateClient = async () => {
-    if (!newClientName.trim()) {
-      setClientError('Veuillez saisir un nom de client.');
-      return;
-    }
-    setCreatingClient(true);
-    setClientError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/api/clients`, {
+      const response = await fetch(`${API_BASE_URL}/brevets/import-excel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nom_client: newClientName.trim() })
+        body: formData,
       });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du client');
-      
-      // Récupérer l'ID du client depuis la réponse de l'API
-      const clientId = data.id || data.id_client || data.data?.id || data.data?.id_client;
-      
-      if (!clientId) {
-        throw new Error('ID client non trouvé dans la réponse');
-      }
 
-      // Créer le nouveau client avec la même structure que les clients existants
-      const newClient = {
-        id: clientId,
-        id_client: clientId, // Pour la compatibilité
-        nom_client: newClientName.trim()
-      };
-      
-      // Mise à jour de la liste des clients
-      setClientsList(prev => [...prev, newClient]);
-      
-      // Ajouter automatiquement le nouveau client à la sélection
-      setSelectedClientIds(prev => [...prev, clientId]);
-      
-      // Debug
-      console.log('Client créé:', newClient);
-      console.log('Nouvelle liste de clients:', [...clientsList, newClient]);
-      console.log('IDs clients sélectionnés:', [...selectedClientIds, clientId]);
-      
-      setNewClientName('');
-      setClientError('');
-    } catch (e) {
-      console.error('Erreur création client:', e);
-      setClientError(e.message);
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Résultat de l\'import:', result);
+        
+        setImportedCount(result.imported?.length || 0);
+        setTotalToImport(result.total || 0);
+        setImportedBrevets(result.imported || []);
+        setImportErrors(result.errors || []);
+        setImportProgress(100);
+        
+        // Recharger les données du portefeuille
+        window.location.reload();
+      } else {
+        const errorResult = await response.json();
+        console.error('Erreur lors de l\'import:', errorResult);
+        alert(`Erreur lors de l'import: ${errorResult.message || 'Erreur inconnue'}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'import:', error);
+      alert('Erreur lors de l\'import du fichier Excel');
     } finally {
-      setCreatingClient(false);
+      setIsImporting(false);
+      setExcelFileToImport(null);
+      setSelectedClientId('');
     }
   };
 
-  // Supprime toute redéclaration de 'user' et 'canWrite' dans le composant, il ne doit y avoir qu'UNE SEULE déclaration :
+  // Fonction pour fermer le modal de sélection de client
+  const closeClientSelectModal = () => {
+    setShowClientSelectModal(false);
+    setExcelFileToImport(null);
+    setSelectedClientId('');
+  };
 
-  const user = typeof cacheService.get === "function"
-    ? cacheService.get('user')
-    : (typeof window !== "undefined" && window.localStorage
-        ? JSON.parse(window.localStorage.getItem('user') || 'null')
-        : null);
-  const canWrite = !!(user && (user.role === 'admin' || user.canWrite === true));
+  // Fonction pour exporter les données en Excel
+  const handleExportExcel = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/brevets/export-excel`, {
+        method: 'GET',
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `portefeuille_brevets_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.error('Erreur lors de l\'export');
+        alert('Erreur lors de l\'export des données');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      alert('Erreur lors de l\'export des données');
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+        <Sidebar />
+        <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress size={60} />
+        </Container>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+        <Sidebar />
+        <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <Typography variant="h5" color="error">
+            <T>Erreur lors du chargement des brevets:</T> {error}
+          </Typography>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <Sidebar />
-      <Container sx={{ padding: '40px' }} maxWidth="xl">
-        <Box sx={{ mb: 4, textAlign: 'center', width: '100%' }}>
-          <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
-        </Box>
+    <>
+      <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+        <Sidebar />
+        <Container sx={{ padding: '40px' }} maxWidth="xl">
+          <Box sx={{ mb: 4 }}>
+            <img src={logo} alt="Logo de l'entreprise" style={{ maxWidth: '100%', height: '250px' }} />
+          </Box>
 
-        <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
-          Portefeuille Brevet
-        </Typography>
-
-        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-          <TextField
-            variant="outlined"
-            label="Rechercher des brevets..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ width: '70%', backgroundColor: 'white', borderRadius: 1 }}
-          />
-          <Select
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            variant="outlined"
-            sx={{ width: '25%', backgroundColor: 'white', borderRadius: 1 }}
-          >
-            <MenuItem value="titre">Rechercher par Titre</MenuItem>
-            <MenuItem value="reference_famille">Rechercher par Référence Famille</MenuItem>
-            <MenuItem value="reference_cabinet">Rechercher par Référence Cabinet</MenuItem>
-            <MenuItem value="client">Rechercher par Client</MenuItem>
-            <MenuItem value="cabinet">Rechercher par Cabinet</MenuItem>
-          </Select>
-        </Box>
-
-        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 4 }}>
-          <Pagination count={Math.ceil(filteredBrevets.length / rowsPerPage)} page={page} onChange={handleChangePage} color="primary" />
-          <FormControl sx={{ width: '150px' }}>
-            <Select value={rowsPerPage} onChange={handleRowsPerPageChange} variant="outlined">
-              <MenuItem value={8}>8 par page</MenuItem>
-              <MenuItem value={16}>16 par page</MenuItem>
-              <MenuItem value={32}>32 par page</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        <Box display="flex" alignItems="center" sx={{ mb: 4 }}>
-          {canWrite && (
-            <Button variant="contained" color="primary" onClick={handleShowAddModal} startIcon={<FaPlus />}>
-              Ajouter un brevet
-            </Button>
-          )}
-          {canWrite && (
-            <Button
-              variant="outlined"
-              color="success"
-              sx={{ ml: 2 }}
-              startIcon={
-                <svg width="20" height="20" viewBox="0 0 20 20" style={{ verticalAlign: 'middle' }}>
-                  <rect width="20" height="20" rx="3" fill="#217346"/>
-                  <text x="50%" y="60%" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">X</text>
-                </svg>
-              }
-              onClick={handleExcelButtonClick}
-            >
-              Ajouter via Excel
-            </Button>
-          )}
-          <Typography variant="h6" sx={{ ml: 2 }}>
-            Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}
+          <Typography variant="h3" fontWeight="bold" color="primary" sx={{ mb: 4 }}>
+            <T>Portefeuille Brevet</T>
           </Typography>
-        </Box>
 
-        {/* Modale de sélection des clients et du fichier Excel */}
-        <Dialog open={showClientSelectModal} onClose={() => setShowClientSelectModal(false)} maxWidth="xs" fullWidth>
-          <DialogTitle>Importer des brevets via Excel</DialogTitle>
-          <DialogContent>
-            <Box sx={{ my: 2 }}>
-              <FormControl fullWidth>
-                <InputLabel>Clients à lier</InputLabel>
-                <Select
-                  multiple
-                  value={selectedClientIds}
-                  onChange={handleClientSelectChange}
-                  renderValue={(selected) =>
-                    clientsList
-                      .filter(c => selected.includes(c.id))
-                      .map(c => c.nom_client)
-                      .join(', ')
-                  }
-                >
-                  {clientsList.map(client => (
-                    <MenuItem key={client.id} value={client.id}>
-                      <Checkbox checked={selectedClientIds.includes(client.id)} />
-                      <Typography>{client.nom_client}</Typography>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              {/* Champ pour créer un nouveau client à la volée */}
-              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <MuiTextField
-                  label="Nouveau client"
-                  value={newClientName}
-                  onChange={e => setNewClientName(e.target.value)}
-                  size="small"
-                  fullWidth
-                />
-                <Button
-                  variant="outlined"
-                  color="success"
-                  onClick={handleCreateClient}
-                  disabled={creatingClient}
-                >
-                  {creatingClient ? <CircularProgress size={18} /> : 'Créer'}
-                </Button>
-              </Box>
-              {clientError && (
-                <Typography color="error" sx={{ mt: 1 }}>{clientError}</Typography>
-              )}
-            </Box>
-            <Box sx={{ my: 2 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+            <TextField
+              variant="outlined"
+              label={<T>Rechercher des brevets...</T>}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{ width: '70%', backgroundColor: 'white', borderRadius: 1 }}
+            />
+            <Select
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              variant="outlined"
+              sx={{ width: '25%', backgroundColor: 'white', borderRadius: 1 }}
+            >
+              <MenuItem value="titre"><T>Rechercher par Titre</T></MenuItem>
+              <MenuItem value="reference_famille"><T>Rechercher par Référence Famille</T></MenuItem>
+              <MenuItem value="reference_cabinet"><T>Rechercher par Référence Cabinet</T></MenuItem>
+              <MenuItem value="client"><T>Rechercher par Client</T></MenuItem>
+              <MenuItem value="cabinet"><T>Rechercher par Cabinet</T></MenuItem>
+              <MenuItem value="inventeur"><T>Rechercher par Inventeur</T></MenuItem>
+              <MenuItem value="deposant"><T>Rechercher par Déposant</T></MenuItem>
+              <MenuItem value="titulaire"><T>Rechercher par Titulaire</T></MenuItem>
+            </Select>
+          </Box>
+
+          <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+            <Typography variant="h6" color="textSecondary">
+              <T>Le portefeuille contient {brevets.length} brevet{brevets.length > 1 ? 's' : ''}</T>
+            </Typography>
+            <Box>
               <Button
                 variant="contained"
-                component="label"
-                fullWidth
+                color="primary"
+                startIcon={<FaPlus />}
+                onClick={handleShowAddModal}
+                sx={{ mr: 2 }}
               >
-                Sélectionner un fichier Excel
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  hidden
-                  onChange={handleExcelFileChange}
-                />
+                <T>Ajouter un brevet</T>
               </Button>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                {excelFileToImport ? excelFileToImport.name : 'Aucun fichier sélectionné'}
-              </Typography>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => fileInputRef.current?.click()}
+                sx={{ mr: 2 }}
+              >
+                <T>Importer Excel</T>
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleExportExcel}
+              >
+                <T>Exporter Excel</T>
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept=".xlsx,.xls"
+                onChange={handleExcelImport}
+              />
             </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowClientSelectModal(false)}>Annuler</Button>
-            <Button variant="contained" color="primary" onClick={handleValidateExcelImport} disabled={importLoading}>
-              {importLoading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
-              Importer
-            </Button>
-          </DialogActions>
-        </Dialog>
-        {/* Buffer global pendant l'import Excel avec estimation */}
-        <Dialog open={importLoading} maxWidth="xs" fullWidth>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 6 }}>
-            <CircularProgress size={60} sx={{ mb: 3 }} />
-            <Typography variant="h6">
-              {importPhase === 'upload'
-                ? 'Envoi du fichier Excel...'
-                : 'Traitement serveur en cours...'}
-            </Typography>
-            {importPhase === 'upload' && (
-              <>
-                <Typography variant="body2" sx={{ mt: 2 }}>
-                  Temps écoulé : {processingElapsed} seconde{processingElapsed > 1 ? 's' : ''}
-                </Typography>
-                {importEstimatedTotal > 0 && (
-                  <>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Estimation totale : {importEstimatedTotal} seconde{importEstimatedTotal > 1 ? 's' : ''}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Progression upload : {Math.min(100, Math.round(importPercent))}%
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(100, importPercent)}
-                      sx={{ width: '100%', mt: 1 }}
-                    />
-                  </>
-                )}
-              </>
-            )}
-            {importPhase === 'processing' && (
-              <>
-                <Typography variant="body2" sx={{ mt: 2 }}>
-                  Temps traitement serveur : {processingElapsed} seconde{processingElapsed > 1 ? 's' : ''}
-                </Typography>
-                {importStatus && (
-                  <>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      {importStatus.message}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Progression serveur : {importStatus.progress || 0}%
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={importStatus.progress || 0}
-                      sx={{ width: '100%', mt: 1 }}
-                    />
-                  </>
-                )}
-              </>
-            )}
           </Box>
-        </Dialog>
 
-        {loading && <Typography>Chargement...</Typography>}
-        {error && <Typography color="error">{error}</Typography>}
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {currentBrevets.length > 0 ? (
-            currentBrevets.map((brevet) => {
-              const brevetId = safe(brevet.id) || safe(brevet.id_brevet);
-              console.log('[PortefeuilleBrevetPage] Render brevet card:', { brevetId, titre: brevet.titre });
-              return (
-                <Paper
-                  key={brevetId}
-                  elevation={6}
-                  sx={{
-                    width: '300px',
-                    padding: 3,
-                    borderRadius: 3,
-                    transition: 'transform 0.3s',
-                    '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
-                  }}
-                >
-                  <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                    <Box>
-                      <Typography variant="h6" fontWeight="bold">
-                        {safe(brevet.titre)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Référence Famille: {safe(brevet.reference_famille)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box display="flex" justifyContent="space-between">
-                    <IconButton 
-                      color="info" 
-                      onClick={() => {
-                        console.log('[PortefeuilleBrevetPage] IconButton clicked for brevetId:', brevetId);
-                        handleDetailClick(brevetId);
-                      }}
-                      aria-label="Voir les détails"
-                    >
-                      <FaInfoCircle size={24} />
-                    </IconButton>
-                    {canWrite && (
-                      <>
-                        <IconButton 
-                          color="warning" 
-                          onClick={() => handleEditClick(brevetId)}
-                          aria-label="Modifier"
-                        >
-                          <FaEdit size={24} />
-                        </IconButton>
-                        <IconButton color="error" onClick={() => handleDeleteBrevet(brevetId)}>
-                          <FaTrash size={24} />
-                        </IconButton>
-                      </>
-                    )}
-                  </Box>
-                </Paper>
-              );
-            })
-          ) : (
-            <Typography>Aucun brevet disponible.</Typography>
+          {/* Modal d'import avec indicateur de progression */}
+          {isImporting && (
+            <Paper sx={{ p: 3, mb: 4, backgroundColor: '#e3f2fd' }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                <T>Import en cours...</T>
+              </Typography>
+              <LinearProgress 
+                variant="determinate" 
+                value={importProgress} 
+                sx={{ mb: 2, height: 8, borderRadius: 4 }}
+              />
+              <Typography variant="body2" color="textSecondary">
+                <T>Brevets importés:</T> {importedCount} / {totalToImport}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                <T>Temps écoulé:</T> {processingElapsed} <T>seconde{processingElapsed > 1 ? 's' : ''}</T>
+              </Typography>
+              {importEstimatedTotal > 0 && (
+                <Typography variant="body2" color="textSecondary">
+                  <T>Estimation totale:</T> {importEstimatedTotal} <T>seconde{importEstimatedTotal > 1 ? 's' : ''}</T>
+                </Typography>
+              )}
+            </Paper>
           )}
-        </Box>
 
-        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 4 }}>
-          <Pagination count={Math.ceil(filteredBrevets.length / rowsPerPage)} page={page} onChange={handleChangePage} color="primary" />
-          <FormControl sx={{ width: '150px' }}>
-            <Select value={rowsPerPage} onChange={handleRowsPerPageChange} variant="outlined">
-              <MenuItem value={8}>8 par page</MenuItem>
-              <MenuItem value={16}>16 par page</MenuItem>
-              <MenuItem value={32}>32 par page</MenuItem>
+          {/* Affichage des résultats d'import */}
+          {!isImporting && importedBrevets.length > 0 && (
+            <Paper sx={{ p: 3, mb: 4, backgroundColor: '#e8f5e8' }}>
+              <Typography variant="h6" color="success.main" sx={{ mb: 2 }}>
+                <T>Import terminé avec succès!</T>
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                <T>Brevets importés:</T> {importedBrevets.length}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                <T>Temps traitement serveur:</T> {processingElapsed} <T>seconde{processingElapsed > 1 ? 's' : ''}</T>
+              </Typography>
+              {importErrors.length > 0 && (
+                <>
+                  <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                    <T>Erreurs rencontrées:</T> {importErrors.length}
+                  </Typography>
+                  <Box sx={{ maxHeight: 200, overflow: 'auto', mt: 1 }}>
+                    {importErrors.map((error, index) => (
+                      <Typography key={index} variant="body2" color="error">
+                        • {error}
+                      </Typography>
+                    ))}
+                  </Box>
+                </>
+              )}
+            </Paper>
+          )}
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
+            {paginatedBrevets.map((brevet, index) => (
+              <Paper
+                key={brevet.id}
+                elevation={3}
+                sx={{
+                  width: { xs: '100%', sm: '45%', md: '30%', lg: '22%' },
+                  p: 2,
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': { transform: 'scale(1.05)', cursor: 'pointer' },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h6" fontWeight="bold" color="primary" sx={{ flex: 1 }}>
+                    {safe(brevet.titre)}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      color="info"
+                      onClick={() => handleDetailClick(brevet.id)}
+                    >
+                      <FaInfoCircle />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => handleEditClick(brevet.id)}
+                    >
+                      <FaEdit />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteBrevet(brevet.id)}
+                    >
+                      <FaTrash />
+                    </IconButton>
+                  </Box>
+                </Box>
+                
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                  <strong><T>Référence:</T></strong> {safe(brevet.reference_famille)}
+                </Typography>
+                
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                  <strong><T>Date de dépôt:</T></strong> {safe(brevet.date_depot)}
+                </Typography>
+
+                <Typography variant="body2" color="textSecondary">
+                  <strong><T>Statut:</T></strong> {safe(brevet.statut)}
+                </Typography>
+              </Paper>
+            ))}
+          </Box>
+
+          {totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(event, value) => setPage(value)}
+                color="primary"
+                size="large"
+              />
+            </Box>
+          )}
+
+          <IconButton
+            onClick={scrollTop}
+            sx={{
+              position: 'fixed',
+              bottom: 20,
+              right: 20,
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': { bgcolor: 'primary.dark' },
+            }}
+          >
+            <FaArrowUp />
+          </IconButton>
+        </Container>
+      </Box>
+
+      {/* Modal de sélection de client pour l'import */}
+      <Dialog open={showClientSelectModal} onClose={closeClientSelectModal} maxWidth="sm" fullWidth>
+        <DialogTitle><T>Sélectionner un client pour l'import</T></DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel><T>Client</T></InputLabel>
+            <Select
+              value={selectedClientId}
+              onChange={(e) => setSelectedClientId(e.target.value)}
+              label="Client"
+            >
+              {isLoadingClients ? (
+                <MenuItem disabled>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  <T>Chargement...</T>
+                </MenuItem>
+              ) : (
+                clientsList.map((client) => (
+                  <MenuItem key={client.id} value={client.id}>
+                    {client.nom_client}
+                  </MenuItem>
+                ))
+              )}
             </Select>
           </FormControl>
-        </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeClientSelectModal} color="secondary">
+            <T>Annuler</T>
+          </Button>
+          <Button 
+            onClick={launchImportWithClient} 
+            color="primary" 
+            variant="contained"
+            disabled={!selectedClientId}
+          >
+            <T>Importer</T>
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-        <AddBrevetModal show={showAddModal} handleClose={handleCloseAddModal} />
-
-        {showDetailModal && selectedBrevetId !== null && (
-          <>
-            {console.log('[PortefeuilleBrevetPage] showDetailModal:', showDetailModal, 'selectedBrevetId:', selectedBrevetId)}
-            <BrevetDetailModal
-              key={selectedBrevetId}
-              show={showDetailModal}
-              handleClose={handleCloseDetailModal}
-              brevetId={selectedBrevetId}
-              onError={(err) => console.error('Erreur dans BrevetDetailModal:', err)}
-            />
-          </>
-        )}
-
-        <EditBrevetModal 
-          show={showEditModal} 
-          handleClose={handleCloseEditModal} 
-          brevetId={selectedBrevetId} 
-        />
-
-        <IconButton
-          onClick={scrollTop}
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            right: 16,
-            backgroundColor: 'primary.main',
-            color: 'white',
-            '&:hover': { backgroundColor: 'primary.dark' },
-          }}
-          aria-label="Retour en haut"
-        >
-          <FaArrowUp />
-        </IconButton>
-        {/* Close the Container wrapping the whole content */}
-      </Container>
-    </Box>
+      {/* Debug log pour le modal de détail */}
+      {showDetailModal && selectedBrevetId !== null && (
+        <>
+          {console.log('[PortefeuilleBrevetPage] showDetailModal:', showDetailModal, 'selectedBrevetId:', selectedBrevetId)}
+        </>
+      )}
+    </>
   );
 };
 

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button as MuiButton, Container, Typography, Box, Modal, CircularProgress, LinearProgress, TextField, InputAdornment, IconButton, MenuItem } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import useTranslation from '../hooks/useTranslation';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
 import cacheService from '../services/cacheService';
+import T, {LanguageSwitch }from '../components/T';
 
 // Style personnalisé pour le bouton de connexion
 const LoginButton = styled(MuiButton)(({ theme }) => ({
@@ -23,71 +25,12 @@ const LoginButton = styled(MuiButton)(({ theme }) => ({
   }
 }));
 
-// Progress circle avec texte centré
-const CircularProgressWithLabel = ({ value }) => (
-  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-    <CircularProgress 
-      variant="determinate" 
-      value={value} 
-      size={120} 
-      thickness={4} 
-      sx={{ color: '#1976d2' }}
-    />
-    <Box
-      sx={{
-        top: 0,
-        left: 0,
-        bottom: 0,
-        right: 0,
-        position: 'absolute',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Typography
-        variant="h5"
-        component="div"
-        color="primary"
-        sx={{ fontWeight: 'bold' }}
-      >
-        {`${Math.round(value)}%`}
-      </Typography>
-    </Box>
-  </Box>
-);
-
-// Section de chargement animée
-const LoadingStage = ({ message, isActive }) => (
-  <Box sx={{ 
-    opacity: isActive ? 1 : 0.5, 
-    transition: 'opacity 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    mb: 1,
-    pl: 1
-  }}>
-    {isActive && (
-      <Box sx={{ mr: 2, width: 20, height: 20, display: 'flex', alignItems: 'center' }}>
-        <CircularProgress size={16} />
-      </Box>
-    )}
-    <Typography 
-      variant="body2" 
-      color={isActive ? "primary" : "text.secondary"} 
-      fontWeight={isActive ? 600 : 400}
-    >
-      {message}
-    </Typography>
-  </Box>
-);
-
 const LoginPage = () => {
+  const { t, alert, quick } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState({ message: '', percent: 0 });
-  const [loadingStage, setLoadingStage] = useState(0); // Étape actuelle du chargement (0-4)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showAdminForm, setShowAdminForm] = useState(false);
@@ -129,8 +72,7 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    setLoadingStage(1);
-    setModalMessage("Connexion en cours...");
+    setModalMessage(quick.connecting());
     setShowModal(true);
 
     try {
@@ -141,13 +83,13 @@ const LoginPage = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        setModalMessage(data.error || "Erreur de connexion");
+        setModalMessage(data.error || quick.connectionError());
         setIsLoading(false);
         setTimeout(() => setShowModal(false), 2000);
         return;
       }
       if (data.user && data.user.isBlocked) {
-        setModalMessage("Votre compte est bloqué. Contactez l'administrateur.");
+        setModalMessage(quick.accountBlocked());
         setIsLoading(false);
         setTimeout(() => setShowModal(false), 3000);
         return;
@@ -158,14 +100,14 @@ const LoginPage = () => {
       } else if (typeof window !== "undefined" && window.localStorage) {
         window.localStorage.setItem('user', JSON.stringify(data.user));
       }
-      setLoadingProgress({ message: 'Connexion réussie', percent: 100 });
+      setLoadingProgress({ message: t('Connexion réussie'), percent: 100 });
       setTimeout(() => {
         setShowModal(false);
         setIsLoading(false);
         navigate('/home');
       }, 1000);
     } catch (error) {
-      setModalMessage("Erreur lors de la connexion: " + (error.message || "Erreur inconnue"));
+      setModalMessage(t("Erreur lors de la connexion:") + " " + (error.message || t("Erreur inconnue")));
       setIsLoading(false);
       setTimeout(() => setShowModal(false), 3000);
     }
@@ -174,7 +116,7 @@ const LoginPage = () => {
   // Création d'un admin
   const handleCreateAdmin = async () => {
     if (!adminForm.nom_user || !adminForm.prenom_user || !adminForm.email_user || !adminForm.password) {
-      alert('Tous les champs sont obligatoires');
+      alert('ALL_FIELDS_REQUIRED', quick.allFieldsRequired());
       return;
     }
     setAdminFormLoading(true);
@@ -191,27 +133,19 @@ const LoginPage = () => {
         })
       });
       if (res.ok) {
-        alert('Compte admin créé avec succès ! Connectez-vous.');
+        alert('ADMIN_CREATED', quick.adminCreated());
         setShowAdminForm(false);
         setAdminExists(true);
       } else {
         const data = await res.json();
-        alert(data.error || 'Erreur lors de la création du compte admin');
+        alert('ADMIN_CREATION_ERROR', data.error || t('Erreur lors de la création du compte admin'));
       }
     } catch (e) {
-      alert('Erreur réseau');
+      console.error('Erreur lors de la création de l\'admin:', e);
+      alert('NETWORK_ERROR', quick.networkError());
     }
     setAdminFormLoading(false);
   };
-
-  // Définir les étapes du chargement
-  const loadingStages = [
-    { id: 0, message: "Initialisation..." },
-    { id: 1, message: "Authentification..." },
-    { id: 2, message: "Chargement des données (brevets, cabinets, clients)..." },
-    { id: 3, message: "Analyse des données..." },
-    { id: 4, message: "Finalisation..." },
-  ];
 
   return (
     <Container 
@@ -241,6 +175,18 @@ const LoginPage = () => {
           overflow: 'hidden'
         }}
       >
+        {/* Sélecteur de langue en haut à droite */}
+        <Box 
+          sx={{ 
+            position: 'absolute', 
+            top: 16, 
+            right: 16,
+            zIndex: 10
+          }}
+        >
+          <LanguageSwitch size="small" />
+        </Box>
+        
         {/* Indicateur de chargement en haut */}
         {isLoading && (
           <LinearProgress 
@@ -271,11 +217,11 @@ const LoginPage = () => {
               color="primary" 
               sx={{ mb: 4, textAlign: 'center' }}
             >
-              Bienvenue
+              <T>Bienvenue</T>
             </Typography>
             {/* Champ email avec liste déroulante */}
             <TextField
-              label="Email"
+              label={<T>Email</T>}
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -303,7 +249,7 @@ const LoginPage = () => {
             </TextField>
             {/* Champ mot de passe avec icône visibilité */}
             <TextField
-              label="Mot de passe"
+              label={<T>Mot de passe</T>}
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -313,7 +259,7 @@ const LoginPage = () => {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                      aria-label={showPassword ? <T>Masquer le mot de passe</T> : <T>Afficher le mot de passe</T>}
                       onClick={() => setShowPassword(v => !v)}
                       edge="end"
                     >
@@ -330,7 +276,7 @@ const LoginPage = () => {
               onClick={handleLogin}
               sx={{ mt: 2 }}
             >
-              Se connecter
+              <T>Se connecter</T>
             </LoginButton>
             {/* Bouton première connexion admin */}
             {(() => {
@@ -343,7 +289,7 @@ const LoginPage = () => {
                   sx={{ mt: 3 }}
                   onClick={() => setShowAdminForm(true)}
                 >
-                  Première connexion (créer le compte admin)
+                  <T>Première connexion (créer le compte admin)</T>
                 </MuiButton>
               ) : null;
             })()}
@@ -373,24 +319,24 @@ const LoginPage = () => {
               }}
             >
               <Typography id="admin-modal-title" variant="h6" component="h2" sx={{ mb: 2 }}>
-                Création du compte administrateur
+                <T>Création du compte administrateur</T>
               </Typography>
               <TextField
-                label="Nom"
+                label={<T>Nom</T>}
                 value={adminForm.nom_user}
                 onChange={e => setAdminForm({ ...adminForm, nom_user: e.target.value })}
                 fullWidth
                 sx={{ mb: 2 }}
               />
               <TextField
-                label="Prénom"
+                label={<T>Prénom</T>}
                 value={adminForm.prenom_user}
                 onChange={e => setAdminForm({ ...adminForm, prenom_user: e.target.value })}
                 fullWidth
                 sx={{ mb: 2 }}
               />
               <TextField
-                label="Email"
+                label={<T>Email</T>}
                 type="email"
                 value={adminForm.email_user}
                 onChange={e => setAdminForm({ ...adminForm, email_user: e.target.value })}
@@ -398,7 +344,7 @@ const LoginPage = () => {
                 sx={{ mb: 2 }}
               />
               <TextField
-                label="Mot de passe"
+                label={<T>Mot de passe</T>}
                 type="password"
                 value={adminForm.password}
                 onChange={e => setAdminForm({ ...adminForm, password: e.target.value })}
@@ -413,7 +359,7 @@ const LoginPage = () => {
                 disabled={adminFormLoading}
                 sx={{ mt: 2 }}
               >
-                {adminFormLoading ? <CircularProgress size={24} /> : "Créer le compte admin"}
+                {adminFormLoading ? <CircularProgress size={24} /> : <T>Créer le compte admin</T>}
               </MuiButton>
               <MuiButton
                 variant="text"
@@ -422,7 +368,7 @@ const LoginPage = () => {
                 onClick={() => setShowAdminForm(false)}
                 sx={{ mt: 1 }}
               >
-                Annuler
+                <T>Annuler</T>
               </MuiButton>
             </Box>
           </Modal>
@@ -488,7 +434,7 @@ const LoginPage = () => {
                 variant="contained"
                 color="secondary"
               >
-                Fermer
+                <T>Fermer</T>
               </MuiButton>
             )}
           </Box>
@@ -499,12 +445,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
-// Ceci est bien la page de login, avec le champ mot de passe éditable et stylisé.
-// Si tu ne peux pas écrire dans le champ mot de passe, vérifie :
-// - Qu'il n'y a pas d'autre composant LoginPage dans un autre fichier qui écrase celui-ci
-// - Que tu n'as pas un overlay ou un bug CSS qui bloque le champ
-// - Que le state password est bien utilisé : ici, il l'est : value={password} onChange={e => setPassword(e.target.value)}
-// - Que tu n'as pas de composant LoginPage parasite dans une autre page (ex : PortefeuilleClientPage.js)
-
-

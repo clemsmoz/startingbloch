@@ -1,7 +1,8 @@
-import React from 'react';
-import { Card, Row, Col, Button, Form } from 'react-bootstrap';
+import React from <T>react';
+import T from '../components/T';
+import { Card, Row, Col, Button, Form } from"react-bootstrap';
 import { FaMinus, FaPlus } from 'react-icons/fa';
-import useBrevetFormModif from '../../hooks/useBrevetFormModif';  // Importer le hook
+import useBrevetFormModif from"../../hooks/useBrevetFormModif';  // Importer le hook
 
 const CabinetsSection = ({ brevetId }) => {
   // Appel du hook directement dans le composant
@@ -19,22 +20,20 @@ const CabinetsSection = ({ brevetId }) => {
   return (
     <>
       <Card className="mb-3">
-        <Card.Header>Cabinets de Procédure et Contacts</Card.Header>
+        <Card.Header><T>Cabinets de Procédure et Contacts</T></Card.Header>
         <Card.Body>
           {formData.cabinets_procedure.map((item, index) => (
             <Row key={index} className="mb-2">
               <Form.Group as={Col}>
                 <Form.Control
-                  as="select"
-                  name="id_cabinet_procedure"
-                  value={item.id_cabinet_procedure}
+                  as={<T>select</T>}
+                  name="id_cabinet_procedure"value={item.id_cabinet_procedure}
                   onChange={(e) => {
                     handleDynamicChange(e, index, 'cabinets_procedure');
                     fetchContacts(e.target.value, 'procedure');
                   }}
-                  className="me-2"
-                >
-                  <option value="">Sélectionner un cabinet</option>
+                  className="me-2">
+                  <option value=""><T>Sélectionner un cabinet</T></option>
                   {cabinets.procedure.map((cabinet) => (
                     <option key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
                       {cabinet.nom_cabinet}
@@ -44,33 +43,25 @@ const CabinetsSection = ({ brevetId }) => {
               </Form.Group>
               <Form.Group as={Col}>
                 <Form.Control
-                  type="text"
-                  name="reference"
-                  value={item.reference}
+                  type="text"name="reference"value={item.reference}
                   onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                  placeholder="Référence"
-                  className="me-2"
-                />
+                  placeholder={<T><T>Référence</T></T>}
+                  className="me-2"/>
               </Form.Group>
-              <Form.Group as={Col} className="d-flex align-items-center">
+              <Form.Group as={Col} className=<T>d-flex align-items-center</T>>
                 <Form.Check
-                  type="checkbox"
-                  name="dernier_intervenant"
-                  checked={item.dernier_intervenant}
+                  type="checkbox"name="dernier_intervenant"checked={item.dernier_intervenant}
                   onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                  label="Dernier Intervenant"
-                  className="me-2"
-                />
+                  label={<T><T>Dernier Intervenant</T></T>}
+                  className="me-2"/>
               </Form.Group>
               <Form.Group as={Col}>
                 <Form.Control
-                  as="select"
-                  name="id_contact_procedure"
-                  value={item.id_contact_procedure}
+                  as={<T>select</T>}
+                  name="id_contact_procedure"value={item.id_contact_procedure}
                   onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
-                  className="me-2"
-                >
-                  <option value="">Sélectionner un contact</option>
+                  className="me-2">
+                  <option value=""><T>Sélectionner un contact</T></option>
                   {contactsProcedure.map((contact) => (
                     <option key={contact.id_contact} value={contact.id_contact}>
                       {contact.nom} {contact.prenom}
@@ -78,36 +69,34 @@ const CabinetsSection = ({ brevetId }) => {
                   ))}
                 </Form.Control>
               </Form.Group>
-              <Col xs="auto">
-                <Button variant="danger" onClick={() => handleRemoveField(index, 'cabinets_procedure')}>
+              <Col xs={<T>auto</T>}>
+                <Button variant="danger"onClick={() => handleRemoveField(index, 'cabinets_procedure')}>
                   <FaMinus />
                 </Button>
               </Col>
             </Row>
           ))}
-          <Button variant="success" onClick={() => handleAddField('cabinets_procedure')}>
+          <Button variant="success"onClick={() => handleAddField('cabinets_procedure')}>
             <FaPlus /> Ajouter un cabinet de procédure
           </Button>
         </Card.Body>
       </Card>
 
       <Card className="mb-3">
-        <Card.Header>Cabinets d'Annuité et Contacts</Card.Header>
+        <Card.Header><T>Cabinets d'Annuité et Contacts</T></Card.Header>
         <Card.Body>
           {formData.cabinets_annuite.map((item, index) => (
             <Row key={index} className="mb-2">
               <Form.Group as={Col}>
                 <Form.Control
-                  as="select"
-                  name="id_cabinet_annuite"
-                  value={item.id_cabinet_annuite}
+                  as={<T>select</T>}
+                  name="id_cabinet_annuite"value={item.id_cabinet_annuite}
                   onChange={(e) => {
                     handleDynamicChange(e, index, 'cabinets_annuite');
                     fetchContacts(e.target.value, 'annuite');
                   }}
-                  className="me-2"
-                >
-                  <option value="">Sélectionner un cabinet</option>
+                  className="me-2">
+                  <option value=""><T>Sélectionner un cabinet</T></option>
                   {cabinets.annuite.map((cabinet) => (
                     <option key={cabinet.id_cabinet} value={cabinet.id_cabinet}>
                       {cabinet.nom_cabinet}
@@ -117,33 +106,25 @@ const CabinetsSection = ({ brevetId }) => {
               </Form.Group>
               <Form.Group as={Col}>
                 <Form.Control
-                  type="text"
-                  name="reference"
-                  value={item.reference}
+                  type="text"name="reference"value={item.reference}
                   onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                  placeholder="Référence"
-                  className="me-2"
-                />
+                  placeholder={<T><T>Référence</T></T>}
+                  className="me-2"/>
               </Form.Group>
-              <Form.Group as={Col} className="d-flex align-items-center">
+              <Form.Group as={Col} className=<T>d-flex align-items-center</T>>
                 <Form.Check
-                  type="checkbox"
-                  name="dernier_intervenant"
-                  checked={item.dernier_intervenant}
+                  type="checkbox"name="dernier_intervenant"checked={item.dernier_intervenant}
                   onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                  label="Dernier Intervenant"
-                  className="me-2"
-                />
+                  label={<T><T>Dernier Intervenant</T></T>}
+                  className="me-2"/>
               </Form.Group>
               <Form.Group as={Col}>
                 <Form.Control
-                  as="select"
-                  name="id_contact_annuite"
-                  value={item.id_contact_annuite}
+                  as={<T>select</T>}
+                  name="id_contact_annuite"value={item.id_contact_annuite}
                   onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
-                  className="me-2"
-                >
-                  <option value="">Sélectionner un contact</option>
+                  className="me-2">
+                  <option value=""><T>Sélectionner un contact</T></option>
                   {contactsAnnuite.map((contact) => (
                     <option key={contact.id_contact} value={contact.id_contact}>
                       {contact.nom} {contact.prenom}
@@ -151,14 +132,14 @@ const CabinetsSection = ({ brevetId }) => {
                   ))}
                 </Form.Control>
               </Form.Group>
-              <Col xs="auto">
-                <Button variant="danger" onClick={() => handleRemoveField(index, 'cabinets_annuite')}>
+              <Col xs={<T>auto</T>}>
+                <Button variant="danger"onClick={() => handleRemoveField(index, 'cabinets_annuite')}>
                   <FaMinus />
                 </Button>
               </Col>
             </Row>
           ))}
-          <Button variant="success" onClick={() => handleAddField('cabinets_annuite')}>
+          <Button variant="success"onClick={() => handleAddField('cabinets_annuite')}>
             <FaPlus /> Ajouter un cabinet d'annuité
           </Button>
         </Card.Body>

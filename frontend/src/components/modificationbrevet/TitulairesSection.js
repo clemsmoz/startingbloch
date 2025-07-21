@@ -1,7 +1,8 @@
-import React from 'react';
-import { Card, Row, Col, Button, Form } from 'react-bootstrap';
+import React from <T>react';
+import T from '../components/T';
+import { Card, Row, Col, Button, Form } from"react-bootstrap';
 import { FaMinus, FaPlus } from 'react-icons/fa';
-import useBrevetFormModif from '../../hooks/useBrevetFormModif';  // Importer le hook
+import useBrevetFormModif from"../../hooks/useBrevetFormModif';  // Importer le hook
 
 const TitulairesSection = ({ brevetId }) => {
   // Appel du hook directement dans le composant
@@ -9,79 +10,65 @@ const TitulairesSection = ({ brevetId }) => {
 
   return (
     <Card className="mb-3">
-      <Card.Header>Titulaires</Card.Header>
+      <Card.Header><T>Titulaires</T></Card.Header>
       <Card.Body>
         {formData.titulaires.map((item, index) => (
           <Row key={index} className="mb-2">
             <Form.Group as={Col}>
               <Form.Control
-                type="text"
-                name="nom_titulaire"
-                value={item.nom_titulaire}
+                type="text"name="nom_titulaire"value={item.nom_titulaire}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                placeholder="Nom"
+                placeholder={<T><T>Nom</T></T>}
               />
             </Form.Group>
             <Form.Group as={Col}>
               <Form.Control
-                type="text"
-                name="prenom_titulaire"
-                value={item.prenom_titulaire}
+                type="text"name="prenom_titulaire"value={item.prenom_titulaire}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                placeholder="Prénom"
+                placeholder={<T><T>Prénom</T></T>}
               />
             </Form.Group>
             <Form.Group as={Col}>
               <Form.Control
-                type="email"
-                name="email_titulaire"
-                value={item.email_titulaire}
+                type="email"name="email_titulaire"value={item.email_titulaire}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                placeholder="Email"
+                placeholder={<T><T>Email</T></T>}
               />
             </Form.Group>
             <Form.Group as={Col}>
               <Form.Control
-                type="text"
-                name="telephone_titulaire"
-                value={item.telephone_titulaire}
+                type="text"name="telephone_titulaire"value={item.telephone_titulaire}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                placeholder="Téléphone"
+                placeholder={<T><T>Téléphone</T></T>}
               />
             </Form.Group>
             <Form.Group as={Col}>
               <Form.Control
-                type="number"
-                name="part_pi"
-                value={item.part_pi}
+                type="number"name="part_pi"value={item.part_pi}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                placeholder="Part PI"
+                placeholder={<T><T>Part PI</T></T>}
               />
             </Form.Group>
-            <Form.Group as={Col} className="d-flex align-items-center">
+            <Form.Group as={Col} className=<T>d-flex align-items-center</T>>
               <Form.Check
-                type="checkbox"
-                name="executant"
-                checked={item.executant}
+                type="checkbox"name="executant"checked={item.executant}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                label="Exécutant"
+                label={<T><T>Exécutant</T></T>}
               />
               <Form.Check
-                type="checkbox"
-                name="client_correspondant"
-                checked={item.client_correspondant}
+                type="checkbox"name="client_correspondant"checked={item.client_correspondant}
                 onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
-                label="Client Correspondant"
+                label={<T><T>Client Correspondant</T></T>}
               />
             </Form.Group>
-            <Col xs="auto">
-              <Button variant="danger" onClick={() => handleRemoveField(index, 'titulaires')}>
+            <Col xs={<T>auto</T>}>
+              <Button variant="danger"onClick={() => handleRemoveField(index, 'titulaires')}>
                 <FaMinus />
               </Button>
             </Col>
           </Row>
         ))}
-        <Button variant="success" onClick={() => handleAddField('titulaires')}>
+        <Button variant="success"onClick={() => handleAddField('titulaires')}>
           <FaPlus /> Ajouter un titulaire
         </Button>
       </Card.Body>

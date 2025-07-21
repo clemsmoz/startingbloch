@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  Button,
-  TextField,
-  Typography,
-  Box,
-  Chip,
-  IconButton,
-  Select,
-  MenuItem,
-  InputLabel,
-  FormControl,
-  Checkbox,
-  ListItemText,
-  Grid
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+import T from './T';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { API_BASE_URL } from '../config';
+import cacheService from '../services/cacheService';
+import {
+  Modal,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip,
+  IconButton
+} from '@mui/material';
 
 const ROLE_OPTIONS = [
   "Responsable PI",
-  "Responsable juridique",
+  "Responsable juridique", 
   "Responsable administratif",
   "Responsable technique",
   "Correspondant annuités",
@@ -33,7 +32,7 @@ const ROLE_OPTIONS = [
 
 const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, clientId }) => {
   const [formData, setFormData] = useState({
-    nom: '',
+    nom: "",
     prenom: '',
     fonction: '',
     emails: [''],
@@ -49,9 +48,11 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
       return { ...prev, emails };
     });
   };
+  
   const handleAddEmail = () => {
     setFormData((prev) => ({ ...prev, emails: [...prev.emails, ''] }));
   };
+  
   const handleRemoveEmail = (idx) => {
     setFormData((prev) => {
       const emails = prev.emails.filter((_, i) => i !== idx);
@@ -67,9 +68,11 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
       return { ...prev, phones };
     });
   };
+  
   const handleAddPhone = () => {
     setFormData((prev) => ({ ...prev, phones: [...prev.phones, ''] }));
   };
+  
   const handleRemovePhone = (idx) => {
     setFormData((prev) => {
       const phones = prev.phones.filter((_, i) => i !== idx);
@@ -77,222 +80,203 @@ const AddContactModal = ({ show, handleClose, refreshContacts, cabinetId, client
     });
   };
 
-  // Gestion des rôles multiples
+  // Gestion des rôles
   const handleRoleChange = (event) => {
-    const { value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      roles: typeof value === 'string' ? value.split(',') : value
-    }));
+    const value = event.target.value;
+    setFormData((prev) => ({ ...prev, roles: value }));
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    let url = '';
-    let dataToSend = {};
-
-    if (cabinetId) {
-      url = `${API_BASE_URL}/api/contacts/cabinets`;
-      dataToSend = {
-        nom_contact: formData.nom,
-        prenom_contact: formData.prenom,
-        poste_contact: formData.fonction,
-        emails: formData.emails.filter(e => e.trim() !== ''),
-        phones: formData.phones.filter(t => t.trim() !== ''),
-        roles: formData.roles,
-        cabinet_id: cabinetId
+    
+    try {
+      const user = cacheService.get('user') || JSON.parse(localStorage.getItem('user') || 'null');
+      const payload = {
+        ...formData,
+        cabinet_id: cabinetId || null,
+        client_id: clientId || null,
+        user_id: user?.id_user
       };
-    } else if (clientId) {
-      url = `${API_BASE_URL}/api/contacts/clients`;
-      dataToSend = {
-        nom_contact: formData.nom,
-        prenom_contact: formData.prenom,
-        poste_contact: formData.fonction,
-        emails: formData.emails.filter(e => e.trim() !== ''),
-        phones: formData.phones.filter(t => t.trim() !== ''),
-        roles: formData.roles,
-        client_id: clientId
-      };
-    }
 
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dataToSend),
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (cabinetId) {
-          refreshContacts({ cabinet_id: cabinetId });
-        } else if (clientId) {
-          refreshContacts({ client_id: clientId });
-        }
-        handleClose();
-      })
-      .catch(error => {
-        console.error('There was an error adding the contact!', error);
+      const response = await fetch(`${API_BASE_URL}/api/contacts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
+
+      if (response.ok) {
+        refreshContacts();
+        handleClose();
+        setFormData({
+          nom: "",
+          prenom: '',
+          fonction: '',
+          emails: [''],
+          phones: [''],
+          roles: []
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du contact:', error);
+    }
   };
 
   return (
     <Modal open={show} onClose={handleClose}>
       <Box
         sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 800,
           bgcolor: 'background.paper',
-          padding: 4,
-          borderRadius: 2,
+          border: '2px solid #000',
           boxShadow: 24,
-          maxWidth: 700, // Largeur augmentée
-          mx: 'auto',
-          mt: '5%',
-          maxHeight: '95vh',
+          p: 4,
+          borderRadius: 2,
+          maxHeight: '90vh',
           overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
         }}
       >
-        <Typography variant="h6" component="h2" gutterBottom>
-          Ajouter un nouveau contact
+        <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+          <T>Ajouter un nouveau contact</T>
         </Typography>
+        
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            {/* Colonne 1 : Infos principales */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
-                label="Nom"
+                fullWidth
+                label={<T>Nom</T>}
                 name="nom"
                 value={formData.nom}
                 onChange={handleChange}
-                fullWidth
-                variant="outlined"
-                sx={{ mb: 2 }}
+                required
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
-                label="Prénom"
+                fullWidth
+                label={<T>Prénom</T>}
                 name="prenom"
                 value={formData.prenom}
                 onChange={handleChange}
-                fullWidth
-                variant="outlined"
-                sx={{ mb: 2 }}
+                required
               />
+            </Grid>
+            <Grid item xs={12}>
               <TextField
-                label="Fonction"
+                fullWidth
+                label={<T>Fonction</T>}
                 name="fonction"
                 value={formData.fonction}
                 onChange={handleChange}
-                fullWidth
-                variant="outlined"
-                sx={{ mb: 2 }}
               />
-              {/* Champ rôles multiples */}
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel id="roles-label">Rôles</InputLabel>
+            </Grid>
+            
+            {/* Emails */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1"><T>Emails</T></Typography>
+              {formData.emails.map((email, idx) => (
+                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <TextField
+                    fullWidth
+                    label={<T>Email</T>}
+                    type="email"
+                    value={email}
+                    onChange={(e) => handleEmailChange(idx, e.target.value)}
+                    sx={{ mr: 1 }}
+                  />
+                  {formData.emails.length > 1 && (
+                    <IconButton 
+                      onClick={() => handleRemoveEmail(idx)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+              <Button onClick={handleAddEmail} variant="outlined" size="small">
+                <T>Ajouter email</T>
+              </Button>
+            </Grid>
+
+            {/* Téléphones */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1"><T>Téléphones</T></Typography>
+              {formData.phones.map((phone, idx) => (
+                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <TextField
+                    fullWidth
+                    label={<T>Téléphone</T>}
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => handlePhoneChange(idx, e.target.value)}
+                    sx={{ mr: 1 }}
+                  />
+                  {formData.phones.length > 1 && (
+                    <IconButton 
+                      onClick={() => handleRemovePhone(idx)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+              <Button onClick={handleAddPhone} variant="outlined" size="small">
+                <T>Ajouter téléphone</T>
+              </Button>
+            </Grid>
+
+            {/* Rôles */}
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel><T>Rôles</T></InputLabel>
                 <Select
-                  labelId="roles-label"
                   multiple
                   value={formData.roles}
                   onChange={handleRoleChange}
-                  renderValue={(selected) => selected.join(', ')}
-                  label="Rôles"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value) => (
+                        <Chip key={value} label={value} />
+                      ))}
+                    </Box>
+                  )}
                 >
                   {ROLE_OPTIONS.map((role) => (
                     <MenuItem key={role} value={role}>
-                      <Checkbox checked={formData.roles.indexOf(role) > -1} />
-                      <ListItemText primary={role} />
+                      <T>{role}</T>
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
-            {/* Colonne 2 : Emails et téléphones dynamiques */}
-            <Grid item xs={12} md={6}>
-              {/* Emails dynamiques */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Emails</Typography>
-                {formData.emails.map((email, idx) => (
-                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <TextField
-                      label={`Email ${idx + 1}`}
-                      type="email"
-                      value={email}
-                      onChange={e => handleEmailChange(idx, e.target.value)}
-                      fullWidth
-                      variant="outlined"
-                    />
-                    <IconButton
-                      aria-label="Supprimer"
-                      onClick={() => handleRemoveEmail(idx)}
-                      disabled={formData.emails.length === 1}
-                      size="small"
-                      sx={{ ml: 1 }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-                <Button
-                  variant="text"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddEmail}
-                  sx={{ mt: 1 }}
-                >
-                  Ajouter un email
-                </Button>
-              </Box>
-              {/* Téléphones dynamiques */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Téléphones</Typography>
-                {formData.phones.map((phone, idx) => (
-                  <Box key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <TextField
-                      label={`Téléphone ${idx + 1}`}
-                      value={phone}
-                      onChange={e => handlePhoneChange(idx, e.target.value)}
-                      fullWidth
-                      variant="outlined"
-                    />
-                    <IconButton
-                      aria-label="Supprimer"
-                      onClick={() => handleRemovePhone(idx)}
-                      disabled={formData.phones.length === 1}
-                      size="small"
-                      sx={{ ml: 1 }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-                <Button
-                  variant="text"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddPhone}
-                  sx={{ mt: 1 }}
-                >
-                  Ajouter un téléphone
-                </Button>
-              </Box>
-            </Grid>
-            {/* Bouton submit sur toute la largeur */}
+
             <Grid item xs={12}>
               <Button
-                variant="contained"
                 type="submit"
-                fullWidth
+                variant="contained"
+                color="primary"
                 sx={{
                   mt: 2,
-                  transition: '0.3s',
                   '&:hover': { boxShadow: 6 },
                 }}
               >
-                Ajouter
+                <T>Ajouter Contact</T>
               </Button>
             </Grid>
           </Grid>

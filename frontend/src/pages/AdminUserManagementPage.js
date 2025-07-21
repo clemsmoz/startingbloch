@@ -1,3 +1,4 @@
+import T from '../components/T';
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -23,7 +24,10 @@ import {
   Chip,
   Divider,
   CircularProgress,
-  InputAdornment
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemText
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { FaEdit, FaTrash, FaPlus, FaLock, FaUnlock, FaUserShield } from 'react-icons/fa';
@@ -32,6 +36,7 @@ import { API_BASE_URL } from '../config';
 import Sidebar from '../components/Sidebar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import HistoryIcon from '@mui/icons-material/History';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   borderRadius: 16,
@@ -56,7 +61,7 @@ const AdminUserManagementPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({
-    nom_user: '',
+    nom_user: "",
     prenom_user: '',
     email_user: '',
     password: '',
@@ -67,6 +72,9 @@ const AdminUserManagementPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   // Récupérer la liste des utilisateurs
   const fetchUsers = async () => {
@@ -80,6 +88,19 @@ const AdminUserManagementPage = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Fonction pour charger les logs d'activité
+  const fetchLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const res = await fetch('/api/logs');
+      const data = await res.json();
+      setLogs(Array.isArray(data.data) ? data.data : []);
+    } catch (e) {
+      setLogs([]);
+    }
+    setLogsLoading(false);
+  };
 
   // Ouvre le formulaire pour création ou édition
   const handleOpenForm = (user = null) => {
@@ -98,7 +119,7 @@ const AdminUserManagementPage = () => {
     } else {
       setEditId(null);
       setForm({
-        nom_user: '',
+        nom_user: "",
         prenom_user: '',
         email_user: '',
         password: '',
@@ -117,7 +138,7 @@ const AdminUserManagementPage = () => {
     setShowForm(false);
     setEditId(null);
     setForm({
-      nom_user: '',
+      nom_user: "",
       prenom_user: '',
       email_user: '',
       password: '',
@@ -127,6 +148,18 @@ const AdminUserManagementPage = () => {
       isBlocked: false,
     });
     setShowPassword(false);
+  };
+
+  // Ouvre la modale des logs
+  const handleShowLogs = () => {
+    fetchLogs();
+    setShowLogs(true);
+  };
+
+  // Ferme la modale des logs
+  const handleCloseLogs = () => {
+    setShowLogs(false);
+    setLogs([]);
   };
 
   // Gère la modification des champs du formulaire
@@ -144,7 +177,7 @@ const AdminUserManagementPage = () => {
     const url = editId ? `${API_BASE_URL}/api/users/${editId}` : `${API_BASE_URL}/api/users`;
     const body = { ...form };
     if (!editId && !body.password) {
-      alert('Le mot de passe est requis à la création.');
+      alert("Le mot de passe est requis à la création.");
       return;
     }
     if (editId && !body.password) delete body.password;
@@ -165,17 +198,17 @@ const AdminUserManagementPage = () => {
         fetchUsers();
       } else {
         const errorText = await res.text();
-        alert('Erreur lors de la sauvegarde\n' + errorText);
+        alert('<T>Erreur lors de la sauvegarde</T>\n' + errorText);
       }
     } catch (e) {
       setLoading(false);
-      alert('Erreur réseau');
+      alert("<T>Erreur réseau</T>");
     }
   };
 
   // Suppression d'un utilisateur
   const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer cet utilisateur ?')) return;
+    if (!window.confirm("<T>Supprimer cet utilisateur ?</T>")) return;
     setLoading(true);
     await fetch(`${API_BASE_URL}/api/users/${id}`, { method: 'DELETE' });
     setLoading(false);
@@ -198,244 +231,295 @@ const AdminUserManagementPage = () => {
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
       <Sidebar />
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Box sx={{ mb: 5, textAlign: 'center' }}>
-          <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
-            Gestion des utilisateurs
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Créez, modifiez, bloquez ou supprimez les comptes utilisateurs de la plateforme.
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 4 }}>
+      <Box sx={{ flex: 1 }}>
+        {/* Ajoute le bouton pour afficher les logs ici */}
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button
-            variant="contained"
-            color="primary"
-            startIcon={<FaPlus />}
-            onClick={() => handleOpenForm()}
-            sx={{
-              borderRadius: 3,
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: '0 4px 20px rgba(25, 118, 210, 0.15)'
-            }}
+            variant="outlined" 
+            color="primary" 
+            startIcon={<HistoryIcon />}
+            onClick={handleShowLogs}
           >
-            Ajouter un utilisateur
+            <T>Historique des actions</T>
           </Button>
         </Box>
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-            <CircularProgress size={48} color="primary" />
+        <Container maxWidth="xl" sx={{ py: 6 }}>
+          <Box sx={{ mb: 5, textAlign: 'center' }}>
+            <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
+              <T>Gestion des utilisateurs</T>
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              <T>Créez, modifiez, bloquez ou supprimez les comptes utilisateurs de la plateforme.</T>
+            </Typography>
           </Box>
-        )}
-        <Grid container spacing={3}>
-          {users.map((user) => (
-            <Grid item xs={12} md={6} lg={4} key={user.id}>
-              <StyledPaper>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <UserAvatar>
-                    {user.prenom_user?.charAt(0) || ''}
-                    {user.nom_user?.charAt(0) || ''}
-                  </UserAvatar>
-                  <Box sx={{ ml: 2 }}>
-                    <Typography variant="h6" fontWeight="bold">
-                      {user.prenom_user} {user.nom_user}
-                    </Typography>
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="contained" 
+              color="primary" 
+              startIcon={<FaPlus />}
+              onClick={() => handleOpenForm()}
+              sx={{
+                borderRadius: 3,
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: '0 4px 20px rgba(25, 118, 210, 0.15)'
+              }}
+            >
+              <T>Ajouter un utilisateur</T>
+            </Button>
+          </Box>
+          {loading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+              <CircularProgress size={48} color="primary"/>
+            </Box>
+          )}
+          <Grid container spacing={3}>
+            {users.map((user) => (
+              <Grid item xs={12} md={6} lg={4} key={user.id}>
+                <StyledPaper>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <UserAvatar>
+                      {user.prenom_user?.charAt(0) || ''}
+                      {user.nom_user?.charAt(0) || ''}
+                    </UserAvatar>
+                    <Box sx={{ ml: 2 }}>
+                      <Typography variant="h6" fontWeight="bold">
+                        {user.prenom_user} {user.nom_user}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {user.email_user}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flexGrow: 1 }} />
+                    <Tooltip title={user.role === 'admin' ? "Administrateur" : "Utilisateur"}>
+                      <Chip
+                        icon={<FaUserShield size={18} />}
+                        label={user.role === 'admin' ? "Admin" : "User"}
+                        color={user.role === 'admin' ? "primary" : "default"}
+                        size="small"
+                        sx={{ ml: 1, fontWeight: 600 }}
+                      />
+                    </Tooltip>
+                  </Box>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      label={user.canRead ? "Lecture" : "Aucune lecture"}
+                      color={user.canRead ? "success" : "default"}
+                      size="small"
+                    />
+                    <Chip
+                      label={user.canWrite ? "Écriture" : "Lecture seule"}
+                      color={user.canWrite ? "primary" : "default"}
+                      size="small"
+                    />
+                    <Chip
+                      label={user.isBlocked ? "Bloqué" : "Actif"}
+                      color={user.isBlocked ? "error" : "success"}
+                      size="small"
+                    />
+                  </Box>
+                  <Divider sx={{ my: 2 }} />
+                  {/* Affichage de la dernière connexion */}
+                  <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                      {user.email_user}
+                      <T>Dernière connexion</T>&nbsp;:
+                      {user.lastLoginAt
+                        ? format(new Date(user.lastLoginAt), "dd/MM/yyyy HH:mm", { locale: fr })
+                        : "Jamais"}
                     </Typography>
                   </Box>
-                  <Box sx={{ flexGrow: 1 }} />
-                  <Tooltip title={user.role === 'admin' ? "Administrateur" : "Utilisateur"}>
-                    <Chip
-                      icon={<FaUserShield size={18} />}
-                      label={user.role === 'admin' ? "Admin" : "User"}
-                      color={user.role === 'admin' ? "primary" : "default"}
-                      size="small"
-                      sx={{ ml: 1, fontWeight: 600 }}
-                    />
-                  </Tooltip>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Chip
-                    label={user.canRead ? "Lecture" : "Aucune lecture"}
-                    color={user.canRead ? "success" : "default"}
-                    size="small"
-                  />
-                  <Chip
-                    label={user.canWrite ? "Écriture" : "Lecture seule"}
-                    color={user.canWrite ? "primary" : "default"}
-                    size="small"
-                  />
-                  <Chip
-                    label={user.isBlocked ? "Bloqué" : "Actif"}
-                    color={user.isBlocked ? "error" : "success"}
-                    size="small"
-                  />
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                {/* Affichage de la dernière connexion */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Dernière connexion&nbsp;:{" "}
-                    {user.lastLoginAt
-                      ? format(new Date(user.lastLoginAt), "dd/MM/yyyy HH:mm", { locale: fr })
-                      : "Jamais"}
-                  </Typography>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                  <Tooltip title={user.isBlocked ? "Débloquer" : "Bloquer"}>
-                    <IconButton color={user.isBlocked ? "success" : "warning"} onClick={() => handleBlockToggle(user)}>
-                      {user.isBlocked ? <FaUnlock /> : <FaLock />}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Modifier">
-                    <IconButton color="primary" onClick={() => handleOpenForm(user)}>
-                      <FaEdit />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Supprimer">
-                    <IconButton color="error" onClick={() => handleDelete(user.id)}>
-                      <FaTrash />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </StyledPaper>
-            </Grid>
-          ))}
-        </Grid>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                    <Tooltip title={user.isBlocked ? "Débloquer" : "Bloquer"}>
+                      <IconButton color={user.isBlocked ? "success" : "warning"} onClick={() => handleBlockToggle(user)}>
+                        {user.isBlocked ? <FaUnlock /> : <FaLock />}
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Modifier">
+                      <IconButton color="primary" onClick={() => handleOpenForm(user)}>
+                        <FaEdit />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Supprimer">
+                      <IconButton color="error" onClick={() => handleDelete(user.id)}>
+                        <FaTrash />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </StyledPaper>
+              </Grid>
+            ))}
+          </Grid>
 
-        {/* Formulaire utilisateur (création/modification) */}
-        <Dialog open={showForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ fontWeight: 700, color: 'primary.main' }}>
-            {editId ? "Modifier l'utilisateur" : "Créer un utilisateur"}
-          </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Nom"
-                  name="nom_user"
-                  value={form.nom_user}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  sx={{ mb: 2 }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Prénom"
-                  name="prenom_user"
-                  value={form.prenom_user}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  sx={{ mb: 2 }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Email"
-                  name="email_user"
-                  value={form.email_user}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  sx={{ mb: 2 }}
-                  type="email"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label={editId ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe"}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  fullWidth
-                  type={showPassword ? "text" : "password"}
-                  sx={{ mb: 2 }}
-                  required={!editId}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                          onClick={() => setShowPassword(v => !v)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Rôle</InputLabel>
-                  <Select
-                    name="role"
-                    value={form.role}
+          {/* Formulaire utilisateur (création/modification) */}
+          <Dialog open={showForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ fontWeight: 700, color: 'primary.main' }}>
+              {editId ? <T>Modifier l'utilisateur</T> : <T>Créer un utilisateur</T>}
+            </DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Nom"
+                    name="nom_user"
+                    value={form.nom_user}
                     onChange={handleChange}
-                    label="Rôle"
-                  >
-                    <MenuItem value="user">Utilisateur</MenuItem>
-                    <MenuItem value="admin">Administrateur</MenuItem>
-                  </Select>
-                </FormControl>
+                    fullWidth
+                    required
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Prénom"
+                    name="prenom_user"
+                    value={form.prenom_user}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Email"
+                    name="email_user"
+                    value={form.email_user}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                    sx={{ mb: 2 }}
+                    type="email"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label={editId ? "Nouveau mot de passe (laisser vide pour ne pas changer)" : "Mot de passe"}
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    fullWidth
+                    type={showPassword ? "text" : "password"}
+                    sx={{ mb: 2 }}
+                    required={!editId}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                            onClick={() => setShowPassword(v => !v)}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel><T>Rôle</T></InputLabel>
+                    <Select
+                      name="role"
+                      value={form.role}
+                      onChange={handleChange}
+                      label="Rôle"
+                    >
+                      <MenuItem value="user"><T>Utilisateur</T></MenuItem>
+                      <MenuItem value="admin"><T>Administrateur</T></MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={form.canRead}
+                          onChange={handleChange}
+                          name="canRead"
+                          color="primary"
+                        />
+                      }
+                      label="Lecture"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={form.canWrite}
+                          onChange={handleChange}
+                          name="canWrite"
+                          color="primary"
+                        />
+                      }
+                      label="Écriture"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={form.isBlocked}
+                          onChange={handleChange}
+                          name="isBlocked"
+                          color="error"
+                        />
+                      }
+                      label="Bloqué"
+                    />
+                  </Box>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={form.canRead}
-                        onChange={handleChange}
-                        name="canRead"
-                        color="primary"
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseForm} color="secondary" variant="outlined">
+                <T>Annuler</T>
+              </Button>
+              <Button onClick={handleSubmit} color="primary" variant="contained">
+                {editId ? <T>Enregistrer</T> : <T>Créer</T>}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Dialog d'affichage des logs */}
+          <Dialog open={showLogs} onClose={handleCloseLogs} maxWidth="lg" fullWidth>
+            <DialogTitle>
+              <HistoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <T>Historique des actions utilisateurs</T>
+            </DialogTitle>
+            <DialogContent dividers>
+              {logsLoading ? (
+                <Typography><T>Chargement...</T></Typography>
+              ) : logs.length === 0 ? (
+                <Typography color="text.secondary"><T>Aucune activité enregistrée.</T></Typography>
+              ) : (
+                <List>
+                  {logs.map((log, idx) => (
+                    <ListItem key={idx} divider>
+                      <ListItemText
+                        primary={
+                          <span>
+                            <b>{log.user_email || log.user || 'Utilisateur inconnu'}</b> — {log.action}
+                          </span>
+                        }
+                        secondary={
+                          <span>
+                            {log.details && <span>{log.details} — </span>}
+                            <span style={{ color: '#888' }}>{new Date(log.date || log.timestamp).toLocaleString()}</span>
+                          </span>
+                        }
                       />
-                    }
-                    label="Lecture"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={form.canWrite}
-                        onChange={handleChange}
-                        name="canWrite"
-                        color="primary"
-                      />
-                    }
-                    label="Écriture"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={form.isBlocked}
-                        onChange={handleChange}
-                        name="isBlocked"
-                        color="error"
-                      />
-                    }
-                    label="Bloqué"
-                  />
-                </Box>
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseForm} color="secondary" variant="outlined">
-              Annuler
-            </Button>
-            <Button onClick={handleSubmit} color="primary" variant="contained">
-              {editId ? "Enregistrer" : "Créer"}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseLogs}><T>Fermer</T></Button>
+            </DialogActions>
+          </Dialog>
+        </Container>
+      </Box>
     </Box>
   );
 };

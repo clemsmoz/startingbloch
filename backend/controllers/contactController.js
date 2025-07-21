@@ -1,10 +1,16 @@
 const { Contact, Client, Cabinet, ContactEmail, ContactPhone, ContactRole, Sequelize } = require('../models');
 const Op = Sequelize.Op;
+const logController = require('./logController');
 
 const contactController = {
   // Création d'un contact pour un cabinet
   createContactForCabinet: async (req, res) => {
     try {
+      // Ajout de logs pour debug req.user
+      console.log('DEBUG LOG - createContactForCabinet');
+      console.log('req.user:', req.user);
+      console.log('req.user?.email_user:', req.user?.email_user);
+
       const { emails, phones, roles, ...contactData } = req.body;
       const contact = await Contact.create(contactData);
       // Ajoute les emails
@@ -25,6 +31,12 @@ const contactController = {
           ContactRole.create({ contact_id: contact.id, role })
         ));
       }
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'inconnu', prenom_user: 'inconnu' },
+        req.user && req.user.email_user ? req.user.email_user : 'inconnu',
+        'Création contact',
+        `Contact créé (cabinet) : ${contact.nom_contact || contact.id}`
+      );
       res.status(201).json({ message: 'Contact créé avec succès', data: contact });
     } catch (error) {
       console.error('Erreur création contact cabinet:', error);
@@ -104,6 +116,10 @@ const contactController = {
   // Création d'un contact pour un client
   createContactForClient: async (req, res) => {
     try {
+      console.log('DEBUG LOG - createContactForClient');
+      console.log('req.user:', req.user);
+      console.log('req.user?.email_user:', req.user?.email_user);
+
       const { emails, phones, roles, ...contactData } = req.body;
       const contact = await Contact.create(contactData);
       if (Array.isArray(emails)) {
@@ -121,6 +137,12 @@ const contactController = {
           ContactRole.create({ contact_id: contact.id, role })
         ));
       }
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'inconnu', prenom_user: 'inconnu' },
+        req.user && req.user.email_user ? req.user.email_user : 'inconnu',
+        'Création contact',
+        `Contact créé (client) : ${contact.nom_contact || contact.id}`
+      );
       res.status(201).json({ message: 'Contact créé avec succès', data: contact });
     } catch (error) {
       console.error('Erreur création contact client:', error);
@@ -309,6 +331,10 @@ const contactController = {
   // Mise à jour générique d'un contact
   update: async (req, res) => {
     try {
+      console.log('DEBUG LOG - updateContact');
+      console.log('req.user:', req.user);
+      console.log('req.user?.email_user:', req.user?.email_user);
+
       const id = req.params.id;
       const { emails, phones, roles, ...contactData } = req.body;
       await Contact.update(contactData, { where: { id } });
@@ -333,6 +359,12 @@ const contactController = {
           ContactRole.create({ contact_id: id, role })
         ));
       }
+      await logController.createLog(
+        req.user && req.user.email_user ? req.user : { email_user: 'inconnu', prenom_user: 'inconnu' },
+        req.user && req.user.email_user ? req.user.email_user : 'inconnu',
+        'Modification contact',
+        `Contact modifié : ${id}`
+      );
       res.status(200).json({ message: "Le contact a été mis à jour avec succès." });
     } catch (error) {
       res.status(500).json({
@@ -344,12 +376,22 @@ const contactController = {
   // Suppression générique d'un contact
   delete: async (req, res) => {
     try {
+      console.log('DEBUG LOG - deleteContact');
+      console.log('req.user:', req.user);
+      console.log('req.user?.email_user:', req.user?.email_user);
+
       const id = req.params.id;
       const num = await Contact.destroy({
         where: { id: id }
       });
 
       if (num == 1) {
+        await logController.createLog(
+          req.user && req.user.email_user ? req.user : { email_user: 'inconnu', prenom_user: 'inconnu' },
+          req.user && req.user.email_user ? req.user.email_user : 'inconnu',
+          'Suppression contact',
+          `Contact supprimé : ${id}`
+        );
         res.status(200).json({
           message: "Le contact a été supprimé avec succès!"
         });

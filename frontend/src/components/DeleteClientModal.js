@@ -1,4 +1,5 @@
 import React from 'react';
+import T from '../components/T';
 import { Modal, Button } from 'react-bootstrap';
 import { API_BASE_URL } from '../config';
 
@@ -20,17 +21,17 @@ const DeleteClientModal = ({ show, handleClose, refreshClients, client }) => {
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Supprimer Client</Modal.Title>
+        <Modal.Title><T>Supprimer Client</T></Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        êtes-vous sur de vouloir supprimer le client ?
+        <T>Êtes-vous sûr de vouloir supprimer le client ?</T>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={handleClose}>
-          Annuler
+          <T>Annuler</T>
         </Button>
         <Button variant="danger" onClick={handleDelete}>
-          Suprimmer 
+          <T>Supprimer</T>
         </Button>
       </Modal.Footer>
     </Modal>

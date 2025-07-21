@@ -1,7 +1,8 @@
-import React from 'react';
-import { Card, Row, Col, Button, Form } from 'react-bootstrap';
+import React from <T>react';
+import T from '../components/T';
+import { Card, Row, Col, Button, Form } from"react-bootstrap';
 import { FaMinus, FaPlus } from 'react-icons/fa';
-import useBrevetFormModif from '../../hooks/useBrevetFormModif';  // Importez votre hook ici
+import useBrevetFormModif from"../../hooks/useBrevetFormModif';  // Importez votre hook ici
 
 const ClientSection = ({ brevetId }) => {
   // Appeler le hook directement dans le composant
@@ -12,19 +13,18 @@ const ClientSection = ({ brevetId }) => {
 
   return (
     <Card className="mb-3">
-      <Card.Header>Clients</Card.Header>
+      <Card.Header><T>Clients</T></Card.Header>
       <Card.Body>
         {formData.clients && formData.clients.length > 0 ? (
           formData.clients.map((client, index) => (
             <Row key={index} className="mb-2">
               <Form.Group as={Col}>
                 <Form.Control
-                  as="select"
-                  name="id_client"
-                  value={client.id_client || ''}
+                  as={<T>select</T>}
+                  name="id_client"value={client.id_client || ''}
                   onChange={(e) => handleDynamicChange(e, index, 'clients')}
                 >
-                  <option value="">Sélectionner un client</option>
+                  <option value=""><T>Sélectionner un client</T></option>
                   {clients && clients.length > 0 && clients.map(clientOption => (
                     <option key={clientOption.id_client} value={clientOption.id_client}>
                       {clientOption.nom_client}
@@ -32,17 +32,17 @@ const ClientSection = ({ brevetId }) => {
                   ))}
                 </Form.Control>
               </Form.Group>
-              <Col xs="auto">
-                <Button variant="danger" onClick={() => handleRemoveField(index, 'clients')}>
+              <Col xs={<T>auto</T>}>
+                <Button variant="danger"onClick={() => handleRemoveField(index, 'clients')}>
                   <FaMinus /> Retirer
                 </Button>
               </Col>
             </Row>
           ))
         ) : (
-          <p>Aucun client ajouté.</p>
+          <p><T>Aucun client ajouté.</T></p>
         )}
-        <Button variant="success" onClick={() => handleAddField('clients')}>
+        <Button variant="success"onClick={() => handleAddField('clients')}>
           <FaPlus /> Ajouter un client
         </Button>
       </Card.Body>

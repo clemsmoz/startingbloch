@@ -51,6 +51,8 @@
       "controllers/**/*",
       "models/**/*",
       "routes/**/*",
+      "middleware/**/*",
+
       "package.json",
       "database.sqlite"
     ],

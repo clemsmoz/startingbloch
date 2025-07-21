@@ -1,5 +1,3 @@
-// Nouveau composant pour afficher le détail d'un contact
-
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -24,6 +22,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import WorkIcon from '@mui/icons-material/Work';
+import T from './T';
 
 const softBlue = "#e3eafc";
 const softGrey = "#f7fafd";
@@ -60,20 +59,18 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
   let avatarIcon = <PersonIcon />;
   let avatarColor = softSecondary;
   let entityName = "";
-  let entityLabel = "";
   let cabinetType = '';
   let entityFonction = '';
+  
   if (client) {
     avatarIcon = <BusinessIcon />;
     avatarColor = softSecondary;
     entityName = client.nom_client || "";
-    entityLabel = "Client";
     entityFonction = client.fonction || client.poste_contact || "";
   } else if (cabinet) {
     avatarIcon = <WorkIcon />;
     avatarColor = "#b5c9d6";
     entityName = cabinet.nom_cabinet || "";
-    entityLabel = "Cabinet";
     cabinetType = cabinet.type
       ? (cabinet.type.toLowerCase() === 'annuite' ? 'Annuité' :
          cabinet.type.toLowerCase() === 'procedure' ? 'Procédure' :
@@ -83,7 +80,7 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
       <Fade in={open}>
         <Paper
           sx={{
@@ -97,14 +94,7 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
           }}
         >
           {/* Bandeau supérieur doux */}
-          <Box sx={{
-            height: 90,
-            bgcolor: softBlue,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
+          <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100px', p: 3, alignItems: 'center' }}>
             <Avatar sx={{
               bgcolor: avatarColor,
               width: 90,
@@ -117,9 +107,11 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
             }}>
               {avatarIcon}
             </Avatar>
-            <Typography variant="h5" fontWeight="bold" color={softPrimary} sx={{ letterSpacing: 1 }}>
-              Détail du contact
-            </Typography>
+            <Box sx={{ ml: 15 }}>
+              <Typography variant="h5" fontWeight="bold" color={softPrimary} sx={{ letterSpacing: 1 }}>
+                <T>Détail du contact</T>
+              </Typography>
+            </Box>
             <IconButton
               aria-label="close"
               onClick={onClose}
@@ -128,48 +120,62 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
               <CloseIcon />
             </IconButton>
           </Box>
+          
           <Box sx={{ p: 4, pt: 8 }}>
             <Grid container spacing={3}>
-              {/* Colonne gauche : infos principales */}
+              {/* Colonne gauche : infos principales */}
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" fontWeight="bold" color={softPrimary} sx={{ mb: 1 }}>
                   {fullContact.nom_contact} {fullContact.prenom_contact}
                 </Typography>
                 <Typography variant="subtitle1" color={softSubtle} sx={{ mb: 2 }}>
-                 Fonction : {fullContact.poste_contact}
+                  <T>Fonction</T> : {fullContact.poste_contact}
                 </Typography>
+                
                 {/* Affichage de la fonction de l'entité si présente */}
                 {entityFonction && (
                   <Typography variant="body2" color={softSubtle} sx={{ mb: 2 }}>
-                    Fonction : {entityFonction}
+                    <T>Fonction</T> : {entityFonction}
                   </Typography>
                 )}
+                
                 <Divider sx={{ my: 2, bgcolor: softBorder }} />
+                
                 <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, color: softPrimary }}>
-                  <EmailIcon sx={iconStyle} /> Emails
+                  <EmailIcon sx={iconStyle} /> <T>Emails</T>
                 </Typography>
                 <List dense>
                   {emails.length > 0 ? emails.map((e, i) => (
                     <ListItem key={i} disablePadding>
                       <ListItemText primary={e.email || e} sx={{ color: softText }} />
                     </ListItem>
-                  )) : <ListItem><ListItemText primary="Aucun" sx={{ color: softSubtle }} /></ListItem>}
+                  )) : (
+                    <ListItem>
+                      <ListItemText primary={<T>Aucun</T>} sx={{ color: softSubtle }} />
+                    </ListItem>
+                  )}
                 </List>
+                
                 <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 2, mb: 1, color: softPrimary }}>
-                  <PhoneIcon sx={iconStyle} /> Téléphones
+                  <PhoneIcon sx={iconStyle} /> <T>Téléphones</T>
                 </Typography>
                 <List dense>
                   {phones.length > 0 ? phones.map((t, i) => (
                     <ListItem key={i} disablePadding>
                       <ListItemText primary={t.phone || t} sx={{ color: softText }} />
                     </ListItem>
-                  )) : <ListItem><ListItemText primary="Aucun" sx={{ color: softSubtle }} /></ListItem>}
+                  )) : (
+                    <ListItem>
+                      <ListItemText primary={<T>Aucun</T>} sx={{ color: softSubtle }} />
+                    </ListItem>
+                  )}
                 </List>
               </Grid>
-              {/* Colonne droite : rôles et entité */}
+              
+              {/* Colonne droite : rôles et entité */}
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, color: softPrimary }}>
-                  Rôles
+                  <T>Rôles</T>
                 </Typography>
                 <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
                   {roles.length > 0 ? roles.map((r, i) => (
@@ -186,10 +192,12 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
                       }}
                     />
                   )) : (
-                    <Chip label="Aucun rôle" sx={{ bgcolor: softGrey, color: softSubtle }} />
+                    <Chip label={<T>Aucun rôle</T>} sx={{ bgcolor: softGrey, color: softSubtle }} />
                   )}
                 </Stack>
+                
                 <Divider sx={{ my: 2, bgcolor: softBorder }} />
+                
                 <Box sx={{ textAlign: 'center', mt: 2 }}>
                   <Tooltip title={client ? "Client associé" : cabinet ? "Cabinet associé" : ""}>
                     <Chip
@@ -201,7 +209,7 @@ const ContactDetailModal = ({ open, contact, onClose }) => {
                             ? (cabinetType
                                 ? `${entityName} (${cabinetType})`
                                 : entityName)
-                            : "Aucune entité"
+                            : <T>Aucune entité</T>
                       }
                       sx={{
                         fontWeight: 600,

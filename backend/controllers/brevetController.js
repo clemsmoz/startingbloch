@@ -9,6 +9,7 @@ const { Brevet, Client,Contact, Titulaire, Deposant, Inventeur, Cabinet, NumeroP
   const XLSX = require('xlsx');
   const fs = require('fs');
   const path = require('path');
+const logController = require('./logController');
 
 const importStatusMap = {};
 
@@ -365,6 +366,12 @@ const getOrCreateStatut = async (statutName, transaction) => {
         await t.commit();
         logSuccess("=== TRANSACTION VALIDÉE AVEC SUCCÈS ===");
         
+        await logController.createLog(
+          req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+          req.user && req.user.email_user ? req.user.email_user : 'admin',
+          'Création brevet',
+          `Brevet créé : ${brevet.titre || brevet.id}`
+        );
         res.status(201).json({
           message: 'Brevet créé avec succès',
           data: brevet
@@ -449,6 +456,12 @@ const getOrCreateStatut = async (statutName, transaction) => {
         const [count] = await Brevet.update(updatedFields, { where: { id: req.params.id } });
         if (!count) return res.status(404).json({ error: 'Brevet non trouvé' });
         const updated = await Brevet.findByPk(req.params.id);
+        await logController.createLog(
+          req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+          req.user && req.user.email_user ? req.user.email_user : 'admin',
+          'Modification brevet',
+          `Brevet modifié : ${req.params.id}`
+        );
         logSuccess('Brevet mis à jour:', req.params.id);
         res.status(200).json({ message: 'Brevet mis à jour', data: updated });
       } catch (error) {
@@ -464,6 +477,12 @@ const getOrCreateStatut = async (statutName, transaction) => {
           logWarn('Brevet non trouvé pour suppression:', req.params.id);
           res.status(404).json({ error: 'Brevet non trouvé' });
         } else {
+          await logController.createLog(
+            req.user && req.user.email_user ? req.user : { email_user: 'admin', prenom_user: 'admin' },
+            req.user && req.user.email_user ? req.user.email_user : 'admin',
+            'Suppression brevet',
+            `Brevet supprimé : ${req.params.id}`
+          );
           logSuccess('Brevet supprimé avec succès:', req.params.id);
           res.status(200).json({ message: 'Brevet supprimé avec succès' });
         }

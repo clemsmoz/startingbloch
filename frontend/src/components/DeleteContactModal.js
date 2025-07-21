@@ -1,4 +1,5 @@
 import React from 'react';
+import T from '../components/T';
 import { Modal, Button } from 'react-bootstrap';
 import { API_BASE_URL } from '../config';
 
@@ -20,14 +21,18 @@ const DeleteContactModal = ({ show, handleClose, refreshContacts, contact }) => 
   return (
     <Modal show={show} onHide={handleClose}>
       <Modal.Header closeButton>
-        <Modal.Title>Supprimer contact</Modal.Title>
+        <Modal.Title><T>Supprimer contact</T></Modal.Title>
       </Modal.Header>
       <Modal.Body>
-      êtes-vous sur de vouloir supprimer le contact ? 
+        <T>Êtes-vous sûr de vouloir supprimer le contact ?</T>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>Annuler</Button>
-        <Button variant="danger" onClick={handleDelete}>Suprimmer</Button>
+        <Button variant="secondary" onClick={handleClose}>
+          <T>Annuler</T>
+        </Button>
+        <Button variant="danger" onClick={handleDelete}>
+          <T>Supprimer</T>
+        </Button>
       </Modal.Footer>
     </Modal>
   );
