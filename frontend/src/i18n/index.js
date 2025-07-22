@@ -1,29 +1,26 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Toujours démarrer en français - ne pas mémoriser
+localStorage.removeItem('i18nextLng');
+console.log('🔄 localStorage i18nextLng supprimé');
 
 // Configuration ultra-simple avec traduction automatique
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     // Pas de ressources prédéfinies - traduction automatique via Google Translate
     resources: {},
     
     // Langue par défaut
+    lng: 'fr',
     fallbackLng: 'fr',
     
     // Langues supportées
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl'],
-    
-    // Détection automatique de la langue
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage']
-    },
 
     // Configuration pour éviter les warnings
-    debug: false,
+    debug: true, // Activer les logs i18n
     
     interpolation: {
       escapeValue: false
@@ -53,7 +50,20 @@ i18n
       bindI18n: 'languageChanged',
       bindI18nStore: 'added'
     }
+  })
+  .then((t) => {
+    console.log('✅ i18n initialisé avec succès');
+    console.log('🌐 Langue courante:', i18n.language);
+    console.log('🔧 Langues supportées:', i18n.options.supportedLngs);
+  })
+  .catch((error) => {
+    console.error('❌ Erreur lors de l\'initialisation i18n:', error);
   });
+
+// Écouter les changements de langue
+i18n.on('languageChanged', (lng) => {
+  console.log('🔄 Langue changée vers:', lng);
+});
 
 // Fonction de traduction en arrière-plan
 const translateInBackground = async (text, targetLang, key) => {

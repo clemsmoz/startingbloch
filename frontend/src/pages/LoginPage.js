@@ -26,7 +26,7 @@ const LoginButton = styled(MuiButton)(({ theme }) => ({
 }));
 
 const LoginPage = () => {
-  const { t, alert, quick } = useTranslation();
+  const { t, alert } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +72,7 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     setIsLoading(true);
-    setModalMessage(quick.connecting());
+    setModalMessage(t('Connexion en cours...'));
     setShowModal(true);
 
     try {
@@ -83,13 +83,13 @@ const LoginPage = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        setModalMessage(data.error || quick.connectionError());
+        setModalMessage(data.error || t('Erreur de connexion'));
         setIsLoading(false);
         setTimeout(() => setShowModal(false), 2000);
         return;
       }
       if (data.user && data.user.isBlocked) {
-        setModalMessage(quick.accountBlocked());
+        setModalMessage(t('Compte bloqué'));
         setIsLoading(false);
         setTimeout(() => setShowModal(false), 3000);
         return;
@@ -116,7 +116,7 @@ const LoginPage = () => {
   // Création d'un admin
   const handleCreateAdmin = async () => {
     if (!adminForm.nom_user || !adminForm.prenom_user || !adminForm.email_user || !adminForm.password) {
-      alert('ALL_FIELDS_REQUIRED', quick.allFieldsRequired());
+      alert('ALL_FIELDS_REQUIRED', t('Tous les champs sont requis'));
       return;
     }
     setAdminFormLoading(true);
@@ -133,7 +133,7 @@ const LoginPage = () => {
         })
       });
       if (res.ok) {
-        alert('ADMIN_CREATED', quick.adminCreated());
+        alert('ADMIN_CREATED', t('Compte admin créé avec succès'));
         setShowAdminForm(false);
         setAdminExists(true);
       } else {
@@ -142,7 +142,7 @@ const LoginPage = () => {
       }
     } catch (e) {
       console.error('Erreur lors de la création de l\'admin:', e);
-      alert('NETWORK_ERROR', quick.networkError());
+      alert('NETWORK_ERROR', t('Erreur réseau'));
     }
     setAdminFormLoading(false);
   };
@@ -157,57 +157,27 @@ const LoginPage = () => {
         alignItems: 'center', 
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'linear-gradient(120deg, #f0f2f5 0%, #e3f2fd 100%)'
+        bgcolor: 'white',
+        position: 'relative',
+        p: 3
       }}
     >
+      {/* Sélecteur de langue dans le coin supérieur droit de la page */}
       <Box 
         sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center',
-          p: 5,
-          borderRadius: 4,
-          bgcolor: 'white',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
-          maxWidth: 500,
-          width: '100%',
-          position: 'relative',
-          overflow: 'hidden'
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          zIndex: 1000
         }}
       >
-        {/* Sélecteur de langue en haut à droite */}
-        <Box 
-          sx={{ 
-            position: 'absolute', 
-            top: 16, 
-            right: 16,
-            zIndex: 10
-          }}
-        >
-          <LanguageSwitch size="small" />
-        </Box>
-        
-        {/* Indicateur de chargement en haut */}
-        {isLoading && (
-          <LinearProgress 
-            sx={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              height: 6,
-              borderTopLeftRadius: 4,
-              borderTopRightRadius: 4
-            }}
-            variant="determinate"
-            value={loadingProgress.percent}
-          />
-        )}
-        
-        {/* Logo de l'entreprise */}
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <img src={logo} alt="Logo Starting Bloch" style={{ maxWidth: '100%', height: '200px' }} />
-        </Box>
+        <LanguageSwitch size="small" />
+      </Box>
+
+      {/* Logo de l'entreprise */}
+      <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <img src={logo} alt="Logo Starting Bloch" style={{ maxWidth: '100%', height: '200px' }} />
+      </Box>
 
         {!isLoading ? (
           <>
@@ -259,7 +229,7 @@ const LoginPage = () => {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      aria-label={showPassword ? <T>Masquer le mot de passe</T> : <T>Afficher le mot de passe</T>}
+                      aria-label={showPassword ? t('Masquer le mot de passe') : t('Afficher le mot de passe')}
                       onClick={() => setShowPassword(v => !v)}
                       edge="end"
                     >
@@ -439,7 +409,6 @@ const LoginPage = () => {
             )}
           </Box>
         </Modal>
-      </Box>
     </Container>
   );
 };

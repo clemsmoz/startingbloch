@@ -31,9 +31,11 @@ import {
   FaArrowUp,
 } from 'react-icons/fa';
 import usePortefeuilleBrevet from '../hooks/usePortefeuilleBrevet';
+import AddBrevetModal from '../components/AddBrevetModal';
+import BrevetDetailModal from '../components/BrevetDetailModal';
+import EditBrevetModal from '../components/EditBrevetModal';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
-import cacheService from '../services/cacheService';
 
 const PortefeuilleBrevetPage = () => {
   // On récupère les données et fonctions depuis le hook personnalisé
@@ -606,6 +608,24 @@ const PortefeuilleBrevetPage = () => {
           {console.log('[PortefeuilleBrevetPage] showDetailModal:', showDetailModal, 'selectedBrevetId:', selectedBrevetId)}
         </>
       )}
+
+      {/* Modals */}
+      <AddBrevetModal 
+        show={showAddModal} 
+        handleClose={handleCloseAddModal} 
+      />
+      
+      <BrevetDetailModal 
+        show={showDetailModal} 
+        handleClose={handleCloseDetailModal} 
+        brevetId={selectedBrevetId} 
+      />
+      
+      <EditBrevetModal 
+        show={showEditModal} 
+        handleClose={handleCloseEditModal} 
+        brevetId={selectedBrevetId} 
+      />
     </>
   );
 };

@@ -144,19 +144,19 @@ const CabinetsPage = () => {
                         {safe(cabinet.nom_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence: {safe(cabinet.reference_cabinet)}
+                        <T>Référence:</T> {safe(cabinet.reference_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Email: {safe(cabinet.email_cabinet)}
+                        <T>Email:</T> {safe(cabinet.email_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Téléphone: {safe(cabinet.telephone_cabinet)}
+                        <T>Téléphone:</T> {safe(cabinet.telephone_cabinet)}
                       </Typography>
                       {/* Affichage des pays associés */}
                       <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: 0 }}>
                         {(cabinet.Pays || []).map((pays) => (
                           <li key={pays.id} style={{ fontSize: '0.9rem', color: '#555' }}>
-                            {pays.nom_fr_fr}
+                            <T>{pays.nom_fr_fr}</T>
                           </li>
                         ))}
                       </ul>
@@ -206,13 +206,13 @@ const CabinetsPage = () => {
                         {safe(cabinet.nom_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Référence: {safe(cabinet.reference_cabinet)}
+                        <T>Référence:</T> {safe(cabinet.reference_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Email: {safe(cabinet.email_cabinet)}
+                        <T>Email:</T> {safe(cabinet.email_cabinet)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Téléphone: {safe(cabinet.telephone_cabinet)}
+                        <T>Téléphone:</T> {safe(cabinet.telephone_cabinet)}
                       </Typography>
                       <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: 0 }}>
                         {(cabinet.Pays || []).map((pays) => (

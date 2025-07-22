@@ -16,23 +16,30 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import { FaPlus, FaMinus, FaSave } from 'react-icons/fa';
+import CloseIcon from '@mui/icons-material/Close';
 import T from '../components/T';
 import useAddBrevet from '../hooks/useAddBrevet';
 
 const AddBrevetModal = ({ show, handleClose }) => {
   const {
     formData,
+    setFormData,
     clientsList,
+    setClientsList,
     statuts,
     paysList,
+    associatedCountries,
+    cabinets,
+    contactsProcedure,
+    contactsAnnuite,
     loading,
     handleChange,
     handleDynamicChange,
     handleAddField,
     handleRemoveField,
     handleSubmit,
+    fetchContacts,
     handleDynamicChangeForSubField,
     handleAddSubField,
     handleRemoveSubField,
@@ -59,12 +66,17 @@ const AddBrevetModal = ({ show, handleClose }) => {
     return paysList;
   };
 
+  // Fonction pour la gestion des pays multiples
+  const handleAddCountry = (parentIndex, field) => {
+    handleAddSubField(parentIndex, field, 'pays');
+  };
+
   // Affichage d'une modale de chargement si les données initiales ne sont pas prêtes
   if (loadingInitialData) {
     return (
-      <Dialog open={show} fullWidth maxWidth="xl">
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-          <CircularProgress size={60} sx={{ mr: 2 }} />
+      <Dialog open={show} fullWidth maxWidth="sm">
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 6 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
           <Typography variant="h6"><T>Chargement des données (clients, pays, statuts, cabinets)...</T></Typography>
         </Box>
       </Dialog>
@@ -73,8 +85,15 @@ const AddBrevetModal = ({ show, handleClose }) => {
 
   return (
     <>
-      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="xl">
-        <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+      <Dialog open={show} onClose={handleClose} fullWidth maxWidth="lg">
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+          }}
+        >
           <Card
             sx={{
               maxHeight: '90vh',
@@ -201,7 +220,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
                           <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
                           {paysList.map((paysItem) => (
                             <MenuItem key={paysItem.id} value={String(paysItem.id)}>
-                              {paysItem.nom_fr_fr}
+                              <T>{paysItem.nom_fr_fr}</T>
                             </MenuItem>
                           ))}
                         </Select>
@@ -368,7 +387,7 @@ const AddBrevetModal = ({ show, handleClose }) => {
                             <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
                             {getCountriesForSelection().map((paysItem) => (
                               <MenuItem key={paysItem.id} value={String(paysItem.id)}>
-                                {paysItem.nom_fr_fr}
+                                <T>{paysItem.nom_fr_fr}</T>
                               </MenuItem>
                             ))}
                           </Select>
@@ -412,6 +431,490 @@ const AddBrevetModal = ({ show, handleClose }) => {
                 </Button>
               </Card>
 
+              {/* Déposants */}
+              <Card sx={{ mb: 3, p: 2 }}>
+                <Typography variant="h5"><T>Déposants</T></Typography>
+                {(formData.deposants || []).map((item, index) => (
+                  <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <TextField
+                        fullWidth
+                        label={<T>Nom</T>}
+                        name="nom_deposant"
+                        value={item.nom_deposant || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'deposants')}
+                      />
+                      <TextField
+                        fullWidth
+                        label={<T>Prénom</T>}
+                        name="prenom_deposant"
+                        value={item.prenom_deposant || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'deposants')}
+                      />
+                      <TextField
+                        fullWidth
+                        label={<T>Email</T>}
+                        name="email_deposant"
+                        type="email"
+                        value={item.email_deposant || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'deposants')}
+                      />
+                      <TextField
+                        fullWidth
+                        label={<T>Téléphone</T>}
+                        name="telephone_deposant"
+                        type="tel"
+                        value={item.telephone_deposant || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'deposants')}
+                      />
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleRemoveField(index, 'deposants')}
+                        sx={{ height: '56px' }}
+                      >
+                        <FaMinus />
+                      </Button>
+                    </Stack>
+                    {/* Sous-section Pays et Licence pour le déposant */}
+                    <Typography variant="subtitle1" sx={{ mt: 2 }}><T>Pays et Licence</T></Typography>
+                    {(item.pays || []).map((p, pIndex) => (
+                      <Stack key={pIndex} direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                        <FormControl fullWidth>
+                          <InputLabel><T>Pays</T></InputLabel>
+                          <Select
+                            value={typeof p?.id_pays !== 'undefined' ? String(p.id_pays) : ''}
+                            onChange={(e) =>
+                              handleDynamicChangeForSubField(e, index, 'deposants', pIndex)
+                            }
+                            name="id_pays"
+                          >
+                            <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
+                            {getCountriesForSelection().map((paysItem) => (
+                              <MenuItem key={paysItem.id} value={String(paysItem.id)}>
+                                <T>{paysItem.nom_fr_fr}</T>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={Boolean(p?.licence)}
+                              onChange={(e) =>
+                                handleDynamicChangeForSubField(e, index, 'deposants', pIndex)
+                              }
+                              name="licence"
+                            />
+                          }
+                          label={<T>Licence</T>}
+                        />
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={() => handleRemoveSubField(index, 'deposants', pIndex)}
+                          sx={{ height: '56px' }}
+                        >
+                          <FaMinus />
+                        </Button>
+                      </Stack>
+                    ))}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleAddSubField(index, 'deposants', 'pays')}
+                      sx={{ mt: 1 }}
+                    >
+                      <FaPlus /> <T>Ajouter un pays</T>
+                    </Button>
+                  </Box>
+                ))}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddField('deposants')}
+                  sx={{ mt: 2 }}
+                >
+                  <FaPlus /> <T>Ajouter un déposant</T>
+                </Button>
+              </Card>
+
+              {/* Titulaires */}
+              <Card sx={{ mb: 3, p: 2 }}>
+                <Typography variant="h5"><T>Titulaires</T></Typography>
+                {(formData.titulaires || []).map((item, index) => (
+                  <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <TextField
+                        fullWidth
+                        label={<T>Nom</T>}
+                        name="nom_titulaire"
+                        value={item.nom_titulaire || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
+                      />
+                      <TextField
+                        fullWidth
+                        label={<T>Prénom</T>}
+                        name="prenom_titulaire"
+                        value={item.prenom_titulaire || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
+                      />
+                      <TextField
+                        fullWidth
+                        label={<T>Email</T>}
+                        name="email_titulaire"
+                        type="email"
+                        value={item.email_titulaire || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
+                      />
+                      <TextField
+                        fullWidth
+                        label={<T>Téléphone</T>}
+                        name="telephone_titulaire"
+                        type="tel"
+                        value={item.telephone_titulaire || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={item.executant || false}
+                            onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
+                            name="executant"
+                          />
+                        }
+                        label={<T>Exécutant</T>}
+                      />
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={item.client_correspondant || false}
+                            onChange={(e) => handleDynamicChange(e, index, 'titulaires')}
+                            name="client_correspondant"
+                          />
+                        }
+                        label={<T>Client Correspondant</T>}
+                      />
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleRemoveField(index, 'titulaires')}
+                        sx={{ height: '56px' }}
+                      >
+                        <FaMinus />
+                      </Button>
+                    </Stack>
+                    {/* Sous-section Pays et Licence pour le titulaire */}
+                    <Typography variant="subtitle1" sx={{ mt: 2 }}><T>Pays et Licence</T></Typography>
+                    {(item.pays || []).map((p, pIndex) => (
+                      <Stack key={pIndex} direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                        <FormControl fullWidth>
+                          <InputLabel><T>Pays</T></InputLabel>
+                          <Select
+                            value={typeof p?.id_pays !== 'undefined' ? String(p.id_pays) : ''}
+                            onChange={(e) =>
+                              handleDynamicChangeForSubField(e, index, 'titulaires', pIndex)
+                            }
+                            name="id_pays"
+                          >
+                            <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
+                            {getCountriesForSelection().map((paysItem) => (
+                              <MenuItem key={paysItem.id} value={String(paysItem.id)}>
+                                <T>{paysItem.nom_fr_fr}</T>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={Boolean(p?.licence)}
+                              onChange={(e) =>
+                                handleDynamicChangeForSubField(e, index, 'titulaires', pIndex)
+                              }
+                              name="licence"
+                            />
+                          }
+                          label={<T>Licence</T>}
+                        />
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={() => handleRemoveSubField(index, 'titulaires', pIndex)}
+                          sx={{ height: '56px' }}
+                        >
+                          <FaMinus />
+                        </Button>
+                      </Stack>
+                    ))}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleAddSubField(index, 'titulaires', 'pays')}
+                      sx={{ mt: 1 }}
+                    >
+                      <FaPlus /> <T>Ajouter un pays</T>
+                    </Button>
+                  </Box>
+                ))}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddField('titulaires')}
+                  sx={{ mt: 2 }}
+                >
+                  <FaPlus /> <T>Ajouter un titulaire</T>
+                </Button>
+              </Card>
+
+              {/* Cabinets de Procédure et Contacts */}
+              <Card sx={{ mb: 3, p: 2 }}>
+                <Typography variant="h5"><T>Cabinets de Procédure et Contacts</T></Typography>
+                {(formData.cabinets_procedure || []).map((item, index) => (
+                  <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
+                    {/* Cabinet et Référence */}
+                    <Stack direction="row" spacing={2}>
+                      <FormControl fullWidth>
+                        <InputLabel><T>Cabinet</T></InputLabel>
+                        <Select
+                          value={item.id_cabinet || ''}
+                          onChange={(e) => {
+                            handleDynamicChange(e, index, 'cabinets_procedure');
+                            fetchContacts(e.target.value, 'procedure');
+                          }}
+                          name="id_cabinet"
+                        >
+                          <MenuItem value=""><T>Sélectionner un cabinet</T></MenuItem>
+                          {(cabinets?.procedure || []).map((cabinet) => (
+                            <MenuItem key={cabinet.id} value={cabinet.id}>
+                              {cabinet.nom_cabinet}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <TextField
+                        fullWidth
+                        label={<T>Référence</T>}
+                        name="reference"
+                        value={item.reference || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+                      />
+                    </Stack>
+
+                    {/* Dernier Intervenant et Contact */}
+                    <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={item.dernier_intervenant || false}
+                            onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+                            name="dernier_intervenant"
+                          />
+                        }
+                        label={<T>Dernier Intervenant</T>}
+                      />
+                      <FormControl fullWidth>
+                        <InputLabel><T>Contact</T></InputLabel>
+                        <Select
+                          value={item.id_contact || ''}
+                          onChange={(e) => handleDynamicChange(e, index, 'cabinets_procedure')}
+                          name="id_contact"
+                        >
+                          <MenuItem value=""><T>Sélectionner un contact</T></MenuItem>
+                          {Array.isArray(contactsProcedure) && contactsProcedure.map((contact) => (
+                            <MenuItem key={contact.id} value={contact.id}>
+                              {contact.nom_contact} {contact.prenom_contact}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Stack>
+
+                    {/* Pays */}
+                    <Typography variant="subtitle1" sx={{ mt: 2 }}><T>Pays</T></Typography>
+                    {(item.pays || []).map((p, pIndex) => (
+                      <Stack key={pIndex} direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                        <FormControl fullWidth>
+                          <InputLabel><T>Pays</T></InputLabel>
+                          <Select
+                            value={typeof p?.id_pays !== 'undefined' ? String(p.id_pays) : ''}
+                            onChange={(e) =>
+                              handleDynamicChangeForSubField(e, index, 'cabinets_procedure', pIndex)
+                            }
+                            name="id_pays"
+                          >
+                            <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
+                            {getCountriesForSelection().map((paysItem) => (
+                              <MenuItem key={paysItem.id} value={String(paysItem.id)}>
+                                <T>{paysItem.nom_fr_fr}</T>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={() => handleRemoveSubField(index, 'cabinets_procedure', pIndex)}
+                          sx={{ height: '56px' }}
+                        >
+                          <FaMinus />
+                        </Button>
+                      </Stack>
+                    ))}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleAddSubField(index, 'cabinets_procedure', 'pays')}
+                      sx={{ mt: 1 }}
+                    >
+                      <FaPlus /> <T>Ajouter un pays</T>
+                    </Button>
+
+                    {/* Bouton pour supprimer le cabinet entier */}
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => handleRemoveField(index, 'cabinets_procedure')}
+                      sx={{ mt: 2, width: '100%' }}
+                    >
+                      <FaMinus /> <T>Supprimer ce cabinet</T>
+                    </Button>
+                  </Box>
+                ))}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddField('cabinets_procedure')}
+                  sx={{ mt: 2 }}
+                >
+                  <FaPlus /> <T>Ajouter un cabinet de procédure</T>
+                </Button>
+              </Card>
+
+              {/* Cabinets d'Annuité et Contacts */}
+              <Card sx={{ mb: 3, p: 2 }}>
+                <Typography variant="h5"><T>Cabinets d'Annuité et Contacts</T></Typography>
+                {(formData.cabinets_annuite || []).map((item, index) => (
+                  <Box key={index} sx={{ mb: 2, border: '1px solid #ccc', p: 2, borderRadius: 1 }}>
+                    {/* Cabinet et Référence */}
+                    <Stack direction="row" spacing={2}>
+                      <FormControl fullWidth>
+                        <InputLabel><T>Cabinet</T></InputLabel>
+                        <Select
+                          value={item.id_cabinet || ''}
+                          onChange={(e) => {
+                            handleDynamicChange(e, index, 'cabinets_annuite');
+                            fetchContacts(e.target.value, 'annuite');
+                          }}
+                          name="id_cabinet"
+                        >
+                          <MenuItem value=""><T>Sélectionner un cabinet</T></MenuItem>
+                          {(cabinets?.annuite || []).map((cabinet) => (
+                            <MenuItem key={cabinet.id} value={cabinet.id}>
+                              {cabinet.nom_cabinet}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <TextField
+                        fullWidth
+                        label={<T>Référence</T>}
+                        name="reference"
+                        value={item.reference || ''}
+                        onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+                      />
+                    </Stack>
+
+                    {/* Dernier Intervenant et Contact */}
+                    <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={item.dernier_intervenant || false}
+                            onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+                            name="dernier_intervenant"
+                          />
+                        }
+                        label={<T>Dernier Intervenant</T>}
+                      />
+                      <FormControl fullWidth>
+                        <InputLabel><T>Contact</T></InputLabel>
+                        <Select
+                          value={item.id_contact || ''}
+                          onChange={(e) => handleDynamicChange(e, index, 'cabinets_annuite')}
+                          name="id_contact"
+                        >
+                          <MenuItem value=""><T>Sélectionner un contact</T></MenuItem>
+                          {Array.isArray(contactsAnnuite) && contactsAnnuite.map((contact) => (
+                            <MenuItem key={contact.id} value={contact.id}>
+                              {contact.nom_contact} {contact.prenom_contact}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Stack>
+
+                    {/* Pays */}
+                    <Typography variant="subtitle1" sx={{ mt: 2 }}><T>Pays</T></Typography>
+                    {(item.pays || []).map((p, pIndex) => (
+                      <Stack key={pIndex} direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+                        <FormControl fullWidth>
+                          <InputLabel><T>Pays</T></InputLabel>
+                          <Select
+                            value={typeof p?.id_pays !== 'undefined' ? String(p.id_pays) : ''}
+                            onChange={(e) =>
+                              handleDynamicChangeForSubField(e, index, 'cabinets_annuite', pIndex)
+                            }
+                            name="id_pays"
+                          >
+                            <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
+                            {getCountriesForSelection().map((paysItem) => (
+                              <MenuItem key={paysItem.id} value={String(paysItem.id)}>
+                                <T>{paysItem.nom_fr_fr}</T>
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          onClick={() => handleRemoveSubField(index, 'cabinets_annuite', pIndex)}
+                          sx={{ height: '56px' }}
+                        >
+                          <FaMinus />
+                        </Button>
+                      </Stack>
+                    ))}
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleAddSubField(index, 'cabinets_annuite', 'pays')}
+                      sx={{ mt: 1 }}
+                    >
+                      <FaPlus /> <T>Ajouter un pays</T>
+                    </Button>
+
+                    {/* Bouton pour supprimer le cabinet entier */}
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => handleRemoveField(index, 'cabinets_annuite')}
+                      sx={{ mt: 2, width: '100%' }}
+                    >
+                      <FaMinus /> <T>Supprimer ce cabinet</T>
+                    </Button>
+                  </Box>
+                ))}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleAddField('cabinets_annuite')}
+                  sx={{ mt: 2 }}
+                >
+                  <FaPlus /> <T>Ajouter un cabinet d'annuité</T>
+                </Button>
+              </Card>
+
               {/* Commentaire */}
               <Card sx={{ mb: 3, p: 2 }}>
                 <Typography variant="h5"><T>Commentaire</T></Typography>
@@ -444,20 +947,29 @@ const AddBrevetModal = ({ show, handleClose }) => {
       </Dialog>
 
       {/* Modal de confirmation */}
-      <Dialog open={confirmationModal} onClose={handleCloseConfirmationModal} fullWidth maxWidth="sm">
-        <Box sx={{ p: 4 }}>
-          <Typography variant="h5">{isError ? <T>Erreur</T> : <T>Succès</T>}</Typography>
-          <Typography variant="body1" sx={{ my: 2 }}>
-            {confirmationMessage}
-          </Typography>
-          <Button
-            variant="contained" 
-            color="primary" 
-            onClick={handleCloseConfirmationModal}
-            fullWidth
-          >
-            <T>OK</T>
-          </Button>
+      <Dialog open={confirmationModal} onClose={handleCloseConfirmationModal} fullWidth maxWidth="xs">
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+          }}
+        >
+          <Card sx={{ p: 4, width: '400px' }}>
+            <Typography variant="h5">{isError ? <T>Erreur</T> : <T>Succès</T>}</Typography>
+            <Typography variant="body1" sx={{ my: 2 }}>
+              {confirmationMessage}
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCloseConfirmationModal}
+              fullWidth
+            >
+              <T>OK</T>
+            </Button>
+          </Card>
         </Box>
       </Dialog>
     </>
