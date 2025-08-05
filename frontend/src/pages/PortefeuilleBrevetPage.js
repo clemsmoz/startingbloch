@@ -21,7 +21,9 @@ import {
   Checkbox,
   CircularProgress,
   TextField as MuiTextField,
-  LinearProgress
+  LinearProgress,
+  Divider,
+  Alert
 } from '@mui/material';
 import {
   FaEdit,
@@ -163,6 +165,12 @@ const PortefeuilleBrevetPage = () => {
   const [selectedClientId, setSelectedClientId] = useState('');
   const [isLoadingClients, setIsLoadingClients] = useState(false);
 
+  // États pour la création de nouveau client dans la modal d'import
+  const [newClientName, setNewClientName] = useState('');
+  const [creatingClient, setCreatingClient] = useState(false);
+  const [clientError, setClientError] = useState('');
+  const [clientSuccess, setClientSuccess] = useState('');
+
   // États pour le traitement d'import avec indicateur de progression
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
@@ -198,17 +206,62 @@ const PortefeuilleBrevetPage = () => {
   const loadClients = async () => {
     setIsLoadingClients(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/clients`);
+      const response = await fetch(`${API_BASE_URL}/api/clients`);
       if (response.ok) {
-        const clients = await response.json();
+        const data = await response.json();
+        console.log('Données clients reçues:', data);
+        // Gérer les deux structures possibles : { data: [...] } ou directement [...]
+        const clients = data.data || data || [];
+        console.log('Clients chargés pour l\'import:', clients);
         setClientsList(clients);
       } else {
-        console.error('Erreur lors du chargement des clients');
+        console.error('Erreur lors du chargement des clients - Status:', response.status);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des clients:', error);
     } finally {
       setIsLoadingClients(false);
+    }
+  };
+
+  // Fonction pour créer un nouveau client depuis la modal d'import
+  const handleCreateClient = async () => {
+    if (!newClientName.trim()) {
+      setClientError('Veuillez saisir un nom de client.');
+      setClientSuccess('');
+      return;
+    }
+    setCreatingClient(true);
+    setClientError('');
+    setClientSuccess('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom_client: newClientName.trim() })
+      });
+
+      if (!res.ok) {
+        throw new Error('Erreur lors de la création du client');
+      }
+
+      const newClient = await res.json();
+      
+      // Recharger immédiatement la liste des clients
+      await loadClients();
+      
+      // Sélectionner automatiquement le nouveau client créé
+      setSelectedClientId(newClient.id);
+      setClientSuccess('Client créé avec succès !');
+      setNewClientName('');
+      
+      // Effacer le message de succès après 3 secondes
+      setTimeout(() => setClientSuccess(''), 3000);
+    } catch (e) {
+      setClientError(e.message);
+      setClientSuccess('');
+    } finally {
+      setCreatingClient(false);
     }
   };
 
@@ -292,6 +345,11 @@ const PortefeuilleBrevetPage = () => {
     setShowClientSelectModal(false);
     setExcelFileToImport(null);
     setSelectedClientId('');
+    // Réinitialiser les états de création de client
+    setNewClientName('');
+    setCreatingClient(false);
+    setClientError('');
+    setClientSuccess('');
   };
 
   // Fonction pour exporter les données en Excel
@@ -562,15 +620,16 @@ const PortefeuilleBrevetPage = () => {
       </Box>
 
       {/* Modal de sélection de client pour l'import */}
-      <Dialog open={showClientSelectModal} onClose={closeClientSelectModal} maxWidth="sm" fullWidth>
+      <Dialog open={showClientSelectModal} onClose={closeClientSelectModal} maxWidth="md" fullWidth>
         <DialogTitle><T>Sélectionner un client pour l'import</T></DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pb: 1 }}>
+          {/* Sélection d'un client existant */}
           <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel><T>Client</T></InputLabel>
+            <InputLabel><T>Client existant</T></InputLabel>
             <Select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(e.target.value)}
-              label="Client"
+              label="Client existant"
             >
               {isLoadingClients ? (
                 <MenuItem disabled>
@@ -578,16 +637,76 @@ const PortefeuilleBrevetPage = () => {
                   <T>Chargement...</T>
                 </MenuItem>
               ) : (
-                clientsList.map((client) => (
-                  <MenuItem key={client.id} value={client.id}>
-                    {client.nom_client}
-                  </MenuItem>
-                ))
+                <>
+                  {console.log('Affichage des clients:', clientsList.length, 'clients trouvés')}
+                  {clientsList.length === 0 ? (
+                    <MenuItem disabled>
+                      <T>Aucun client trouvé</T>
+                    </MenuItem>
+                  ) : (
+                    clientsList.map((client) => {
+                      console.log('Client:', client);
+                      return (
+                        <MenuItem key={client.id} value={client.id}>
+                          {client.nom_client}
+                        </MenuItem>
+                      );
+                    })
+                  )}
+                </>
               )}
             </Select>
           </FormControl>
+
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary">
+              <T>OU</T>
+            </Typography>
+          </Divider>
+
+          {/* Création d'un nouveau client */}
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              <T>Créer un nouveau client</T>
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <TextField
+                label={<T>Nom du nouveau client</T>}
+                value={newClientName}
+                onChange={(e) => setNewClientName(e.target.value)}
+                fullWidth
+                size="small"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && newClientName.trim()) {
+                    handleCreateClient();
+                  }
+                }}
+              />
+              <Button
+                variant="outlined" 
+                color="success" 
+                onClick={handleCreateClient}
+                disabled={creatingClient || !newClientName.trim()}
+                sx={{ whiteSpace: 'nowrap' }}
+              >
+                {creatingClient ? <CircularProgress size={18} /> : <T>Créer ce client</T>}
+              </Button>
+            </Box>
+            
+            {/* Messages d'erreur et de succès */}
+            {clientError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {clientError}
+              </Alert>
+            )}
+            {clientSuccess && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {clientSuccess}
+              </Alert>
+            )}
+          </Box>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={closeClientSelectModal} color="secondary">
             <T>Annuler</T>
           </Button>

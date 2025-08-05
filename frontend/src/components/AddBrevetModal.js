@@ -214,12 +214,12 @@ const AddBrevetModal = ({ show, handleClose }) => {
                       <FormControl fullWidth>
                         <InputLabel><T>Pays</T></InputLabel>
                         <Select   
-                          value={typeof info?.id_pays !== 'undefined' ? String(info.id_pays) : ''}
+                          value={info?.id_pays || ''}
                           onChange={(e) => handleDynamicChange(e, index, 'informations_depot')}
                           name="id_pays">
                           <MenuItem value=""><T>Sélectionner un pays</T></MenuItem>
                           {paysList.map((paysItem) => (
-                            <MenuItem key={paysItem.id} value={String(paysItem.id)}>
+                            <MenuItem key={paysItem.id} value={paysItem.id}>
                               <T>{paysItem.nom_fr_fr}</T>
                             </MenuItem>
                           ))}

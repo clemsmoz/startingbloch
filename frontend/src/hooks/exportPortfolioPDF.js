@@ -137,11 +137,149 @@ function card(title, content, options = {}) {
 }
 
 // ----------- MAIN EXPORT -----------
-export async function exportBrevetsPDF(brevets, clientName, logo) {
+export async function exportBrevetsPDF(brevets, clientName, logo, exportLang = 'fr') {
   if (!brevets || brevets.length === 0) {
     window.alert("Aucun brevet à exporter !");
     return false;
   }
+
+  // Dictionnaire de traductions pour les textes du PDF
+  const translations = {
+    fr: {
+      portfolioTitle: "Portefeuille de brevets",
+      reportGenerated: "Rapport généré le",
+      summary: "Sommaire",
+      client: "Client",
+      inventor: "Inventeur",
+      applicant: "Déposant",
+      owner: "Titulaire",
+      country: "Pays",
+      status: "Statut",
+      applicationNumber: "N° Dépôt",
+      applicationDate: "Date Dépôt",
+      publicationNumber: "N° Publication",
+      publicationDate: "Date Publication",
+      procedureCabinet: "Cabinet de Procédure",
+      renewalCabinet: "Cabinet d'Annuité",
+      reference: "Référence",
+      email: "Email",
+      telephone: "Téléphone",
+      confidential: "Portefeuille de brevets | confidentiel",
+      page: "Page"
+    },
+    en: {
+      portfolioTitle: "Patent Portfolio",
+      reportGenerated: "Report generated on",
+      summary: "Summary",
+      client: "Client",
+      inventor: "Inventor",
+      applicant: "Applicant",
+      owner: "Owner",
+      country: "Country",
+      status: "Status",
+      applicationNumber: "Application No.",
+      applicationDate: "Application Date",
+      publicationNumber: "Publication No.",
+      publicationDate: "Publication Date",
+      procedureCabinet: "Procedure Firm",
+      renewalCabinet: "Renewal Firm",
+      reference: "Reference",
+      email: "Email",
+      telephone: "Telephone",
+      confidential: "Patent portfolio | confidential",
+      page: "Page"
+    },
+    es: {
+      portfolioTitle: "Cartera de Patentes",
+      reportGenerated: "Informe generado el",
+      summary: "Resumen",
+      client: "Cliente",
+      inventor: "Inventor",
+      applicant: "Solicitante",
+      owner: "Propietario",
+      country: "País",
+      status: "Estado",
+      applicationNumber: "N° Solicitud",
+      applicationDate: "Fecha Solicitud",
+      publicationNumber: "N° Publicación",
+      publicationDate: "Fecha Publicación",
+      procedureCabinet: "Despacho de Procedimiento",
+      renewalCabinet: "Despacho de Renovación",
+      reference: "Referencia",
+      email: "Email",
+      telephone: "Teléfono",
+      confidential: "Cartera de patentes | confidencial",
+      page: "Página"
+    },
+    de: {
+      portfolioTitle: "Patent-Portfolio",
+      reportGenerated: "Bericht erstellt am",
+      summary: "Zusammenfassung",
+      client: "Kunde",
+      inventor: "Erfinder",
+      applicant: "Anmelder",
+      owner: "Inhaber",
+      country: "Land",
+      status: "Status",
+      applicationNumber: "Anmeldenr.",
+      applicationDate: "Anmeldedatum",
+      publicationNumber: "Veröffentlichungsnr.",
+      publicationDate: "Veröffentlichungsdatum",
+      procedureCabinet: "Verfahrenskanzlei",
+      renewalCabinet: "Verlängerungskanzlei",
+      reference: "Referenz",
+      email: "E-Mail",
+      telephone: "Telefon",
+      confidential: "Patent-Portfolio | vertraulich",
+      page: "Seite"
+    },
+    it: {
+      portfolioTitle: "Portafoglio Brevetti",
+      reportGenerated: "Rapporto generato il",
+      summary: "Sommario",
+      client: "Cliente",
+      inventor: "Inventore",
+      applicant: "Richiedente",
+      owner: "Proprietario",
+      country: "Paese",
+      status: "Stato",
+      applicationNumber: "N° Domanda",
+      applicationDate: "Data Domanda",
+      publicationNumber: "N° Pubblicazione",
+      publicationDate: "Data Pubblicazione",
+      procedureCabinet: "Studio di Procedura",
+      renewalCabinet: "Studio di Rinnovo",
+      reference: "Riferimento",
+      email: "Email",
+      telephone: "Telefono",
+      confidential: "Portafoglio brevetti | riservato",
+      page: "Pagina"
+    },
+    pt: {
+      portfolioTitle: "Portfólio de Patentes",
+      reportGenerated: "Relatório gerado em",
+      summary: "Resumo",
+      client: "Cliente",
+      inventor: "Inventor",
+      applicant: "Requerente",
+      owner: "Proprietário",
+      country: "País",
+      status: "Estado",
+      applicationNumber: "N° Pedido",
+      applicationDate: "Data Pedido",
+      publicationNumber: "N° Publicação",
+      publicationDate: "Data Publicação",
+      procedureCabinet: "Escritório de Procedimentos",
+      renewalCabinet: "Escritório de Renovação",
+      reference: "Referência",
+      email: "Email",
+      telephone: "Telefone",
+      confidential: "Portfólio de patentes | confidencial",
+      page: "Página"
+    }
+  };
+
+  const t = translations[exportLang] || translations.fr;
 
   const detailedBrevets = [];
   let statutsList = [];

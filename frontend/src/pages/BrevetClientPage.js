@@ -7,6 +7,7 @@ import { FaEdit, FaTrash, FaInfoCircle, FaPlus, FaArrowUp } from 'react-icons/fa
 import AddBrevetModal from '../components/AddBrevetModal';
 import BrevetDetailModal from '../components/BrevetDetailModal';
 import EditBrevetModal from '../components/EditBrevetModal';
+import LanguageExportDialog from '../components/LanguageExportDialog';
 import { useNavigate, useParams } from 'react-router-dom';
 import logo from '../assets/startigbloch_transparent_corrected.png';
 import { API_BASE_URL } from '../config';
@@ -34,6 +35,10 @@ const BrevetClientPage = () => {
   // Sélection multiple de brevets
   const [selectedBrevets, setSelectedBrevets] = useState([]);
   const allSelected = selectedBrevets.length === brevets.length && brevets.length > 0;
+
+  // États pour le dialogue d'export
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportType, setExportType] = useState('all'); // 'all' ou 'selected'
 
   const navigate = useNavigate();
   const safe = (val) => val ?? '';
@@ -83,19 +88,43 @@ const BrevetClientPage = () => {
   };
 
   // ------ EXPORT PDF ------
-  const handleExportAll = async () => {
-  await exportBrevetsPDF(brevets, clientName, logo);
-};
+  const handleExportAll = () => {
+    setExportType('all');
+    setShowExportDialog(true);
+  };
 
-const handleExportSelected = async () => {
-  const brevetsToExport = brevets.filter(b => selectedBrevets.includes(b.id_brevet));
-  if (brevetsToExport.length === 0) {
-    alert('Sélectionne au moins un brevet à exporter !');
-    return;
-  }
-  await exportBrevetsPDF(brevetsToExport, clientName, logo);
-  setSelectedBrevets([]);
-};
+  const handleExportSelected = () => {
+    if (selectedBrevets.length === 0) {
+      alert('Sélectionne au moins un brevet à exporter !');
+      return;
+    }
+    setExportType('selected');
+    setShowExportDialog(true);
+  };
+
+  // Fonction d'export avec langue sélectionnée
+  const handleConfirmExport = async (selectedLanguage) => {
+    try {
+      let brevetsToExport;
+      if (exportType === 'all') {
+        brevetsToExport = brevets;
+      } else {
+        brevetsToExport = brevets.filter(b => selectedBrevets.includes(b.id_brevet));
+      }
+
+      await exportBrevetsPDF(brevetsToExport, clientName, logo, selectedLanguage);
+      
+      // Réinitialiser la sélection si on exportait les brevets sélectionnés
+      if (exportType === 'selected') {
+        setSelectedBrevets([]);
+      }
+      
+      alert(`Export PDF réussi en ${selectedLanguage.toUpperCase()} !`);
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      alert('Erreur lors de l\'export PDF');
+    }
+  };
 
   // ------ AUTRES HANDLERS ------
   const handleShowEditModal = (brevet, event) => {
@@ -344,6 +373,18 @@ const handleExportSelected = async () => {
             refreshBrevets={refreshBrevets}
           />
         )}
+
+        {/* Dialogue de sélection de langue pour l'export */}
+        <LanguageExportDialog
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+          onConfirm={handleConfirmExport}
+          title={exportType === 'all' 
+            ? "Exporter tous les brevets" 
+            : `Exporter ${selectedBrevets.length} brevet(s) sélectionné(s)`
+          }
+        />
+
         {/* Bouton "Retour en haut" */}
         <IconButton
           onClick={scrollTop}
