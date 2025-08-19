@@ -83,6 +83,10 @@ public class InformationDepotDto
     
     /// <summary>Entité statut procédure complète (chargement optionnel).</summary>
     public StatutDto? Statuts { get; set; }
+
+    // Cabinets par information de dépôt
+    public List<InformationDepotCabinetItemDto> CabinetsAnnuites { get; set; } = new();
+    public List<InformationDepotCabinetItemDto> CabinetsProcedures { get; set; } = new();
 }
 
 /// <summary>
@@ -125,6 +129,10 @@ public class CreateInformationDepotDto
     /// <summary>Commentaires contextuels procédure avec validation longueur.</summary>
     [StringLength(500, ErrorMessage = "Le commentaire ne peut pas dépasser 500 caractères")]
     public string? Commentaire { get; set; }
+
+    // Création: cabinets rattachés à cette info de dépôt
+    public List<InformationDepotCabinetInputDto> CabinetsAnnuites { get; set; } = new();
+    public List<InformationDepotCabinetInputDto> CabinetsProcedures { get; set; } = new();
 }
 
 /// <summary>
@@ -165,4 +173,19 @@ public class UpdateInformationDepotDto
     
     /// <summary>Licence modifiable selon stratégie commerciale évolutive.</summary>
     public bool Licence { get; set; } = false;
+}
+
+public class InformationDepotCabinetItemDto
+{
+    public int CabinetId { get; set; }
+    public string? CabinetNom { get; set; }
+    public List<string> Roles { get; set; } = new();
+    public List<ContactDto> Contacts { get; set; } = new();
+}
+
+public class InformationDepotCabinetInputDto
+{
+    public int CabinetId { get; set; }
+    public List<string> Roles { get; set; } = new();
+    public List<int> ContactIds { get; set; } = new();
 }

@@ -28,8 +28,6 @@ import {
   FileProtectOutlined,
   BankOutlined,
   UserOutlined,
-  ExperimentOutlined,
-  CrownOutlined,
   AuditOutlined,
   SettingOutlined,
   LogoutOutlined,
@@ -43,7 +41,7 @@ import { useAuthStore } from '@store/authStore';
 import { useNotificationStore } from '@store/notificationStore';
 
 const { Header, Sider, Content } = Layout;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // Styled components
 const StyledLayout = styled(Layout)`
@@ -74,12 +72,7 @@ const LogoImage = styled.img`
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 `;
 
-const BrandText = styled(Title)`
-  margin: 0 !important;
-  color: #1890ff;
-  font-size: 20px;
-  font-weight: 600;
-`;
+
 
 const HeaderActions = styled.div`
   display: flex;
@@ -127,33 +120,20 @@ const DesktopSider = styled(Sider)`
  * Configuration du menu de navigation
  */
 const getMenuItems = (userRole: string) => {
+  const role = (userRole || '').toLowerCase();
   console.log('🎯 Menu - Rôle utilisateur:', userRole);
-  console.log('🎯 Menu - Est Admin?', userRole === 'Admin');
-  
+  console.log('🎯 Menu - Est Admin?', role === 'admin');
+
+  // Base: toujours Dashboard, Brevets, Cabinets
   const baseItems = [
-    {
-      key: '/dashboard',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-    },
-    {
-      key: '/clients',
-      icon: <TeamOutlined />,
-      label: 'Clients',
-    },
-    {
-      key: '/brevets',
-      icon: <FileProtectOutlined />,
-      label: 'Brevets',
-    },
-    {
-      key: '/cabinets',
-      icon: <BankOutlined />,
-      label: 'Cabinets',
-    },
+    { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+    // Clients n'est visible que si l'utilisateur n'est pas de rôle 'client'
+    ...(role !== 'client' ? [{ key: '/clients', icon: <TeamOutlined />, label: 'Clients' }] : []),
+    { key: '/brevets', icon: <FileProtectOutlined />, label: 'Brevets' },
+    { key: '/cabinets', icon: <BankOutlined />, label: 'Cabinets' },
   ];
-  
-  const adminItems = userRole === 'Admin' ? [
+
+  const adminItems = role === 'admin' ? [
     {
       key: '/admin/users',
       icon: <UserOutlined />,

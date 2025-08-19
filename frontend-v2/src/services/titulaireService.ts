@@ -30,24 +30,25 @@ api.interceptors.request.use(authInterceptor.request, authInterceptor.error);
 
 export const titulaireService = {
   // Récupérer tous les titulaires
-  getAll: async (): Promise<PagedApiResponse<Titulaire>> => {
+  getAll: async (page: number = 1, pageSize: number = 100): Promise<PagedApiResponse<Titulaire>> => {
     try {
       console.log('👑 Titulaire Service - Récupération de tous les titulaires...');
       
-      const response = await api.get('/titulaire');
+  const response = await api.get(config.api.endpoints.titulaires, { params: { page, pageSize } });
       
       console.log('✅ Titulaire Service - Réponse reçue:', response.data);
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((titulaire: any) => ({
         id: titulaire.Id,
-        nomTitulaire: titulaire.NomTitulaire,
-        prenomTitulaire: titulaire.PrenomTitulaire,
+        nomTitulaire: titulaire.Nom,
+        // Backend peut ne pas avoir Prenom/Adresse/Telephone
+        prenomTitulaire: titulaire.Prenom,
         adresseTitulaire: titulaire.AdresseTitulaire,
-        emailTitulaire: titulaire.EmailTitulaire,
+        emailTitulaire: titulaire.Email,
         telephoneTitulaire: titulaire.TelephoneTitulaire,
-        createdAt: titulaire.CreatedAt,
-        updatedAt: titulaire.UpdatedAt
+        createdAt: titulaire.CreatedAt ?? '',
+        updatedAt: titulaire.UpdatedAt ?? ''
       })) || [];
       
       console.log('🔄 Titulaire Service - Données transformées:', transformedData);
@@ -84,7 +85,7 @@ export const titulaireService = {
   // Récupérer un titulaire par son ID
   getById: async (id: number): Promise<ApiResponse<Titulaire>> => {
     try {
-      const response = await api.get(`/titulaire/${id}`);
+  const response = await api.get(`${config.api.endpoints.titulaires}/${id}`);
       return {
         data: response.data.data || response.data,
         success: true,
@@ -103,11 +104,10 @@ export const titulaireService = {
   // Créer un nouveau titulaire
   create: async (titulaireData: CreateTitulaireDto): Promise<ApiResponse<Titulaire>> => {
     try {
-      const response = await api.post('/titulaire', {
-        nom_titulaire: titulaireData.nomTitulaire,
-        adresse_titulaire: titulaireData.adresseTitulaire,
-        email_titulaire: titulaireData.emailTitulaire,
-        telephone_titulaire: titulaireData.telephoneTitulaire
+      const response = await api.post(config.api.endpoints.titulaires, {
+        // Backend attend Nom, Email (Prenom possible selon modèle)
+        nom: titulaireData.nomTitulaire,
+        email: titulaireData.emailTitulaire,
       });
       return {
         data: response.data,
@@ -127,11 +127,9 @@ export const titulaireService = {
   // Mettre à jour un titulaire existant
   update: async (titulaireData: UpdateTitulaireDto): Promise<ApiResponse<Titulaire>> => {
     try {
-      const response = await api.put(`/titulaire/${titulaireData.id}`, {
-        nom_titulaire: titulaireData.nomTitulaire,
-        adresse_titulaire: titulaireData.adresseTitulaire,
-        email_titulaire: titulaireData.emailTitulaire,
-        telephone_titulaire: titulaireData.telephoneTitulaire
+      const response = await api.put(`${config.api.endpoints.titulaires}/${titulaireData.id}`, {
+        nom: titulaireData.nomTitulaire,
+        email: titulaireData.emailTitulaire,
       });
       return {
         data: response.data.data || response.data,
@@ -151,7 +149,7 @@ export const titulaireService = {
   // Supprimer un titulaire
   delete: async (id: number): Promise<ApiResponse<void>> => {
     try {
-      await api.delete(`/titulaire/${id}`);
+  await api.delete(`${config.api.endpoints.titulaires}/${id}`);
       return {
         data: undefined,
         success: true,

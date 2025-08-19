@@ -61,6 +61,12 @@ public class DeposantPays
     public int IdPays { get; set; }
 
     /// <summary>
+    /// Référence optionnelle vers le brevet pour contextualiser la liaison
+    /// </summary>
+    [Column("id_brevet")]
+    public int? IdBrevet { get; set; }
+
+    /// <summary>
     /// Date d'établissement de la relation déposant-pays
     /// Traçabilité des changements de nationalité/domiciliation
     /// Important pour suivi des capacités juridiques
@@ -85,4 +91,10 @@ public class DeposantPays
     /// </summary>
     [ForeignKey("IdPays")]
     public virtual Pays Pays { get; set; } = null!;
+
+    /// <summary>
+    /// Brevet concerné (optionnel)
+    /// </summary>
+    [ForeignKey("IdBrevet")]
+    public virtual Brevet? Brevet { get; set; }
 }

@@ -5,21 +5,25 @@
  */
 
 import React, { useState } from 'react';
-import { Modal, Form, Input, Row, Col } from 'antd';
+import { Modal, Form, Input, Row, Col, message } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
 import { deposantService } from '../../services';
-import type { CreateDeposantDto } from '../../types';
+import type { CreateDeposantDto, Deposant } from '../../types';
 
 interface CreateDeposantModalProps {
   visible: boolean;
   onCancel: () => void;
   onSuccess: (deposant: any) => void;
+  existing?: Deposant[];
+  onDuplicate?: (deposant: any) => void;
 }
 
 const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
   visible,
   onCancel,
-  onSuccess
+  onSuccess,
+  existing = [],
+  onDuplicate
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -27,6 +31,28 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
+      // Détection doublon: par email si fourni, sinon (nom + prénom)
+      const norm = (s?: string) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+      const email = norm(values.emailDeposant);
+      const nom = norm(values.nomDeposant);
+      const prenom = norm(values.prenomDeposant);
+      const duplicate = existing.find(d => {
+        const dEmail = norm(d.emailDeposant);
+        const dNom = norm(d.nomDeposant);
+        const dPrenom = norm(d.prenomDeposant);
+        if (email) return dEmail && dEmail === email;
+        if (prenom) return dNom === nom && dPrenom === prenom;
+        return dNom === nom;
+      });
+
+      if (duplicate) {
+        message.info("Ce déposant existe déjà, il a été sélectionné.");
+        onDuplicate?.(duplicate);
+        form.resetFields();
+        onCancel();
+        return;
+      }
+
       // Mapper les valeurs vers le format attendu par l'API
       const deposantData: CreateDeposantDto = {
         nomDeposant: values.nomDeposant,

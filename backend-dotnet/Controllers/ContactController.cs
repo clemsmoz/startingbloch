@@ -156,6 +156,40 @@ public class ContactController : ControllerBase
     }
 
     /// <summary>
+    /// Récupère la liste paginée des contacts associés à un client spécifique
+    /// </summary>
+    /// <param name="clientId">Identifiant du client</param>
+    /// <param name="page">Numéro de page</param>
+    /// <param name="pageSize">Taille de la page</param>
+    /// <returns>Liste paginée des contacts du client</returns>
+    [HttpGet("client/{clientId}")]
+    [EmployeeOnly]
+    public async Task<ActionResult<PagedResponse<List<ContactDto>>>> GetContactsByClient(int clientId, int page = 1, int pageSize = 10)
+    {
+        var result = await _contactService.GetContactsByClientAsync(clientId, page, pageSize);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Récupère la liste paginée des contacts associés à un cabinet spécifique
+    /// </summary>
+    /// <param name="cabinetId">Identifiant du cabinet</param>
+    /// <param name="page">Numéro de page</param>
+    /// <param name="pageSize">Taille de la page</param>
+    /// <returns>Liste paginée des contacts du cabinet</returns>
+    [HttpGet("cabinet/{cabinetId}")]
+    [EmployeeOnly]
+    public async Task<ActionResult<PagedResponse<List<ContactDto>>>> GetContactsByCabinet(int cabinetId, int page = 1, int pageSize = 10)
+    {
+        var result = await _contactService.GetContactsByCabinetAsync(cabinetId, page, pageSize);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Crée un nouveau contact dans le carnet d'adresses professionnel
     /// 
     /// PROCESSUS DE CRÉATION SÉCURISÉ :
@@ -191,7 +225,7 @@ public class ContactController : ControllerBase
     /// <param name="createContactDto">Données complètes du nouveau contact</param>
     /// <returns>Contact créé avec ID généré ou erreurs de validation détaillées</returns>
     [HttpPost]
-    [EmployeeOnly] // Restriction : employés pour protection et contrôle des données
+    [WritePermission] // Nécessite canWrite=true ou Admin
     public async Task<ActionResult<ApiResponse<ContactDto>>> CreateContact(CreateContactDto createContactDto)
     {
         // Validation préalable complète du modèle de données RGPD
@@ -246,7 +280,7 @@ public class ContactController : ControllerBase
     /// <param name="updateContactDto">Nouvelles données du contact à appliquer</param>
     /// <returns>Contact mis à jour avec toutes les données actualisées</returns>
     [HttpPut("{id}")]
-    [EmployeeOnly] // Restriction : employés pour protection des données personnelles
+    [WritePermission] // Nécessite canWrite=true ou Admin
     public async Task<ActionResult<ApiResponse<ContactDto>>> UpdateContact(int id, UpdateContactDto updateContactDto)
     {
         // Validation préalable complète du modèle de données

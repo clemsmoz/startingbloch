@@ -115,12 +115,17 @@ L'API sera disponible sur :
 - Gestion des permissions
 
 ### User (Employé)
-- Accès complet aux clients et brevets
+- Accès aux clients et brevets internes
+- Droit d'écriture contrôlé via un flag `canWrite`
 - Pas de gestion d'utilisateurs
 
 ### Client
-- Accès uniquement à ses propres données
-- Lecture seule par défaut (configurable)
+- Accès uniquement à ses propres données (portefeuille associé)
+- Lecture par défaut; droit d'écriture contrôlé via `canWrite`
+
+Notes importantes:
+- Les rôles affichés côté frontend proviennent de la table `Roles` (endpoint `/api/roles`).
+- La lecture/écriture est gérée par les flags `canRead`/`canWrite`.
 
 ## 🛠️ API Endpoints
 
@@ -144,10 +149,19 @@ DELETE /api/brevets/{id}         # Supprimer un brevet
 
 ### Administration (Admin uniquement)
 ```
-GET    /api/admin/users                    # Liste des utilisateurs
-POST   /api/admin/users/client             # Créer utilisateur pour client existant
-POST   /api/admin/users/client-with-user   # Créer client + utilisateur
-GET    /api/admin/clients-without-users    # Clients sans compte utilisateur
+GET    /api/admin/users                              # Liste des utilisateurs
+POST   /api/admin/create-employee                    # Créer employé (admin/user) avec canWrite
+POST   /api/admin/create-client-account              # Créer utilisateur pour client existant
+POST   /api/admin/create-new-client-with-user        # Créer client + utilisateur
+PUT    /api/admin/user/{userId}/permissions          # Modifier droits (canRead/canWrite)
+PUT    /api/admin/user/{userId}/activate             # Activer un utilisateur
+PUT    /api/admin/user/{userId}/deactivate           # Désactiver un utilisateur
+POST   /api/admin/user/{userId}/assign-client/{clientId}  # Assigner un client à un utilisateur
+POST   /api/admin/user/{userId}/remove-client             # Retirer l'association client
+GET    /api/admin/clients-without-account            # Clients sans compte utilisateur
+
+### Référentiel de rôles
+GET    /api/roles                                    # Rôles issus de la DB (AdminOnly)
 ```
 
 ## 🧪 Tests

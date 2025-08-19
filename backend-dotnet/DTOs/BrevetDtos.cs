@@ -217,6 +217,58 @@ public class CreateBrevetDto
     /// Création simultanée brevet et premiers dépôts.
     /// </summary>
     public List<CreateInformationDepotDto> InformationsDepot { get; set; } = new();
+
+    /// <summary>
+    /// Liaisons pays par inventeur (optionnel). Permet de définir les pays associés à chaque inventeur.
+    /// Si renseigné, les relations InventeurPays seront complétées sans créer de doublons.
+    /// </summary>
+    public List<InventeurPaysLinkInputDto>? InventeursPays { get; set; }
+
+    /// <summary>
+    /// Liaisons pays par déposant (optionnel). Permet de définir les pays associés à chaque déposant.
+    /// </summary>
+    public List<DeposantPaysLinkInputDto>? DeposantsPays { get; set; }
+
+    /// <summary>
+    /// Liaisons pays par titulaire (optionnel). Permet de définir les pays associés à chaque titulaire.
+    /// </summary>
+    public List<TitulairePaysLinkInputDto>? TitulairesPays { get; set; }
+}
+
+/// <summary>
+/// DTO d'entrée pour lier des pays à un inventeur donné.
+/// </summary>
+public class InventeurPaysLinkInputDto
+{
+    /// <summary>Identifiant de l'inventeur concerné.</summary>
+    public int InventeurId { get; set; }
+
+    /// <summary>Liste des identifiants de pays à lier.</summary>
+    public List<int> PaysIds { get; set; } = new();
+}
+
+/// <summary>
+/// DTO d'entrée pour lier des pays à un déposant donné.
+/// </summary>
+public class DeposantPaysLinkInputDto
+{
+    /// <summary>Identifiant du déposant concerné.</summary>
+    public int DeposantId { get; set; }
+
+    /// <summary>Liste des identifiants de pays à lier.</summary>
+    public List<int> PaysIds { get; set; } = new();
+}
+
+/// <summary>
+/// DTO d'entrée pour lier des pays à un titulaire donné.
+/// </summary>
+public class TitulairePaysLinkInputDto
+{
+    /// <summary>Identifiant du titulaire concerné.</summary>
+    public int TitulaireId { get; set; }
+
+    /// <summary>Liste des identifiants de pays à lier.</summary>
+    public List<int> PaysIds { get; set; } = new();
 }
 
 /// <summary>

@@ -67,7 +67,10 @@
  */
 
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using StartingBloch.Backend.Models;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace StartingBloch.Backend.Data;
 
@@ -78,12 +81,15 @@ namespace StartingBloch.Backend.Data;
 /// </summary>
 public class StartingBlochDbContext : DbContext
 {
+    private readonly IHttpContextAccessor? _httpContextAccessor;
     /// <summary>
     /// Initialise le contexte avec configuration Entity Framework avancée.
     /// </summary>
     /// <param name="options">Options configuration base données avec provider</param>
-    public StartingBlochDbContext(DbContextOptions<StartingBlochDbContext> options) : base(options)
+    /// <param name="httpContextAccessor">Accès au contexte HTTP courant pour récupérer l'utilisateur</param>
+    public StartingBlochDbContext(DbContextOptions<StartingBlochDbContext> options, IHttpContextAccessor? httpContextAccessor = null) : base(options)
     {
+        _httpContextAccessor = httpContextAccessor;
     }
 
     // ================================================================================================
@@ -125,6 +131,9 @@ public class StartingBlochDbContext : DbContext
     
     /// <summary>Informations dépôt officielles</summary>
     public DbSet<InformationDepot> InformationsDepot { get; set; }
+    public DbSet<InformationDepotCabinet> InformationDepotCabinets { get; set; }
+    public DbSet<InformationDepotCabinetRole> InformationDepotCabinetRoles { get; set; }
+    public DbSet<InformationDepotCabinetContact> InformationDepotCabinetContacts { get; set; }
 
     // ================================================================================================
     // SYSTÈME RÔLES GRANULAIRES AVANCÉ
@@ -251,6 +260,24 @@ public class StartingBlochDbContext : DbContext
             .HasIndex(r => r.Name)
             .IsUnique()
             .HasDatabaseName("IX_Roles_Name");
+
+        // Unicité: un cabinet par catégorie par information de dépôt
+        modelBuilder.Entity<InformationDepotCabinet>()
+            .HasIndex(x => new { x.InformationDepotId, x.CabinetId, x.Category })
+            .IsUnique()
+            .HasDatabaseName("IX_InfoDepotCab_Unique");
+
+        // Unicité: un rôle par infoDepotCabinet
+        modelBuilder.Entity<InformationDepotCabinetRole>()
+            .HasIndex(x => new { x.InformationDepotCabinetId, x.Role })
+            .IsUnique()
+            .HasDatabaseName("IX_InfoDepotCabRole_Unique");
+
+        // Unicité: un contact par infoDepotCabinet
+        modelBuilder.Entity<InformationDepotCabinetContact>()
+            .HasIndex(x => new { x.InformationDepotCabinetId, x.ContactId })
+            .IsUnique()
+            .HasDatabaseName("IX_InfoDepotCabContact_Unique");
     }
 
     /// <summary>
@@ -265,6 +292,26 @@ public class StartingBlochDbContext : DbContext
             .WithMany(b => b.InformationsDepot)
             .HasForeignKey(i => i.IdBrevet)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Relations optionnelles vers Brevet depuis InventeurPays/DeposantPays/TitulairePays
+        // Lors de la suppression d'un Brevet, on ne supprime pas ces liaisons pays: on passe la FK à NULL
+        modelBuilder.Entity<InventeurPays>()
+            .HasOne(ip => ip.Brevet)
+            .WithMany()
+            .HasForeignKey(ip => ip.IdBrevet)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<DeposantPays>()
+            .HasOne(dp => dp.Brevet)
+            .WithMany()
+            .HasForeignKey(dp => dp.IdBrevet)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<TitulairePays>()
+            .HasOne(tp => tp.Brevet)
+            .WithMany()
+            .HasForeignKey(tp => tp.IdBrevet)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Relations contacts avec préservation données
         modelBuilder.Entity<Contact>()
@@ -316,6 +363,37 @@ public class StartingBlochDbContext : DbContext
             .WithMany(cab => cab.ClientCabinets)
             .HasForeignKey(cc => cc.CabinetId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // InformationDepotCabinet relations
+        modelBuilder.Entity<InformationDepotCabinet>()
+            .HasOne(x => x.InformationDepot)
+            .WithMany(i => i.InformationDepotCabinets)
+            .HasForeignKey(x => x.InformationDepotId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InformationDepotCabinet>()
+            .HasOne(x => x.Cabinet)
+            .WithMany()
+            .HasForeignKey(x => x.CabinetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InformationDepotCabinetRole>()
+            .HasOne(x => x.InformationDepotCabinet)
+            .WithMany(x => x.Roles)
+            .HasForeignKey(x => x.InformationDepotCabinetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InformationDepotCabinetContact>()
+            .HasOne(x => x.InformationDepotCabinet)
+            .WithMany(x => x.Contacts)
+            .HasForeignKey(x => x.InformationDepotCabinetId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InformationDepotCabinetContact>()
+            .HasOne(x => x.Contact)
+            .WithMany()
+            .HasForeignKey(x => x.ContactId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     /// <summary>
@@ -364,7 +442,8 @@ public class StartingBlochDbContext : DbContext
     /// <returns>Nombre d'entités sauvegardées</returns>
     public override int SaveChanges()
     {
-        UpdateTimestamps();
+    UpdateTimestamps();
+    AddAuditLogs();
         return base.SaveChanges();
     }
 
@@ -376,8 +455,9 @@ public class StartingBlochDbContext : DbContext
     /// <returns>Nombre d'entités sauvegardées</returns>
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        UpdateTimestamps();
-        return base.SaveChangesAsync(cancellationToken);
+    UpdateTimestamps();
+    AddAuditLogs();
+    return base.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -399,6 +479,150 @@ public class StartingBlochDbContext : DbContext
                 client.UpdatedAt = DateTime.UtcNow;
             }
             // TODO: Implémenter interface ITimestamped pour optimisation
+        }
+    }
+
+    /// <summary>
+    /// Génère des entrées de logs (table Logs) pour les opérations CRUD détectées par EF Core.
+    /// Renseigne OldValues/NewValues en JSON pour permettre l'affichage des avant/après.
+    /// </summary>
+    private void AddAuditLogs()
+    {
+        // Collecter les entrées pertinentes avant le SaveChanges réel
+        var auditEntries = ChangeTracker.Entries()
+            .Where(e =>
+                e.Entity is not Log && // éviter la récursion sur la table des logs
+                (e.State == EntityState.Modified || e.State == EntityState.Added || e.State == EntityState.Deleted))
+            .ToList();
+
+        if (auditEntries.Count == 0)
+            return;
+
+        foreach (var entry in auditEntries)
+        {
+            try
+            {
+                // Déterminer le type d'entité et l'identifiant (si disponible)
+                var entityType = entry.Entity.GetType();
+                var entityName = entityType.Name; // ex: Client, Brevet
+                var tableName = entry.Metadata.GetTableName() ?? entityName;
+
+                int? recordId = null;
+                var idProp = entityType.GetProperty("Id");
+                if (idProp != null)
+                {
+                    var idValue = entry.State == EntityState.Added
+                        ? entry.CurrentValues[idProp.Name]
+                        : entry.OriginalValues[idProp.Name];
+                    if (idValue is int intId)
+                        recordId = intId;
+                    else if (idValue != null && int.TryParse(idValue.ToString(), out var parsed))
+                        recordId = parsed;
+                }
+
+                // Préparer Old/New values
+                Dictionary<string, object?>? oldValues = null;
+                Dictionary<string, object?>? newValues = null;
+
+                // Propriétés à ignorer dans le diff (bruit)
+                var ignoreProps = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "UpdatedAt", "CreatedAt"
+                };
+
+                if (entry.State == EntityState.Modified)
+                {
+                    foreach (var prop in entry.Properties)
+                    {
+                        if (!prop.IsModified)
+                            continue;
+                        if (ignoreProps.Contains(prop.Metadata.Name))
+                            continue;
+
+                        oldValues ??= new Dictionary<string, object?>();
+                        newValues ??= new Dictionary<string, object?>();
+                        oldValues[prop.Metadata.Name] = prop.OriginalValue;
+                        newValues[prop.Metadata.Name] = prop.CurrentValue;
+                    }
+                }
+                else if (entry.State == EntityState.Added)
+                {
+                    newValues = entry.Properties
+                        .Where(p => !ignoreProps.Contains(p.Metadata.Name))
+                        .ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
+                }
+                else if (entry.State == EntityState.Deleted)
+                {
+                    oldValues = entry.Properties
+                        .Where(p => !ignoreProps.Contains(p.Metadata.Name))
+                        .ToDictionary(p => p.Metadata.Name, p => p.OriginalValue);
+                }
+
+                // Ne créer un log que si on a des valeurs utiles (pour Modified)
+                if (entry.State == EntityState.Modified && (oldValues == null || newValues == null || oldValues.Count == 0))
+                    continue;
+
+                var action = entry.State switch
+                {
+                    EntityState.Added => $"Création d'un {entityName.ToLower()}",
+                    EntityState.Modified => $"Modification d'un {entityName.ToLower()}",
+                    EntityState.Deleted => $"Suppression d'un {entityName.ToLower()}",
+                    _ => entry.State.ToString()
+                };
+
+                var changedFields = entry.State == EntityState.Modified && newValues != null
+                    ? string.Join(", ", newValues.Keys)
+                    : entry.State == EntityState.Added && newValues != null
+                        ? string.Join(", ", newValues.Keys)
+                        : entry.State == EntityState.Deleted && oldValues != null
+                            ? string.Join(", ", oldValues.Keys)
+                            : string.Empty;
+
+                var details = string.IsNullOrWhiteSpace(changedFields)
+                    ? null
+                    : $"Champs concernés: {changedFields}";
+
+                // Récupérer l'utilisateur courant si disponible (JWT)
+                string? userId = null;
+                try
+                {
+                    var httpContext = _httpContextAccessor?.HttpContext;
+                    if (httpContext?.User?.Identity?.IsAuthenticated == true)
+                    {
+                        userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                                 ?? httpContext.User.FindFirst("nameid")?.Value
+                                 ?? httpContext.User.FindFirst("sub")?.Value
+                                 ?? httpContext.User.FindFirst("id")?.Value;
+                    }
+                }
+                catch
+                {
+                    // Ne pas bloquer l'audit si le contexte HTTP n'est pas disponible (jobs, seeds, tests)
+                }
+
+                var log = new Log
+                {
+                    Level = "info",
+                    Message = $"{action} {(recordId.HasValue ? "(ID=" + recordId.Value + ")" : string.Empty)}",
+                    Timestamp = DateTime.UtcNow,
+                    UserId = userId,
+                    Action = action,
+                    TableName = tableName,
+                    RecordId = recordId,
+                    OldValues = oldValues != null ? JsonSerializer.Serialize(oldValues) : null,
+                    NewValues = newValues != null ? JsonSerializer.Serialize(newValues) : null,
+                    IpAddress = null,
+                    UserAgent = null,
+                    CreatedAt = DateTime.UtcNow,
+                    Details = details
+                };
+
+                Logs.Add(log);
+            }
+            catch
+            {
+                // En cas d'erreur dans l'audit, ne pas bloquer la sauvegarde
+            }
         }
     }
 }

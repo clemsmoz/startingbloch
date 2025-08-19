@@ -60,7 +60,7 @@ public class ClientService : IClientService
     private readonly StartingBlochDbContext _context;
 
     /// <summary>
-    /// Initialise service clients avec contexte données Entity Framework.
+    /// Initialise service clients avec contexte données.
     /// Configuration accès base données optimisée requêtes relations.
     /// </summary>
     /// <param name="context">Contexte base données Entity Framework</param>
@@ -247,9 +247,9 @@ public class ClientService : IClientService
     /// Modification complète client incluant permissions et coordonnées.
     /// </summary>
     /// <param name="id">Identifiant unique client à modifier</param>
-    /// <param name="updateClientDto">Nouvelles données client</param>
+    /// <param name="updateClientDto">Nouvelles données client (partielles)</param>
     /// <returns>Client modifié ou erreur validation</returns>
-    public async Task<ApiResponse<ClientDto>> UpdateClientAsync(int id, CreateClientDto updateClientDto)
+    public async Task<ApiResponse<ClientDto>> UpdateClientAsync(int id, UpdateClientDto updateClientDto)
     {
         try
         {
@@ -264,16 +264,26 @@ public class ClientService : IClientService
                 };
             }
 
-            client.NomClient = updateClientDto.NomClient;
-            client.ReferenceClient = updateClientDto.ReferenceClient;
-            client.AdresseClient = updateClientDto.AdresseClient;
-            client.CodePostal = updateClientDto.CodePostal;
-            client.PaysClient = updateClientDto.PaysClient;
-            client.EmailClient = updateClientDto.EmailClient;
-            client.TelephoneClient = updateClientDto.TelephoneClient;
-            client.CanWrite = updateClientDto.CanWrite;
-            client.CanRead = updateClientDto.CanRead;
-            client.IsBlocked = updateClientDto.IsBlocked;
+            if (updateClientDto.NomClient != null)
+                client.NomClient = updateClientDto.NomClient;
+            if (updateClientDto.ReferenceClient != null)
+                client.ReferenceClient = updateClientDto.ReferenceClient;
+            if (updateClientDto.AdresseClient != null)
+                client.AdresseClient = updateClientDto.AdresseClient;
+            if (updateClientDto.CodePostal != null)
+                client.CodePostal = updateClientDto.CodePostal;
+            if (updateClientDto.PaysClient != null)
+                client.PaysClient = updateClientDto.PaysClient;
+            if (updateClientDto.EmailClient != null)
+                client.EmailClient = updateClientDto.EmailClient;
+            if (updateClientDto.TelephoneClient != null)
+                client.TelephoneClient = updateClientDto.TelephoneClient;
+            if (updateClientDto.CanWrite.HasValue)
+                client.CanWrite = updateClientDto.CanWrite.Value;
+            if (updateClientDto.CanRead.HasValue)
+                client.CanRead = updateClientDto.CanRead.Value;
+            if (updateClientDto.IsBlocked.HasValue)
+                client.IsBlocked = updateClientDto.IsBlocked.Value;
 
             await _context.SaveChangesAsync();
 

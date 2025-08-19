@@ -35,24 +35,18 @@ export const contactService = {
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((contact: any) => ({
         id: contact.Id,
-        nomContact: contact.NomContact,
-        prenomContact: contact.PrenomContact,
-        emailContact: contact.EmailContact,
-        telephoneContact: contact.TelephoneContact,
-        fonctionContact: contact.FonctionContact,
-        entrepriseContact: contact.EntrepriseContact,
-        adresseContact: contact.AdresseContact,
-        codePostal: contact.CodePostal,
-        villeContact: contact.VilleContact,
-        paysContact: contact.PaysContact,
-        noteContact: contact.NoteContact,
-        clientId: contact.ClientId,
-        cabinetId: contact.CabinetId,
+        nom: contact.Nom,
+        prenom: contact.Prenom,
+        email: contact.Email,
+        telephone: contact.Telephone,
+        role: contact.Role,
+        idClient: contact.IdClient,
+        idCabinet: contact.IdCabinet,
         createdAt: contact.CreatedAt,
         updatedAt: contact.UpdatedAt,
-        emails: contact.Emails,
-        phones: contact.Phones,
-        roles: contact.Roles
+        emails: contact.Emails || [],
+        phones: contact.Phones || [],
+        roles: contact.Roles || []
       })) || [];
       
       console.log('🔄 Contact Service - Données transformées:', transformedData);
@@ -120,9 +114,121 @@ export const contactService = {
     return response.data;
   },
 
-  // Récupérer les contacts d'un client
-  getByClientId: async (clientId: number): Promise<ApiResponse<Contact[]>> => {
-    const response = await api.get(`${config.api.endpoints.contacts}/client/${clientId}`);
-    return response.data;
+  // Récupérer les contacts d'un client spécifique
+  getByClient: async (clientId: number, page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Contact>> => {
+    try {
+      console.log(`📞 Contact Service - Récupération des contacts du client ${clientId} (page ${page}, taille ${pageSize})...`);
+      
+      const response = await api.get(`${config.api.endpoints.contacts}/client/${clientId}`, {
+        params: { page, pageSize }
+      });
+      
+      console.log('✅ Contact Service - Réponse contacts client reçue:', response.data);
+      
+      // Transformer les données pour correspondre aux types frontend (camelCase)
+      const transformedData = response.data.Data?.map((contact: any) => ({
+        id: contact.Id,
+        nom: contact.Nom,
+        prenom: contact.Prenom,
+        email: contact.Email,
+        telephone: contact.Telephone,
+        role: contact.Role,
+        idClient: contact.IdClient,
+        idCabinet: contact.IdCabinet,
+        createdAt: contact.CreatedAt,
+        updatedAt: contact.UpdatedAt,
+        emails: contact.Emails || [],
+        phones: contact.Phones || [],
+        roles: contact.Roles || [],
+        cabinetNom: contact.CabinetNom,
+        clientNom: contact.ClientNom
+      })) || [];
+      
+      return {
+        success: response.data.Success,
+        data: transformedData,
+        message: response.data.Message,
+        page: response.data.Page,
+        pageSize: response.data.PageSize,
+        totalCount: response.data.TotalCount,
+        totalPages: response.data.TotalPages,
+        hasNextPage: response.data.HasNextPage,
+        hasPreviousPage: response.data.HasPreviousPage
+      };
+    } catch (error: any) {
+      console.error('❌ Contact Service - Erreur récupération contacts client:', error);
+      
+      return {
+        data: [],
+        success: false,
+        message: error.response?.data?.message || 'Erreur lors de la récupération des contacts du client',
+        errors: error.response?.data?.errors,
+        page: 1,
+        pageSize: 10,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false
+      };
+    }
+  },
+
+  // Récupérer les contacts d'un cabinet spécifique
+  getByCabinet: async (cabinetId: number, page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Contact>> => {
+    try {
+      console.log(`📞 Contact Service - Récupération des contacts du cabinet ${cabinetId} (page ${page}, taille ${pageSize})...`);
+      
+      const response = await api.get(`${config.api.endpoints.contacts}/cabinet/${cabinetId}`, {
+        params: { page, pageSize }
+      });
+      
+      console.log('✅ Contact Service - Réponse contacts cabinet reçue:', response.data);
+      
+      // Transformer les données pour correspondre aux types frontend (camelCase)
+      const transformedData = response.data.Data?.map((contact: any) => ({
+        id: contact.Id,
+        nom: contact.Nom,
+        prenom: contact.Prenom,
+        email: contact.Email,
+        telephone: contact.Telephone,
+        role: contact.Role,
+        idClient: contact.IdClient,
+        idCabinet: contact.IdCabinet,
+        createdAt: contact.CreatedAt,
+        updatedAt: contact.UpdatedAt,
+        emails: contact.Emails || [],
+        phones: contact.Phones || [],
+        roles: contact.Roles || [],
+        cabinetNom: contact.CabinetNom,
+        clientNom: contact.ClientNom
+      })) || [];
+      
+      return {
+        success: response.data.Success,
+        data: transformedData,
+        message: response.data.Message,
+        page: response.data.Page,
+        pageSize: response.data.PageSize,
+        totalCount: response.data.TotalCount,
+        totalPages: response.data.TotalPages,
+        hasNextPage: response.data.HasNextPage,
+        hasPreviousPage: response.data.HasPreviousPage
+      };
+    } catch (error: any) {
+      console.error('❌ Contact Service - Erreur récupération contacts cabinet:', error);
+      
+      return {
+        data: [],
+        success: false,
+        message: error.response?.data?.message || 'Erreur lors de la récupération des contacts du cabinet',
+        errors: error.response?.data?.errors,
+        page: 1,
+        pageSize: 10,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false
+      };
+    }
   },
 };

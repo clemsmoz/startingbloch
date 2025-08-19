@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using StartingBloch.Backend.DTOs;
 using StartingBloch.Backend.Services;
 using StartingBloch.Backend.Middleware;
+using StartingBloch.Backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace StartingBloch.Backend.Controllers;
 
@@ -45,19 +47,20 @@ public class ClientController : ControllerBase
 {
     // Service principal pour la logique métier des clients
     private readonly IClientService _clientService;
-    // Service spécialisé pour la gestion des utilisateurs et relations
-    private readonly IUserAdminService _userAdminService;
+    // Contexte de base de données pour requêtes directes (résolution dépendance circulaire)
+    private readonly StartingBlochDbContext _context;
 
     /// <summary>
     /// Constructeur du contrôleur de gestion des clients
     /// Injection des services métier pour l'accès aux données et la logique
+    /// Note: IUserAdminService supprimé pour résoudre la dépendance circulaire
     /// </summary>
     /// <param name="clientService">Service métier pour les opérations sur les clients</param>
-    /// <param name="userAdminService">Service pour la gestion des utilisateurs associés</param>
-    public ClientController(IClientService clientService, IUserAdminService userAdminService)
+    /// <param name="context">Contexte de base de données pour requêtes directes</param>
+    public ClientController(IClientService clientService, StartingBlochDbContext context)
     {
         _clientService = clientService;
-        _userAdminService = userAdminService;
+        _context = context;
     }
 
     /// <summary>
@@ -336,64 +339,6 @@ public class ClientController : ControllerBase
     }
 
     /// <summary>
-    /// Crée un nouveau client avec son compte utilisateur associé - Opération complexe réservée aux administrateurs
-    /// 
-    /// OPÉRATION ATOMIQUE COMPLEXE :
-    /// - Création simultanée du client et de son compte utilisateur
-    /// - Transaction globale : succès complet ou rollback total
-    /// - Configuration automatique des permissions et accès
-    /// - Génération sécurisée des identifiants et mots de passe
-    /// 
-    /// ORCHESTRATION DES SERVICES :
-    /// - Délégation au UserAdminController pour coordination
-    /// - Gestion des dépendances entre entités Client et User
-    /// - Synchronisation des données de référence
-    /// - Validation croisée des contraintes métier
-    /// 
-    /// SÉCURITÉ RENFORCÉE :
-    /// - Accès exclusivement réservé aux administrateurs
-    /// - Génération de mots de passe temporaires sécurisés
-    /// - Envoi d'invitations par email chiffré
-    /// - Audit complet de la création des accès
-    /// 
-    /// WORKFLOW AUTOMATISÉ :
-    /// - Création du client avec données complètes
-    /// - Génération du compte utilisateur associé
-    /// - Configuration des permissions par défaut
-    /// - Envoi automatique des informations de connexion
-    /// - Notification aux équipes support et commercial
-    /// 
-    /// NOTE TECHNIQUE :
-    /// Cette méthode redirige vers UserAdminController.CreateNewClientWithUser()
-    /// pour orchestrer la création coordonnée des deux entités.
-    /// </summary>
-    /// <param name="createClientWithUserDto">Données complètes client + utilisateur</param>
-    /// <returns>Redirection vers l'endpoint spécialisé UserAdmin</returns>
-    [HttpPost("with-user-account")]
-    [AdminOnly] // Restriction maximale : administrateurs uniquement
-    public Task<ActionResult<ApiResponse<UserDto>>> CreateClientWithUser(
-        [FromBody] CreateClientWithUserDto createClientWithUserDto)
-    {
-        // Validation préalable du modèle de données complexe
-        if (!ModelState.IsValid)
-        {
-            return Task.FromResult<ActionResult<ApiResponse<UserDto>>>(BadRequest(new ApiResponse<UserDto>
-            {
-                Success = false,
-                Message = "Données invalides",
-                Errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList()
-            }));
-        }
-
-        // Redirection vers le contrôleur spécialisé pour l'orchestration
-        // Cette approche garantit la cohérence des transactions complexes
-        return Task.FromResult<ActionResult<ApiResponse<UserDto>>>(RedirectToAction("CreateNewClientWithUser", "UserAdmin", createClientWithUserDto));
-    }
-
-    /// <summary>
     /// Met à jour les informations d'un client existant - Modification critique nécessitant des droits d'écriture
     /// 
     /// GESTION DES MODIFICATIONS :
@@ -433,7 +378,7 @@ public class ClientController : ControllerBase
     [WritePermission] // Permissions d'écriture obligatoires
     public async Task<ActionResult<ApiResponse<ClientDto>>> UpdateClient(
         int id, 
-        [FromBody] CreateClientDto updateClientDto)
+        [FromBody] UpdateClientDto updateClientDto)
     {
         // Validation préalable complète du modèle de données
         if (!ModelState.IsValid)
@@ -450,7 +395,7 @@ public class ClientController : ControllerBase
         }
 
         // Délégation de la mise à jour au service métier avec toutes les validations
-        var result = await _clientService.UpdateClientAsync(id, updateClientDto);
+    var result = await _clientService.UpdateClientAsync(id, updateClientDto);
         
         // Gestion des erreurs (client inexistant, contraintes violées, etc.)
         if (!result.Success)
@@ -541,6 +486,8 @@ public class ClientController : ControllerBase
     /// - Requête optimisée avec jointures efficaces
     /// - Cache des relations stables pour performance
     /// - Limitation automatique pour éviter les surcharges
+    /// 
+    /// NOTE TECHNIQUE : Requête directe pour éviter la dépendance circulaire
     /// </summary>
     /// <param name="id">Identifiant unique du client</param>
     /// <returns>Liste complète des utilisateurs associés au client</returns>
@@ -548,14 +495,57 @@ public class ClientController : ControllerBase
     [EmployeeOnly] // Restriction : employés pour administration des accès
     public async Task<ActionResult<ApiResponse<List<UserDto>>>> GetClientUsers(int id)
     {
-        // Délégation au service spécialisé pour gestion des utilisateurs
-        var result = await _userAdminService.GetUsersByClientAsync(id);
-        
-        // Gestion des erreurs (client inexistant, aucun utilisateur)
-        if (!result.Success)
-            return NotFound(result);
-            
-        return Ok(result);
+        try
+        {
+            // Vérification de l'existence du client
+            var clientExists = await _context.Clients.AnyAsync(c => c.Id == id);
+            if (!clientExists)
+            {
+                return NotFound(new ApiResponse<List<UserDto>>
+                {
+                    Success = false,
+                    Message = "Client non trouvé"
+                });
+            }
+
+            // Requête directe pour récupérer les utilisateurs du client
+            var users = await _context.Users
+                .Where(u => u.ClientId == id)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Role = u.Role,
+                    CanRead = u.CanRead,
+                    CanWrite = u.CanWrite,
+                    IsActive = u.IsActive,
+                    IsBlocked = u.IsBlocked,
+                    ClientId = u.ClientId,
+                    // FirstName et LastName n'existent pas dans le modèle User
+                    FirstName = string.Empty,
+                    LastName = string.Empty,
+                    CreatedAt = u.CreatedAt
+                    // UpdatedAt n'existe pas dans UserDto
+                })
+                .ToListAsync();
+
+            return Ok(new ApiResponse<List<UserDto>>
+            {
+                Success = true,
+                Data = users,
+                Message = $"{users.Count} utilisateur(s) trouvé(s) pour le client {id}"
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<List<UserDto>>
+            {
+                Success = false,
+                Message = "Erreur lors de la récupération des utilisateurs",
+                Errors = ex.Message
+            });
+        }
     }
 
     /// <summary>
@@ -584,6 +574,8 @@ public class ClientController : ControllerBase
     /// - Validation de configuration avant modifications
     /// - Alertes automatiques sur seuils définis
     /// - Optimisation des requêtes complexes
+    /// 
+    /// NOTE TECHNIQUE : Requête directe pour éviter la dépendance circulaire
     /// </summary>
     /// <param name="id">Identifiant unique du client</param>
     /// <returns>Nombre total d'utilisateurs associés au client</returns>
@@ -591,13 +583,39 @@ public class ClientController : ControllerBase
     [EmployeeOnly] // Restriction : employés pour administration
     public async Task<ActionResult<ApiResponse<int>>> GetClientUserCount(int id)
     {
-        // Délégation au service spécialisé pour comptage optimisé
-        var result = await _userAdminService.GetUserCountByClientAsync(id);
-        
-        // Gestion des erreurs (client inexistant)
-        if (!result.Success)
-            return NotFound(result);
-            
-        return Ok(result);
+        try
+        {
+            // Vérification de l'existence du client
+            var clientExists = await _context.Clients.AnyAsync(c => c.Id == id);
+            if (!clientExists)
+            {
+                return NotFound(new ApiResponse<int>
+                {
+                    Success = false,
+                    Message = "Client non trouvé"
+                });
+            }
+
+            // Requête directe optimisée pour compter les utilisateurs
+            var userCount = await _context.Users
+                .Where(u => u.ClientId == id)
+                .CountAsync();
+
+            return Ok(new ApiResponse<int>
+            {
+                Success = true,
+                Data = userCount,
+                Message = $"{userCount} utilisateur(s) associé(s) au client {id}"
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<int>
+            {
+                Success = false,
+                Message = "Erreur lors du comptage des utilisateurs",
+                Errors = ex.Message
+            });
+        }
     }
 }

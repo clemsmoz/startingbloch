@@ -387,8 +387,11 @@ public class UserAdminController : ControllerBase
     public async Task<ActionResult<ApiResponse<UserDto>>> CreateNewClientWithUser(
         [FromBody] CreateClientWithUserDto createClientWithUserDto)
     {
+        Console.WriteLine($"🎯 ENDPOINT APPELÉ - create-new-client-with-user: {createClientWithUserDto.NomClient}");
+        
         if (!ModelState.IsValid)
         {
+            Console.WriteLine("❌ ModelState invalide");
             return BadRequest(new ApiResponse<UserDto>
             {
                 Success = false,
@@ -583,6 +586,35 @@ public class UserAdminController : ControllerBase
         [FromQuery] DateTime? toDate = null)
     {
         var result = await _userAdminService.GetUserActivityAsync(userId, fromDate, toDate);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Assigne un utilisateur à un client spécifique (post-création)
+    /// </summary>
+    /// <param name="userId">Identifiant de l'utilisateur</param>
+    /// <param name="clientId">Identifiant du client</param>
+    /// <returns>Confirmation d'assignation</returns>
+    [HttpPost("user/{userId}/assign-client/{clientId}")]
+    public async Task<ActionResult<ApiResponse<bool>>> AssignUserToClient(int userId, int clientId)
+    {
+        var result = await _userAdminService.AssignUserToClientAsync(userId, clientId);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Retire l'association d'un utilisateur avec un client (post-création)
+    /// </summary>
+    /// <param name="userId">Identifiant de l'utilisateur</param>
+    /// <returns>Confirmation de retrait</returns>
+    [HttpPost("user/{userId}/remove-client")]
+    public async Task<ActionResult<ApiResponse<bool>>> RemoveUserFromClient(int userId)
+    {
+        var result = await _userAdminService.RemoveUserFromClientAsync(userId);
+        if (!result.Success)
+            return BadRequest(result);
         return Ok(result);
     }
 }

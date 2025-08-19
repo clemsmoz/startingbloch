@@ -5,21 +5,25 @@
  */
 
 import React, { useState } from 'react';
-import { Modal, Form, Input, Row, Col } from 'antd';
+import { Modal, Form, Input, Row, Col, message } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
 import { titulaireService } from '../../services';
-import type { CreateTitulaireDto } from '../../types';
+import type { CreateTitulaireDto, Titulaire } from '../../types';
 
 interface CreateTitulaireModalProps {
   visible: boolean;
   onCancel: () => void;
   onSuccess: (titulaire: any) => void;
+  existing?: Titulaire[];
+  onDuplicate?: (titulaire: any) => void;
 }
 
 const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
   visible,
   onCancel,
-  onSuccess
+  onSuccess,
+  existing = [],
+  onDuplicate
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -27,6 +31,25 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
+      // Détection doublon: par email si fourni, sinon par nom
+      const norm = (s?: string) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+      const email = norm(values.emailTitulaire);
+      const nom = norm(values.nomTitulaire);
+      const duplicate = existing.find(t => {
+        const tEmail = norm(t.emailTitulaire);
+        const tNom = norm(t.nomTitulaire);
+        if (email) return tEmail && tEmail === email;
+        return tNom === nom;
+      });
+
+      if (duplicate) {
+        message.info("Ce titulaire existe déjà, il a été sélectionné.");
+        onDuplicate?.(duplicate);
+        form.resetFields();
+        onCancel();
+        return;
+      }
+
       // Mapper les valeurs vers le format attendu par l'API
       const titulaireData: CreateTitulaireDto = {
         nomTitulaire: values.nomTitulaire,

@@ -119,9 +119,25 @@ public class UserAdminService : IUserAdminService
     /// <returns>Utilisateur créé avec client associé et rôles assignés</returns>
     public async Task<ApiResponse<UserDto>> CreateNewClientWithUserAsync(CreateClientWithUserDto createDto)
     {
+        Console.WriteLine($"🚀 DEBUT CreateNewClientWithUserAsync - Client: {createDto.NomClient}, Email: {createDto.UserEmail}");
+        
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
+            // Vérifier l'existence du rôle 'client' dans la table Roles
+            var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == "client");
+            if (clientRole == null)
+            {
+                Console.WriteLine("❌ Rôle 'client' introuvable dans la table Roles");
+                await transaction.RollbackAsync();
+                return new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Le rôle 'client' est absent de la table des rôles. Veuillez créer ce rôle avant de créer un compte client."
+                };
+            }
+
+            Console.WriteLine("📝 Étape 1: Création du client");
             // 1. Créer le client d'abord
             var clientDto = new CreateClientDto
             {
@@ -138,8 +154,11 @@ public class UserAdminService : IUserAdminService
             };
 
             var clientResult = await _clientService.CreateClientAsync(clientDto);
+            Console.WriteLine($"✅ Client créé - Success: {clientResult.Success}, ID: {clientResult.Data?.Id}");
+            
             if (!clientResult.Success || clientResult.Data == null)
             {
+                Console.WriteLine($"❌ Erreur création client: {clientResult.Message}");
                 await transaction.RollbackAsync();
                 return new ApiResponse<UserDto>
                 {
@@ -149,34 +168,35 @@ public class UserAdminService : IUserAdminService
                 };
             }
 
+            Console.WriteLine("👤 Étape 2: Création de l'utilisateur");
             // 2. Créer l'utilisateur lié au client
             var user = new User
             {
                 Username = createDto.Username,
                 Email = createDto.UserEmail,
                 Password = BCrypt.Net.BCrypt.HashPassword(createDto.Password), // Hash du mot de passe
-                Role = "client",
+                Role = clientRole.Name, // Utiliser la valeur canonique depuis la table Roles
                 CanWrite = createDto.CanWrite,
                 IsActive = createDto.IsActive,
                 ClientId = clientResult.Data.Id
             };
 
+            Console.WriteLine($"📊 Données utilisateur - Username: {user.Username}, Email: {user.Email}, ClientId: {user.ClientId}");
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+            
+            Console.WriteLine($"✅ Utilisateur créé - ID: {user.Id}");
 
-            // 3. Assigner le rôle client
-            var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "client");
-            if (clientRole != null)
+            // 3. Assigner le rôle client (existe garanti ci-dessus)
+            var userRole = new UserRole
             {
-                var userRole = new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = clientRole.Id,
-                    ClientId = clientResult.Data.Id
-                };
-                _context.UserRoles.Add(userRole);
-                await _context.SaveChangesAsync();
-            }
+                UserId = user.Id,
+                RoleId = clientRole.Id,
+                ClientId = clientResult.Data.Id
+            };
+            _context.UserRoles.Add(userRole);
+            await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
 
@@ -224,6 +244,17 @@ public class UserAdminService : IUserAdminService
     {
         try
         {
+            // Vérifier l'existence du rôle 'client' dans la table Roles avant toute création
+            var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == "client");
+            if (clientRole == null)
+            {
+                return new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = "Le rôle 'client' est absent de la table des rôles. Veuillez créer ce rôle avant de créer un compte client."
+                };
+            }
+
             // Vérifier que le client existe
             var client = await _context.Clients.FindAsync(clientId);
             if (client == null)
@@ -252,7 +283,7 @@ public class UserAdminService : IUserAdminService
                 Username = createUserDto.Username,
                 Email = createUserDto.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
-                Role = "client",
+                Role = clientRole.Name, // Utiliser la valeur canonique depuis la table Roles
                 CanWrite = createUserDto.CanWrite,
                 IsActive = createUserDto.IsActive,
                 ClientId = clientId
@@ -261,19 +292,15 @@ public class UserAdminService : IUserAdminService
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Assigner le rôle client
-            var clientRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "client");
-            if (clientRole != null)
+            // Assigner le rôle client (existe garanti ci-dessus)
+            var userRole = new UserRole
             {
-                var userRole = new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = clientRole.Id,
-                    ClientId = clientId
-                };
-                _context.UserRoles.Add(userRole);
-                await _context.SaveChangesAsync();
-            }
+                UserId = user.Id,
+                RoleId = clientRole.Id,
+                ClientId = clientId
+            };
+            _context.UserRoles.Add(userRole);
+            await _context.SaveChangesAsync();
 
             var userDto = new UserDto
             {
@@ -440,6 +467,14 @@ public class UserAdminService : IUserAdminService
                 throw new InvalidOperationException("Un utilisateur avec ce nom d'utilisateur ou cet email existe déjà");
             }
 
+            // Valider l'existence du rôle fourni dans la table Roles et normaliser le nom
+            var requestedRole = (createUserDto.Role ?? "user").Trim();
+            var roleEntity = await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == requestedRole.ToLower());
+            if (roleEntity == null)
+            {
+                throw new InvalidOperationException($"Le rôle '{requestedRole}' est introuvable dans la table des rôles");
+            }
+
             var user = new User
             {
                 Username = createUserDto.Username,
@@ -447,7 +482,7 @@ public class UserAdminService : IUserAdminService
                 Prenom = createUserDto.FirstName,
                 Nom = createUserDto.LastName,
                 Password = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
-                Role = createUserDto.Role,
+                Role = roleEntity.Name, // utiliser la valeur canonique
                 CanRead = createUserDto.CanRead,
                 CanWrite = createUserDto.CanWrite,
                 IsActive = createUserDto.IsActive,
@@ -639,7 +674,13 @@ public class UserAdminService : IUserAdminService
             }
             if (!string.IsNullOrWhiteSpace(updateUserDto.Role))
             {
-                user.Role = updateUserDto.Role;
+                var newRoleRequested = updateUserDto.Role.Trim();
+                var roleEntity = await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == newRoleRequested.ToLower());
+                if (roleEntity == null)
+                {
+                    throw new InvalidOperationException($"Le rôle '{newRoleRequested}' est introuvable dans la table des rôles");
+                }
+                user.Role = roleEntity.Name; // normaliser le nom du rôle
             }
             if (updateUserDto.CanWrite.HasValue)
             {
@@ -700,7 +741,8 @@ public class UserAdminService : IUserAdminService
     {
         try
         {
-            if (role != "admin" && role != "user")
+            var normalized = (role ?? string.Empty).Trim().ToLower();
+            if (normalized != "admin" && normalized != "user")
             {
                 return new ApiResponse<UserDto>
                 {
@@ -719,12 +761,23 @@ public class UserAdminService : IUserAdminService
                 };
             }
 
+            // Vérifier que le rôle existe dans la table Roles
+            var roleEntity = await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == normalized);
+            if (roleEntity == null)
+            {
+                return new ApiResponse<UserDto>
+                {
+                    Success = false,
+                    Message = $"Le rôle '{role}' est introuvable dans la table des rôles"
+                };
+            }
+
             var user = new User
             {
                 Username = createUserDto.Username,
                 Email = createUserDto.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
-                Role = role,
+                Role = roleEntity.Name, // utiliser nom canonique depuis Roles
                 CanWrite = createUserDto.CanWrite,
                 IsActive = createUserDto.IsActive,
                 ClientId = null // Les employés ne sont pas liés à un client
@@ -733,19 +786,15 @@ public class UserAdminService : IUserAdminService
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Assigner le rôle
-            var roleEntity = await _context.Roles.FirstOrDefaultAsync(r => r.Name == role);
-            if (roleEntity != null)
+            // Assigner le rôle (existe garanti)
+            var userRole = new UserRole
             {
-                var userRole = new UserRole
-                {
-                    UserId = user.Id,
-                    RoleId = roleEntity.Id,
-                    ClientId = null
-                };
-                _context.UserRoles.Add(userRole);
-                await _context.SaveChangesAsync();
-            }
+                UserId = user.Id,
+                RoleId = roleEntity.Id,
+                ClientId = null
+            };
+            _context.UserRoles.Add(userRole);
+            await _context.SaveChangesAsync();
 
             var userDto = new UserDto
             {
@@ -1051,7 +1100,7 @@ public class UserAdminService : IUserAdminService
         {
             var employees = await _context.Users
                 .Include(u => u.Client)
-                .Where(u => u.Role == "admin" || u.Role == "user")
+                .Where(u => u.Role.ToLower() == "admin" || u.Role.ToLower() == "user")
                 .ToListAsync();
 
             var employeeDtos = employees.Select(u => new UserDto
@@ -1095,7 +1144,7 @@ public class UserAdminService : IUserAdminService
         {
             var clientUsers = await _context.Users
                 .Include(u => u.Client)
-                .Where(u => u.Role == "client" && u.ClientId != null)
+                .Where(u => u.Role.ToLower() == "client" && u.ClientId != null)
                 .ToListAsync();
 
             var clientUserDtos = clientUsers.Select(u => new UserDto

@@ -118,6 +118,7 @@ using StartingBloch.Backend.Middleware;
 using StartingBloch.Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AspNetCoreRateLimit;
@@ -195,6 +196,9 @@ public static class ServiceCollectionExtensions
         // SERVICES SÉCURITÉ (Scoped)
         // ============================================================================================
         
+    // Accès au contexte HTTP (pour récupérer l'utilisateur courant dans le DbContext)
+    services.AddHttpContextAccessor();
+
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPasswordValidationService, PasswordValidationService>();
@@ -291,7 +295,17 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
             options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
+            
+            // Politique pour admin OU propriétaire de ressource
+            options.AddPolicy("AdminOrOwner", policy => policy.Requirements.Add(new AdminOrOwnerRequirement()));
+            
+            // Politique pour droits d'écriture granulaires
+            options.AddPolicy("WritePermission", policy => policy.Requirements.Add(new WritePermissionRequirement()));
         });
+
+        // Enregistrement des gestionnaires d'autorisation personnalisés
+        services.AddScoped<IAuthorizationHandler, AdminOrOwnerHandler>();
+        services.AddScoped<IAuthorizationHandler, WritePermissionHandler>();
 
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 

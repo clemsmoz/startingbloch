@@ -128,4 +128,27 @@ public interface ICabinetService
     /// <param name="country">Nom pays pour filtrage géographique</param>
     /// <returns>Liste cabinets pays spécifique avec détails</returns>
     Task<ApiResponse<List<CabinetDto>>> GetCabinetsByCountryAsync(string country);
+
+    /// <summary>
+    /// Récupère la liste des cabinets liés à un client donné via la table de jonction.
+    /// </summary>
+    /// <param name="clientId">Identifiant du client</param>
+    /// <returns>Liste des cabinets du client</returns>
+    Task<ApiResponse<List<CabinetDto>>> GetCabinetsByClientAsync(int clientId);
+
+    /// <summary>
+    /// Crée un cabinet et le lie immédiatement au client spécifié.
+    /// </summary>
+    /// <param name="clientId">Identifiant du client propriétaire</param>
+    /// <param name="createCabinetDto">Données de création du cabinet</param>
+    /// <returns>Cabinet créé</returns>
+    Task<ApiResponse<CabinetDto>> CreateCabinetForClientAsync(int clientId, CreateCabinetDto createCabinetDto);
+
+    /// <summary>
+    /// Lie un cabinet existant au client spécifié s'il n'est pas déjà lié.
+    /// </summary>
+    /// <param name="clientId">Identifiant du client</param>
+    /// <param name="cabinetId">Identifiant du cabinet à lier</param>
+    /// <returns>Confirmation de liaison</returns>
+    Task<ApiResponse<bool>> LinkExistingCabinetToClientAsync(int clientId, int cabinetId);
 }

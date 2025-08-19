@@ -30,10 +30,12 @@ export const config = {
       contacts: '/api/contact',
       cabinets: '/api/cabinet',
       inventeurs: '/api/inventeur',
+  deposants: '/api/deposant',
       titulaires: '/api/titulaire',
       logs: '/api/log',
       pays: '/api/pays',
       statuts: '/api/statuts',
+  roles: '/api/roles',
     },
   },
 

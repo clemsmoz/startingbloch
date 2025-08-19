@@ -34,19 +34,14 @@ export const statutsService = {
     try {
       console.log('📊 Statuts Service - Récupération de tous les statuts...');
       
-      const response = await api.get('/statuts');
+  const response = await api.get(config.api.endpoints.statuts);
       
       console.log('✅ Statuts Service - Réponse reçue:', response.data);
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((statut: any) => ({
         id: statut.Id,
-        nomStatut: statut.NomStatut,
-        descriptionStatut: statut.DescriptionStatut,
-        couleurStatut: statut.CouleurStatut,
-        ordreStatut: statut.OrdreStatut,
-        createdAt: statut.CreatedAt,
-        updatedAt: statut.UpdatedAt
+        description: statut.Description ?? statut.Nom ?? statut.DescriptionStatut ?? statut.NomStatut,
       })) || [];
       
       console.log('🔄 Statuts Service - Données transformées:', transformedData);
@@ -83,7 +78,7 @@ export const statutsService = {
   // Récupérer un statut par son ID
   getById: async (id: number): Promise<ApiResponse<Statuts>> => {
     try {
-      const response = await api.get(`/statuts/${id}`);
+  const response = await api.get(`${config.api.endpoints.statuts}/${id}`);
       return {
         data: response.data.data || response.data,
         success: true,
@@ -102,7 +97,7 @@ export const statutsService = {
   // Créer un nouveau statut
   create: async (statutsData: CreateStatutsDto): Promise<ApiResponse<Statuts>> => {
     try {
-      const response = await api.post('/statuts', {
+  const response = await api.post(config.api.endpoints.statuts, {
         description: statutsData.description
       });
       return {
@@ -123,7 +118,7 @@ export const statutsService = {
   // Mettre à jour un statut existant
   update: async (statutsData: UpdateStatutsDto): Promise<ApiResponse<Statuts>> => {
     try {
-      const response = await api.put(`/statuts/${statutsData.id}`, {
+  const response = await api.put(`${config.api.endpoints.statuts}/${statutsData.id}`, {
         description: statutsData.description
       });
       return {
@@ -144,7 +139,7 @@ export const statutsService = {
   // Supprimer un statut
   delete: async (id: number): Promise<ApiResponse<void>> => {
     try {
-      await api.delete(`/statuts/${id}`);
+  await api.delete(`${config.api.endpoints.statuts}/${id}`);
       return {
         data: undefined,
         success: true,

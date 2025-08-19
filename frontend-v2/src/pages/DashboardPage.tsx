@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Typography, Space, Spin } from 'antd';
+import { Card, Row, Col, Statistic, Typography, Space } from 'antd';
 import {
   UserOutlined,
   FileProtectOutlined,
@@ -61,18 +61,23 @@ const DashboardPage: React.FC = () => {
   const loadStats = async () => {
     setLoading(true);
     try {
+      const storedUser = sessionStorage.getItem('startingbloch_user');
+      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
       const [clientsResponse, brevetsResponse, contactsResponse, cabinetsResponse] = await Promise.all([
         clientService.getAll(),
         brevetService.getAll(),
         contactService.getAll(),
-        cabinetService.getAll()
+        role === 'client' ? (async () => {
+          const res = await cabinetService.getMine();
+          return { success: res.success, data: res.data } as any;
+        })() : cabinetService.getAll()
       ]);
 
       setStats({
         clients: clientsResponse.success ? (clientsResponse.data?.length || 0) : 0,
         brevets: brevetsResponse.success ? (brevetsResponse.data?.length || 0) : 0,
         contacts: contactsResponse.success ? (contactsResponse.data?.length || 0) : 0,
-        cabinets: cabinetsResponse.success ? (cabinetsResponse.data?.length || 0) : 0
+  cabinets: cabinetsResponse.success ? (cabinetsResponse.data?.length || 0) : 0
       });
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);

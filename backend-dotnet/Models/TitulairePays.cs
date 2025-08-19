@@ -61,6 +61,12 @@ public class TitulairePays
     public int IdPays { get; set; }
 
     /// <summary>
+    /// Référence optionnelle vers le brevet pour contextualiser la liaison
+    /// </summary>
+    [Column("id_brevet")]
+    public int? IdBrevet { get; set; }
+
+    /// <summary>
     /// Date d'établissement de la relation titulaire-pays
     /// Traçabilité des restructurations et optimisations fiscales
     /// Crucial pour historique des revenus de PI
@@ -85,4 +91,10 @@ public class TitulairePays
     /// </summary>
     [ForeignKey("IdPays")]
     public virtual Pays Pays { get; set; } = null!;
+
+    /// <summary>
+    /// Brevet concerné (optionnel)
+    /// </summary>
+    [ForeignKey("IdBrevet")]
+    public virtual Brevet? Brevet { get; set; }
 }

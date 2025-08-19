@@ -492,6 +492,10 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("createdAt");
 
+                    b.Property<int?>("IdBrevet")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id_brevet");
+
                     b.Property<int>("IdDeposant")
                         .HasColumnType("INTEGER")
                         .HasColumnName("id_deposant");
@@ -501,6 +505,8 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnName("id_pays");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdBrevet");
 
                     b.HasIndex("IdDeposant");
 
@@ -585,6 +591,92 @@ namespace StartingBloch.Backend.Migrations
                     b.ToTable("InformationsDepot");
                 });
 
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CabinetId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("cabinet_id");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("createdAt");
+
+                    b.Property<int>("InformationDepotId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("information_depot_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CabinetId");
+
+                    b.HasIndex("InformationDepotId", "CabinetId", "Category")
+                        .IsUnique()
+                        .HasDatabaseName("IX_InfoDepotCab_Unique");
+
+                    b.ToTable("InformationDepotCabinets");
+                });
+
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinetContact", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ContactId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("contact_id");
+
+                    b.Property<int>("InformationDepotCabinetId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("information_depot_cabinet_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContactId");
+
+                    b.HasIndex("InformationDepotCabinetId", "ContactId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_InfoDepotCabContact_Unique");
+
+                    b.ToTable("InformationDepotCabinetContacts");
+                });
+
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinetRole", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<int>("InformationDepotCabinetId")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("information_depot_cabinet_id");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("role");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InformationDepotCabinetId", "Role")
+                        .IsUnique()
+                        .HasDatabaseName("IX_InfoDepotCabRole_Unique");
+
+                    b.ToTable("InformationDepotCabinetRoles");
+                });
+
             modelBuilder.Entity("StartingBloch.Backend.Models.Inventeur", b =>
                 {
                     b.Property<int>("Id")
@@ -641,6 +733,10 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("createdAt");
 
+                    b.Property<int?>("IdBrevet")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id_brevet");
+
                     b.Property<int>("IdInventeur")
                         .HasColumnType("INTEGER")
                         .HasColumnName("id_inventeur");
@@ -650,6 +746,8 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnName("id_pays");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdBrevet");
 
                     b.HasIndex("IdInventeur");
 
@@ -845,26 +943,26 @@ namespace StartingBloch.Backend.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4015),
+                            CreatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1806),
                             Description = "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs",
                             Name = "admin",
-                            UpdatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4017)
+                            UpdatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1808)
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4020),
+                            CreatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1811),
                             Description = "Employé StartingBloch - Utilisateur standard avec droits configurables",
                             Name = "user",
-                            UpdatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4020)
+                            UpdatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1811)
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4021),
+                            CreatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1812),
                             Description = "Client StartingBloch - Accès restreint à ses propres brevets uniquement",
                             Name = "client",
-                            UpdatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4021)
+                            UpdatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1813)
                         });
                 });
 
@@ -950,6 +1048,10 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("createdAt");
 
+                    b.Property<int?>("IdBrevet")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id_brevet");
+
                     b.Property<int>("IdPays")
                         .HasColumnType("INTEGER")
                         .HasColumnName("id_pays");
@@ -959,6 +1061,8 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnName("id_titulaire");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdBrevet");
 
                     b.HasIndex("IdPays");
 
@@ -1228,6 +1332,11 @@ namespace StartingBloch.Backend.Migrations
 
             modelBuilder.Entity("StartingBloch.Backend.Models.DeposantPays", b =>
                 {
+                    b.HasOne("StartingBloch.Backend.Models.Brevet", "Brevet")
+                        .WithMany()
+                        .HasForeignKey("IdBrevet")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("StartingBloch.Backend.Models.Deposant", "Deposant")
                         .WithMany("DeposantPays")
                         .HasForeignKey("IdDeposant")
@@ -1239,6 +1348,8 @@ namespace StartingBloch.Backend.Migrations
                         .HasForeignKey("IdPays")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Brevet");
 
                     b.Navigation("Deposant");
 
@@ -1268,8 +1379,62 @@ namespace StartingBloch.Backend.Migrations
                     b.Navigation("Statuts");
                 });
 
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinet", b =>
+                {
+                    b.HasOne("StartingBloch.Backend.Models.Cabinet", "Cabinet")
+                        .WithMany()
+                        .HasForeignKey("CabinetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StartingBloch.Backend.Models.InformationDepot", "InformationDepot")
+                        .WithMany("InformationDepotCabinets")
+                        .HasForeignKey("InformationDepotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cabinet");
+
+                    b.Navigation("InformationDepot");
+                });
+
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinetContact", b =>
+                {
+                    b.HasOne("StartingBloch.Backend.Models.Contact", "Contact")
+                        .WithMany()
+                        .HasForeignKey("ContactId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StartingBloch.Backend.Models.InformationDepotCabinet", "InformationDepotCabinet")
+                        .WithMany("Contacts")
+                        .HasForeignKey("InformationDepotCabinetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Contact");
+
+                    b.Navigation("InformationDepotCabinet");
+                });
+
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinetRole", b =>
+                {
+                    b.HasOne("StartingBloch.Backend.Models.InformationDepotCabinet", "InformationDepotCabinet")
+                        .WithMany("Roles")
+                        .HasForeignKey("InformationDepotCabinetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InformationDepotCabinet");
+                });
+
             modelBuilder.Entity("StartingBloch.Backend.Models.InventeurPays", b =>
                 {
+                    b.HasOne("StartingBloch.Backend.Models.Brevet", "Brevet")
+                        .WithMany()
+                        .HasForeignKey("IdBrevet")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("StartingBloch.Backend.Models.Inventeur", "Inventeur")
                         .WithMany("InventeurPays")
                         .HasForeignKey("IdInventeur")
@@ -1281,6 +1446,8 @@ namespace StartingBloch.Backend.Migrations
                         .HasForeignKey("IdPays")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Brevet");
 
                     b.Navigation("Inventeur");
 
@@ -1298,6 +1465,11 @@ namespace StartingBloch.Backend.Migrations
 
             modelBuilder.Entity("StartingBloch.Backend.Models.TitulairePays", b =>
                 {
+                    b.HasOne("StartingBloch.Backend.Models.Brevet", "Brevet")
+                        .WithMany()
+                        .HasForeignKey("IdBrevet")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("StartingBloch.Backend.Models.Pays", "Pays")
                         .WithMany("TitulairePays")
                         .HasForeignKey("IdPays")
@@ -1309,6 +1481,8 @@ namespace StartingBloch.Backend.Migrations
                         .HasForeignKey("IdTitulaire")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Brevet");
 
                     b.Navigation("Pays");
 
@@ -1391,6 +1565,18 @@ namespace StartingBloch.Backend.Migrations
                     b.Navigation("BrevetDeposants");
 
                     b.Navigation("DeposantPays");
+                });
+
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepot", b =>
+                {
+                    b.Navigation("InformationDepotCabinets");
+                });
+
+            modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinet", b =>
+                {
+                    b.Navigation("Contacts");
+
+                    b.Navigation("Roles");
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Inventeur", b =>

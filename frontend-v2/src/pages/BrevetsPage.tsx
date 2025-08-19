@@ -18,7 +18,9 @@ import {
   Dropdown,
   MenuProps,
   Tooltip,
-  Avatar
+  Card,
+  Descriptions,
+  
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,7 +30,7 @@ import {
   MoreOutlined,
   ExportOutlined,
   FileProtectOutlined,
-  FlagOutlined
+  
 } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { motion } from 'framer-motion';
@@ -38,7 +40,7 @@ import { PageHeader, DataTable, SearchInput } from '../components/common';
 import { AddBrevetModal, EditBrevetModal } from '../components/modals';
 
 // Services
-import { brevetService, statutService } from '../services';
+import { brevetService } from '../services';
 
 // Types
 import type { Brevet } from '../types';
@@ -50,41 +52,53 @@ const BrevetsPage: React.FC = () => {
   const [brevets, setBrevets] = useState<Brevet[]>([]);
   const [allBrevets, setAllBrevets] = useState<Brevet[]>([]); // Stockage de tous les brevets
   const [loading, setLoading] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const [selectedBrevet, setSelectedBrevet] = useState<Brevet | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [brevetToEdit, setBrevetToEdit] = useState<Brevet | null>(null);
-  const [statuts, setStatuts] = useState<Array<{text: string; value: string}>>([]);
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  
   
   const { addNotification } = useNotificationStore();
 
-  // Fonction pour obtenir l'emoji du drapeau du pays
-  const getFlagEmoji = (codeIso?: string): string => {
-    if (!codeIso || codeIso.length !== 2) return '🏳️';
+  // Fonction pour obtenir l'image du drapeau du pays (x2)
+  const getFlagImage = (codeIso?: string): React.ReactNode => {
+    if (!codeIso || codeIso.length !== 2) {
+      return <span style={{ fontSize: 24, lineHeight: '32px' }}>🏳️</span>;
+    }
     
-    const flagEmojis: { [key: string]: string } = {
-      'FR': '🇫🇷', 'DE': '🇩🇪', 'GB': '🇬🇧', 'US': '🇺🇸', 'IT': '🇮🇹', 
-      'ES': '🇪🇸', 'NL': '🇳🇱', 'BE': '🇧🇪', 'CH': '🇨🇭', 'AT': '🇦🇹',
-      'SE': '🇸🇪', 'DK': '🇩🇰', 'FI': '🇫🇮', 'NO': '🇳🇴', 'PL': '🇵🇱',
-      'CZ': '🇨🇿', 'HU': '🇭🇺', 'SK': '🇸🇰', 'SI': '🇸🇮', 'HR': '🇭🇷',
-      'RO': '🇷🇴', 'BG': '🇧🇬', 'GR': '🇬🇷', 'CY': '🇨🇾', 'MT': '🇲🇹',
-      'LU': '🇱🇺', 'IE': '🇮🇪', 'PT': '🇵🇹', 'EE': '🇪🇪', 'LV': '🇱🇻',
-      'LT': '🇱🇹', 'CA': '🇨🇦', 'AU': '🇦🇺', 'JP': '🇯🇵', 'KR': '🇰🇷',
-      'CN': '🇨🇳', 'IN': '🇮🇳', 'BR': '🇧🇷', 'MX': '🇲🇽', 'AR': '🇦🇷',
-      'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪', 'VE': '🇻🇪', 'UY': '🇺🇾',
-      'RU': '🇷🇺', 'TR': '🇹🇷', 'IL': '🇮🇱', 'SA': '🇸🇦', 'AE': '🇦🇪',
-      'EG': '🇪🇬', 'ZA': '🇿🇦', 'MA': '🇲🇦', 'TN': '🇹🇳', 'DZ': '🇩🇿'
-    };
-    
-    return flagEmojis[codeIso.toUpperCase()] || '🏳️';
+    try {
+      // Utiliser les images png40px depuis le dossier assets
+      const flagSrc = `/src/assets/png40px/${codeIso.toLowerCase()}.png`;
+      return (
+        <img 
+          src={flagSrc} 
+          alt={`Drapeau ${codeIso}`}
+          style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: 4, boxShadow: '0 0 0 1px rgba(0,0,0,0.06)' }}
+          onError={(e) => {
+            // Fallback vers l'emoji si l'image n'existe pas
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    } catch (error) {
+      return <span style={{ fontSize: 24, lineHeight: '32px' }}>🏳️</span>;
+    }
+  };
+
+  // Helpers rôles
+  const capitalizeRole = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+  const roleColor = (r: string) => {
+    const rl = (r || '').toLowerCase();
+    if (rl === 'premier') return 'gold';
+    if (rl === 'deuxieme' || rl === 'deuxième') return 'geekblue';
+    if (rl === 'troisieme' || rl === 'troisième') return 'purple';
+    return 'default';
   };
 
   // Fonction pour obtenir les couleurs cohérentes des statuts
@@ -143,46 +157,6 @@ const BrevetsPage: React.FC = () => {
     return 'default';
   };
 
-  // Fonction utilitaire pour les couleurs de statut (garde l'ancienne pour compatibilité)
-  const getStatusColor = (statut?: string): string => {
-    switch (statut) {
-      case 'Actif': return 'green';
-      case 'En cours': return 'blue';
-      case 'Accordé': return 'green';
-      case 'Expiré': return 'red';
-      case 'Rejeté': return 'red';
-      case 'Abandonné': return 'orange';
-      default: return 'default';
-    }
-  };
-
-  // Charger les statuts depuis l'API
-  const loadStatuts = async () => {
-    try {
-      const response = await statutService.getAll();
-      if (response.success && response.data) {
-        // Transformer les statuts pour les filtres
-        const statutFilters = response.data.map(statut => ({
-          text: statut.nomStatut,
-          value: statut.nomStatut
-        }));
-        setStatuts(statutFilters);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des statuts:', error);
-      // En cas d'erreur, utiliser des statuts par défaut
-      setStatuts([
-        { text: 'Actif', value: 'Actif' },
-        { text: 'En cours', value: 'En cours' },
-        { text: 'Accordé', value: 'Accordé' },
-        { text: 'Expiré', value: 'Expiré' },
-        { text: 'Rejeté', value: 'Rejeté' },
-        { text: 'Suspendu', value: 'Suspendu' },
-        { text: 'Abandonné', value: 'Abandonné' },
-      ]);
-    }
-  };
-
   // Charger les brevets avec pagination
   const loadBrevets = async (page: number = currentPage, size: number = pageSize) => {
     setLoading(true);
@@ -192,7 +166,6 @@ const BrevetsPage: React.FC = () => {
         setBrevets(response.data);
         setAllBrevets(response.data); // Stocker tous les brevets pour le filtrage local
         setTotalCount(response.totalCount || 0);
-        setTotalPages(response.totalPages || 0);
         setCurrentPage(response.page || page);
       }
     } catch (error) {
@@ -284,7 +257,6 @@ const BrevetsPage: React.FC = () => {
 
   useEffect(() => {
     loadBrevets();
-    loadStatuts(); // Charger aussi les statuts au démarrage
   }, []);
 
   // Gestionnaire de changement de pagination
@@ -292,13 +264,11 @@ const BrevetsPage: React.FC = () => {
     const newPageSize = size || pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
-    loadBrevets(page, newPageSize);
+  loadBrevets(page, newPageSize);
   };
 
   // Recherche locale en temps réel
   const handleSearch = (value: string) => {
-    setSearchValue(value);
-    
     if (!value.trim()) {
       // Si recherche vide, afficher tous les brevets
       setBrevets(allBrevets);
@@ -375,33 +345,10 @@ const BrevetsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Numéro',
+      title: 'référence famille',
       dataIndex: 'numeroBrevet',
       key: 'numeroBrevet',
       width: 120,
-    },
-    {
-      title: 'Statut',
-      dataIndex: 'statutBrevet',
-      key: 'statutBrevet',
-      render: (statut: string) => {
-        console.log('🎯 Statut reçu:', statut); // Debug log
-        // Utiliser la fonction getStatutColor existante pour une cohérence visuelle
-        return <Tag color={getStatutColor(statut)}>{statut || 'Non défini'}</Tag>;
-      },
-      filters: statuts.length > 0 ? statuts : [
-        { text: 'Actif', value: 'Actif' },
-        { text: 'En cours', value: 'En cours' },
-        { text: 'Accordé', value: 'Accordé' },
-        { text: 'Expiré', value: 'Expiré' },
-        { text: 'Rejeté', value: 'Rejeté' },
-        { text: 'Suspendu', value: 'Suspendu' },
-        { text: 'Abandonné', value: 'Abandonné' },
-      ],
-      onFilter: (value, record) => {
-        console.log('🔍 Filtrage statut:', value, 'Record:', record.statutBrevet); // Debug log
-        return record.statutBrevet === value;
-      },
     },
     {
       title: 'Actions',
@@ -515,24 +462,24 @@ const BrevetsPage: React.FC = () => {
           selectedBrevet && (
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               {/* Informations générales */}
-              <div>
-                <h3>📋 Informations générales</h3>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div><strong>Référence:</strong> {selectedBrevet.numeroBrevet || 'Non renseigné'}</div>
-                  <div><strong>Titre:</strong> {selectedBrevet.titreBrevet || 'Non renseigné'}</div>
-                  <div><strong>Description:</strong> {selectedBrevet.descriptionBrevet || 'Non renseignée'}</div>
-                  <div><strong>Classes:</strong> {selectedBrevet.classesBrevet || 'Non renseignées'}</div>
-                  <div><strong>Date de création:</strong> {new Date(selectedBrevet.createdAt).toLocaleDateString('fr-FR')}</div>
-                </Space>
-              </div>
+              <Card title="📋 Informations générales" size="small">
+                <Descriptions bordered size="small" column={1}>
+                  <Descriptions.Item label="Référence famille">{selectedBrevet.numeroBrevet || 'Non renseigné'}</Descriptions.Item>
+                  <Descriptions.Item label="Titre">{selectedBrevet.titreBrevet || 'Non renseigné'}</Descriptions.Item>
+                  {selectedBrevet.descriptionBrevet && (
+                    <Descriptions.Item label="Description">{selectedBrevet.descriptionBrevet}</Descriptions.Item>
+                  )}
+                  <Descriptions.Item label="Date d'ajout au portefeuille">{new Date(selectedBrevet.createdAt).toLocaleDateString('fr-FR')}</Descriptions.Item>
+                </Descriptions>
+              </Card>
 
               {/* Clients */}
               {selectedBrevet.clients && selectedBrevet.clients.length > 0 && (
                 <div>
                   <h3>🏢 Clients ({selectedBrevet.clients.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {selectedBrevet.clients.map((client: any, index: number) => (
-                      <div key={index} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                    {selectedBrevet.clients.map((client: any) => (
+                      <div key={client.Id || client.ReferenceClient || `${client.NomClient}-${client.EmailClient}`} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
                         <div><strong>{client.NomClient}</strong> ({client.ReferenceClient})</div>
                         <div>📧 {client.EmailClient}</div>
                         <div>📞 {client.TelephoneClient}</div>
@@ -548,12 +495,21 @@ const BrevetsPage: React.FC = () => {
                 <div>
                   <h3>👨‍🔬 Inventeurs ({selectedBrevet.inventeurs.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {selectedBrevet.inventeurs.map((inventeur: any, index: number) => (
-                      <div key={index} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                    {selectedBrevet.inventeurs.map((inventeur: any) => (
+                      <div key={inventeur.Id || `${inventeur.Nom}-${inventeur.Prenom}-${inventeur.Email || ''}`}
+                           style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
                         <div><strong>{inventeur.Prenom} {inventeur.Nom}</strong></div>
                         <div>📧 {inventeur.Email}</div>
                         {inventeur.Pays && inventeur.Pays.length > 0 && (
-                          <div>🌍 {inventeur.Pays.map((pays: any) => pays.NomPays || pays.nom).join(', ')}</div>
+                          <div style={{ marginTop: 4 }}>
+                            {inventeur.Pays.map((pays: any) => (
+                              <Tag key={pays.Id || pays.CodeIso || pays.CodePays || pays.NomPays || pays.NomFrFr}
+                                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span>{getFlagImage(pays.CodeIso || pays.CodePays)}</span>
+                                <span>{pays.NomPays || pays.NomFrFr || 'Pays'}</span>
+                              </Tag>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
@@ -566,12 +522,21 @@ const BrevetsPage: React.FC = () => {
                 <div>
                   <h3>📝 Déposants ({selectedBrevet.deposants.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {selectedBrevet.deposants.map((deposant: any, index: number) => (
-                      <div key={deposant.Id || index} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                    {selectedBrevet.deposants.map((deposant: any) => (
+                      <div key={deposant.Id || `${deposant.Nom}-${deposant.Email || ''}`}
+                           style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
                         <div><strong>{deposant.Nom}</strong></div>
                         <div>📧 {deposant.Email || 'Non renseigné'}</div>
                         {deposant.Pays && deposant.Pays.length > 0 && (
-                          <div>🌍 {deposant.Pays.map((pays: any) => pays.NomPays || pays.NomFrFr).join(', ')}</div>
+                          <div style={{ marginTop: 4 }}>
+                            {deposant.Pays.map((pays: any) => (
+                              <Tag key={pays.Id || pays.CodeIso || pays.CodePays || pays.NomPays || pays.NomFrFr}
+                                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span>{getFlagImage(pays.CodeIso || pays.CodePays)}</span>
+                                <span>{pays.NomPays || pays.NomFrFr || 'Pays'}</span>
+                              </Tag>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
@@ -584,12 +549,21 @@ const BrevetsPage: React.FC = () => {
                 <div>
                   <h3>👑 Titulaires ({selectedBrevet.titulaires.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {selectedBrevet.titulaires.map((titulaire: any, index: number) => (
-                      <div key={titulaire.Id || index} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                    {selectedBrevet.titulaires.map((titulaire: any) => (
+                      <div key={titulaire.Id || `${titulaire.Nom}-${titulaire.Email || ''}`}
+                           style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
                         <div><strong>{titulaire.Nom}</strong></div>
                         <div>📧 {titulaire.Email || 'Non renseigné'}</div>
                         {titulaire.Pays && titulaire.Pays.length > 0 && (
-                          <div>🌍 {titulaire.Pays.map((pays: any) => pays.NomPays || pays.NomFrFr).join(', ')}</div>
+                          <div style={{ marginTop: 4 }}>
+                            {titulaire.Pays.map((pays: any) => (
+                              <Tag key={pays.Id || pays.CodeIso || pays.CodePays || pays.NomPays || pays.NomFrFr}
+                                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span>{getFlagImage(pays.CodeIso || pays.CodePays)}</span>
+                                <span>{pays.NomPays || pays.NomFrFr || 'Pays'}</span>
+                              </Tag>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
@@ -597,52 +571,25 @@ const BrevetsPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Cabinets */}
-              {selectedBrevet.cabinets && selectedBrevet.cabinets.length > 0 && (
-                <div>
-                  <h3>🏛️ Cabinets ({selectedBrevet.cabinets.length})</h3>
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {selectedBrevet.cabinets.map((cabinet: any, index: number) => (
-                      <div key={cabinet.Id || index} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
-                        <div><strong>{cabinet.NomCabinet}</strong></div>
-                        <div>📧 {cabinet.EmailCabinet}</div>
-                        <div>📞 {cabinet.TelephoneCabinet}</div>
-                        <div>📍 {cabinet.AdresseCabinet}</div>
-                        {cabinet.PaysCabinet && (
-                          <div>🌍 {cabinet.PaysCabinet}</div>
-                        )}
-                        <div>
-                          <Tag color={cabinet.Type === 'Annuite' ? 'blue' : 'orange'}>
-                            {cabinet.Type === 'Annuite' ? 'Annuités' : 'Procédures'}
-                          </Tag>
-                        </div>
-                      </div>
-                    ))}
-                  </Space>
-                </div>
-              )}
+              {/* Cabinets (désormais par Information de dépôt, voir plus bas) */}
 
               {/* Informations de dépôt */}
               {selectedBrevet.informationsDepot && selectedBrevet.informationsDepot.length > 0 && (
                 <div>
                   <h3>🗂️ Informations de dépôt ({selectedBrevet.informationsDepot.length})</h3>
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {selectedBrevet.informationsDepot.map((info: any, index: number) => (
-                      <div key={index} style={{ padding: '12px', border: '1px solid #f0f0f0', borderRadius: '4px', backgroundColor: '#fafafa' }}>
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    {selectedBrevet.informationsDepot.map((info: any) => (
+                      <Card key={info.Id || info.NumeroDepot || `${info.Pays?.CodeIso || info.Pays?.CodePays}-${info.DateDepot || ''}`}
+                           size="small" bodyStyle={{ backgroundColor: '#fafafa' }} headStyle={{ background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
                         {/* En-tête avec drapeau et pays */}
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '24px', marginRight: '8px' }}>
-                            {(() => {
-                              const codeIso = info.Pays?.CodeIso || info.Pays?.CodePays;
-                              console.log('🏳️ Pays info:', info.Pays);
-                              console.log('🎯 Code ISO utilisé:', codeIso);
-                              return getFlagEmoji(codeIso);
-                            })()}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 54, height: 36, marginRight: 12, background: '#fff', borderRadius: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.05)' }}>
+                            {getFlagImage(info.Pays?.CodeIso || info.Pays?.CodePays)}
                           </span>
-                          <strong style={{ fontSize: '16px' }}>
+                          <strong style={{ fontSize: 18 }}>
                             {info.Pays?.NomPays || info.Pays?.NomFrFr || 'Pays non spécifié'}
                             {(info.Pays?.CodeIso || info.Pays?.CodePays) && (
-                              <span style={{ marginLeft: '8px', color: '#666', fontSize: '14px' }}>
+                              <span style={{ marginLeft: 8, color: '#666', fontSize: 14 }}>
                                 ({info.Pays?.CodeIso || info.Pays?.CodePays})
                               </span>
                             )}
@@ -661,45 +608,33 @@ const BrevetsPage: React.FC = () => {
                         </div>
                         
                         {/* Informations de dépôt */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '14px' }}>
-                          <div><strong>N° Dépôt:</strong> {info.NumeroDepot || 'Non renseigné'}</div>
+                        <Descriptions bordered size="small" column={2} style={{ marginBottom: 8 }}>
+                          <Descriptions.Item label="N° Dépôt">{info.NumeroDepot || 'Non renseigné'}</Descriptions.Item>
                           {info.NumeroPublication && (
-                            <div><strong>N° Publication:</strong> {info.NumeroPublication}</div>
+                            <Descriptions.Item label="N° Publication">{info.NumeroPublication}</Descriptions.Item>
                           )}
                           {info.NumeroDelivrance && (
-                            <div><strong>N° Délivrance:</strong> {info.NumeroDelivrance}</div>
+                            <Descriptions.Item label="N° Délivrance">{info.NumeroDelivrance}</Descriptions.Item>
                           )}
-                          <div>
-                            <strong>Date de dépôt:</strong> {
-                              info.DateDepot 
-                                ? new Date(info.DateDepot).toLocaleDateString('fr-FR') 
-                                : 'Non renseignée'
-                            }
-                          </div>
+                          <Descriptions.Item label="Date de dépôt">
+                            {info.DateDepot ? new Date(info.DateDepot).toLocaleDateString('fr-FR') : 'Non renseignée'}
+                          </Descriptions.Item>
                           {info.DatePublication && (
-                            <div>
-                              <strong>Date de publication:</strong> {
-                                new Date(info.DatePublication).toLocaleDateString('fr-FR')
-                              }
-                            </div>
+                            <Descriptions.Item label="Date de publication">
+                              {new Date(info.DatePublication).toLocaleDateString('fr-FR')}
+                            </Descriptions.Item>
                           )}
                           {info.DateDelivrance && (
-                            <div>
-                              <strong>Date de délivrance:</strong> {
-                                new Date(info.DateDelivrance).toLocaleDateString('fr-FR')
-                              }
-                            </div>
+                            <Descriptions.Item label="Date de délivrance">
+                              {new Date(info.DateDelivrance).toLocaleDateString('fr-FR')}
+                            </Descriptions.Item>
                           )}
-                          <div>
-                            <strong>Licence:</strong> 
-                            <Tag 
-                              color={info.Licence ? 'green' : 'default'} 
-                              style={{ marginLeft: '8px' }}
-                            >
+                          <Descriptions.Item label="Licence">
+                            <Tag color={info.Licence ? 'green' : 'default'}>
                               {info.Licence ? '✅ Oui' : '❌ Non'}
                             </Tag>
-                          </div>
-                        </div>
+                          </Descriptions.Item>
+                        </Descriptions>
                         
                         {/* Commentaire si présent */}
                         {info.Commentaire && (
@@ -707,7 +642,78 @@ const BrevetsPage: React.FC = () => {
                             <strong>Commentaire:</strong> {info.Commentaire}
                           </div>
                         )}
-                      </div>
+
+                        {/* Cabinets liés à ce dépôt */}
+                        <div style={{ marginTop: '12px' }}>
+                          <h4 style={{ marginBottom: 8 }}>🏛️ Cabinets liés</h4>
+                          {/* Annuités */}
+                          <div style={{ marginBottom: 6 }}>
+                            <div style={{ color: '#1890ff', marginBottom: 4 }}>Annuités</div>
+                            {(!info.CabinetsAnnuites || info.CabinetsAnnuites.length === 0) ? (
+                              <span style={{ color: '#999' }}>Aucun</span>
+                            ) : (
+                              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                {info.CabinetsAnnuites.map((row: any, idx: number) => (
+                                  <li key={`ann-${info.Id || info._tempId || idx}`} style={{ marginBottom: 4 }}>
+                                    <strong>{row.CabinetNom || 'Cabinet'}</strong>
+                                    {row.Roles && row.Roles.length > 0 && (
+                                      <span style={{ marginLeft: 8 }}>
+                                        {row.Roles.map((r: string, i: number) => (
+                                          <Tag key={`ra-${i}`} color={roleColor(r)}>
+                                            {capitalizeRole(r)}
+                                          </Tag>
+                                        ))}
+                                      </span>
+                                    )}
+                                    {row.Contacts && row.Contacts.length > 0 && (
+                                      <span style={{ marginLeft: 8 }}>
+                                        {row.Contacts.map((c: any, i: number) => (
+                                          <Tooltip key={`ca-${i}`} title={c.Email || c.email || ''}>
+                                            <Tag>{`${c.Prenom || c.prenom || ''} ${c.Nom || c.nom || ''}`.trim()}</Tag>
+                                          </Tooltip>
+                                        ))}
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          {/* Procédures */}
+                          <div>
+                            <div style={{ color: '#fa8c16', marginBottom: 4 }}>Procédures</div>
+                            {(!info.CabinetsProcedures || info.CabinetsProcedures.length === 0) ? (
+                              <span style={{ color: '#999' }}>Aucun</span>
+                            ) : (
+                              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                {info.CabinetsProcedures.map((row: any, idx: number) => (
+                                  <li key={`proc-${info.Id || info._tempId || idx}`} style={{ marginBottom: 4 }}>
+                                    <strong>{row.CabinetNom || 'Cabinet'}</strong>
+                                    {row.Roles && row.Roles.length > 0 && (
+                                      <span style={{ marginLeft: 8 }}>
+                                        {row.Roles.map((r: string, i: number) => (
+                                          <Tag key={`rp-${i}`} color={roleColor(r)}>
+                                            {capitalizeRole(r)}
+                                          </Tag>
+                                        ))}
+                                      </span>
+                                    )}
+                                    {row.Contacts && row.Contacts.length > 0 && (
+                                      <span style={{ marginLeft: 8 }}>
+                                        {row.Contacts.map((c: any, i: number) => (
+                                          <Tooltip key={`cp-${i}`} title={c.Email || c.email || ''}>
+                                            <Tag>{`${c.Prenom || c.prenom || ''} ${c.Nom || c.nom || ''}`.trim()}</Tag>
+                                          </Tooltip>
+                                        ))}
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
                     ))}
                   </Space>
                 </div>
@@ -726,6 +732,7 @@ const BrevetsPage: React.FC = () => {
             await brevetService.create(values);
             handleAddSuccess();
           } catch (error) {
+            console.error('Erreur création brevet:', error);
             addNotification({
               type: 'error',
               message: 'Erreur lors de la création du brevet'
@@ -747,6 +754,7 @@ const BrevetsPage: React.FC = () => {
             await brevetService.update(id, values);
             handleEditSuccess();
           } catch (error) {
+            console.error('Erreur modification brevet:', error);
             addNotification({
               type: 'error',
               message: 'Erreur lors de la modification du brevet'

@@ -165,7 +165,47 @@ export const brevetService = {
 
   // Récupérer les brevets d'un client
   getByClientId: async (clientId: number): Promise<ApiResponse<Brevet[]>> => {
-    const response = await api.get(`${config.api.endpoints.brevets}/client/${clientId}`);
-    return response.data;
+    try {
+      const resp = await api.get(`${config.api.endpoints.brevets}/client/${clientId}`);
+
+      const payload: any = resp.data || {};
+      const items = payload.Data || [];
+
+      const transformed: Brevet[] = (items as any[]).map((brevet: any) => ({
+        id: brevet.Id,
+        numeroBrevet: brevet.ReferenceFamille,
+        titreBrevet: brevet.Titre,
+        descriptionBrevet: brevet.Commentaire,
+        dateDepot: brevet.DateDepot || null,
+        dateDelivrance: brevet.DateDelivrance || null,
+        dateExpiration: brevet.DateExpiration || null,
+        statutBrevet: brevet.StatutBrevet || null,
+        paysBrevet: brevet.PaysBrevet || null,
+        classesBrevet: brevet.ClassesBrevet || null,
+        createdAt: brevet.CreatedAt,
+        updatedAt: brevet.UpdatedAt,
+        clientId: brevet.ClientId || null,
+        clients: brevet.Clients || [],
+        inventeurs: brevet.Inventeurs || [],
+        deposants: brevet.Deposants || [],
+        titulaires: brevet.Titulaires || [],
+        cabinets: brevet.Cabinets || [],
+        informationsDepot: brevet.InformationsDepot || []
+      }));
+
+      return {
+        success: !!payload.Success,
+        data: transformed,
+        message: payload.Message,
+      };
+    } catch (error: any) {
+      console.error('❌ Brevet Service - Erreur getByClientId:', error);
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Erreur lors de la récupération des brevets du client',
+        errors: error.response?.data?.errors,
+      };
+    }
   },
 };

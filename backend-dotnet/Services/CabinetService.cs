@@ -568,4 +568,177 @@ public class CabinetService : ICabinetService
             };
         }
     }
+
+    /// <summary>
+    /// Retourne les cabinets liés à un client via ClientCabinets.
+    /// </summary>
+    public async Task<ApiResponse<List<CabinetDto>>> GetCabinetsByClientAsync(int clientId)
+    {
+        try
+        {
+            var cabinets = await _context.ClientCabinets
+                .Where(cc => cc.ClientId == clientId)
+                .Include(cc => cc.Cabinet)
+                .Select(cc => cc.Cabinet!)
+                .Distinct()
+                .ToListAsync();
+
+            var cabinetDtos = cabinets.Select(c => new CabinetDto
+            {
+                Id = c.Id,
+                NomCabinet = c.NomCabinet ?? "",
+                AdresseCabinet = c.AdresseCabinet ?? "",
+                CodePostal = c.CodePostal,
+                PaysCabinet = c.PaysCabinet ?? "",
+                EmailCabinet = c.EmailCabinet ?? "",
+                TelephoneCabinet = c.TelephoneCabinet ?? "",
+                Type = c.Type,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt,
+                NombreClients = _context.ClientCabinets.Count(x => x.CabinetId == c.Id)
+            }).ToList();
+
+            return new ApiResponse<List<CabinetDto>>
+            {
+                Success = true,
+                Data = cabinetDtos,
+                Message = $"{cabinetDtos.Count} cabinets trouvés pour le client"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<List<CabinetDto>>
+            {
+                Success = false,
+                Message = "Erreur lors de la récupération des cabinets du client",
+                Errors = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Crée un cabinet et le relie au client spécifié.
+    /// </summary>
+    public async Task<ApiResponse<CabinetDto>> CreateCabinetForClientAsync(int clientId, CreateCabinetDto createCabinetDto)
+    {
+        try
+        {
+            // Créer le cabinet
+            var createResult = await CreateCabinetAsync(createCabinetDto);
+            if (!createResult.Success || createResult.Data == null)
+            {
+                return new ApiResponse<CabinetDto>
+                {
+                    Success = false,
+                    Message = createResult.Message,
+                    Errors = createResult.Errors
+                };
+            }
+
+            // Lier au client
+            var linkResult = await AssignClientToCabinetAsync(createResult.Data.Id, clientId);
+            if (!linkResult.Success)
+            {
+                return new ApiResponse<CabinetDto>
+                {
+                    Success = false,
+                    Message = linkResult.Message,
+                    Errors = linkResult.Errors
+                };
+            }
+
+            // Recharger
+            var cabinet = await _context.Cabinets
+                .Include(c => c.ClientCabinets)
+                .FirstAsync(c => c.Id == createResult.Data.Id);
+
+            var dto = new CabinetDto
+            {
+                Id = cabinet.Id,
+                NomCabinet = cabinet.NomCabinet ?? "",
+                AdresseCabinet = cabinet.AdresseCabinet ?? "",
+                CodePostal = cabinet.CodePostal,
+                PaysCabinet = cabinet.PaysCabinet ?? "",
+                EmailCabinet = cabinet.EmailCabinet ?? "",
+                TelephoneCabinet = cabinet.TelephoneCabinet ?? "",
+                Type = cabinet.Type,
+                CreatedAt = cabinet.CreatedAt,
+                UpdatedAt = cabinet.UpdatedAt,
+                NombreClients = cabinet.ClientCabinets?.Count ?? 0
+            };
+
+            return new ApiResponse<CabinetDto>
+            {
+                Success = true,
+                Data = dto,
+                Message = "Cabinet créé et lié au client"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<CabinetDto>
+            {
+                Success = false,
+                Message = "Erreur lors de la création du cabinet pour le client",
+                Errors = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Lie un cabinet existant au client spécifié.
+    /// </summary>
+    public async Task<ApiResponse<bool>> LinkExistingCabinetToClientAsync(int clientId, int cabinetId)
+    {
+        try
+        {
+            // Vérifier existence
+            var exists = await _context.Cabinets.AnyAsync(c => c.Id == cabinetId);
+            var clientExists = await _context.Clients.AnyAsync(c => c.Id == clientId);
+            if (!exists || !clientExists)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = "Cabinet ou client introuvable"
+                };
+            }
+
+            // Vérifier relation existante
+            var already = await _context.ClientCabinets
+                .AnyAsync(cc => cc.ClientId == clientId && cc.CabinetId == cabinetId);
+            if (already)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = "Déjà lié"
+                };
+            }
+
+            _context.ClientCabinets.Add(new ClientCabinet
+            {
+                ClientId = clientId,
+                CabinetId = cabinetId
+            });
+            await _context.SaveChangesAsync();
+
+            return new ApiResponse<bool>
+            {
+                Success = true,
+                Data = true,
+                Message = "Liaison effectuée"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<bool>
+            {
+                Success = false,
+                Message = "Erreur lors de la liaison client-cabinet",
+                Errors = ex.Message
+            };
+        }
+    }
 }

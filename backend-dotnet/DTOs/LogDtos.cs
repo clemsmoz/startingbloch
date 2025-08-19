@@ -84,6 +84,18 @@ public class LogDto
     
     /// <summary>Date création UTC log pour audit chronologique.</summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>Type d'entité métier concernée (pour affichage frontend).</summary>
+    public string? EntityType { get; set; }
+
+    /// <summary>Nom de l'entité métier concernée (pour affichage frontend).</summary>
+    public string? EntityName { get; set; }
+
+    /// <summary>ID de l'entité métier concernée (pour affichage frontend).</summary>
+    public int? EntityId { get; set; }
+
+    /// <summary>Détails métier ou contexte libre pour affichage lisible.</summary>
+    public string? Details { get; set; }
 }
 
 /// <summary>

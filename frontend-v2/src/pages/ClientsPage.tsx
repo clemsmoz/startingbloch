@@ -48,7 +48,7 @@ const ClientsPage: React.FC = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
+  // Recherche contrôlée localement (pas besoin d'état séparé)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -59,7 +59,6 @@ const ClientsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   
   const { addNotification } = useNotificationStore();
 
@@ -71,10 +70,10 @@ const ClientsPage: React.FC = () => {
       if (response.success && response.data) {
         setClients(response.data);
         setTotalCount(response.totalCount || 0);
-        setTotalPages(response.totalPages || 0);
         setCurrentPage(response.page || page);
       }
     } catch (error) {
+      console.error('Erreur lors du chargement des clients:', error);
       addNotification({
         type: 'error',
         message: 'Erreur',
@@ -103,6 +102,11 @@ const ClientsPage: React.FC = () => {
   const handleViewContacts = (client: Client) => {
     // Naviguer vers la page des contacts avec l'ID du client
     navigate(`/contacts?clientId=${client.id}&clientName=${encodeURIComponent(client.nomClient)}`);
+  };
+
+  const handleViewBrevets = (client: Client) => {
+  // Naviguer vers la page dédiée des brevets d'un client
+  navigate(`/clients/${client.id}/brevets?clientName=${encodeURIComponent(client.nomClient)}`);
   };
 
   const handleDelete = async (id: number) => {
@@ -155,7 +159,6 @@ const ClientsPage: React.FC = () => {
 
   // Recherche
   const handleSearch = async (value: string) => {
-    setSearchValue(value);
     if (value.trim()) {
       setLoading(true);
       try {
@@ -165,7 +168,6 @@ const ClientsPage: React.FC = () => {
           // Réinitialiser la pagination pour la recherche
           setCurrentPage(1);
           setTotalCount(response.data.length);
-          setTotalPages(1);
         }
       } catch (error) {
         console.error('Erreur de recherche:', error);
@@ -209,6 +211,12 @@ const ClientsPage: React.FC = () => {
       label: 'Voir contacts',
       icon: <ContactsOutlined />,
       onClick: () => handleViewContacts(record)
+    },
+    {
+      key: 'brevets',
+      label: 'Voir brevets',
+      icon: <EyeOutlined />,
+      onClick: () => handleViewBrevets(record)
     },
     {
       key: 'edit',
@@ -297,7 +305,6 @@ const ClientsPage: React.FC = () => {
       key="export"
       icon={<ExportOutlined />}
       onClick={() => {
-        // TODO: Implémenter l'export
         message.info('Fonctionnalité d\'export en cours de développement');
       }}
     >
@@ -389,11 +396,56 @@ const ClientsPage: React.FC = () => {
       <AddClientModal
         visible={isAddModalVisible}
         onCancel={() => setIsAddModalVisible(false)}
-        onSubmit={async (values) => {
+        onSubmit={async (values, hasUserAccount) => {
           try {
-            await clientService.create(values);
+            if (hasUserAccount) {
+              // Créer client avec compte utilisateur - Appel direct à UserAdmin
+              console.log('🔄 Création client avec compte utilisateur via UserAdmin');
+              const userValues = values as any; // Cast pour accéder aux champs utilisateur
+              
+              const clientWithUserData = {
+                // Données client
+                nomClient: values.nomClient,
+                referenceClient: values.referenceClient,
+                adresseClient: values.adresseClient,
+                codePostal: values.codePostal,
+                paysClient: values.paysClient,
+                emailClient: values.emailClient,
+                telephoneClient: values.telephoneClient,
+                
+                // Données utilisateur
+                username: userValues.userEmail,
+                userEmail: userValues.userEmail,
+                password: userValues.password,
+                
+                // Permissions
+                canWrite: values.canWrite ?? false,
+                canRead: values.canRead ?? true,
+                isActive: !(values.isBlocked ?? false),
+              };
+              
+              // Appel direct à l'endpoint UserAdmin
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/useradmin/create-new-client-with-user`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${sessionStorage.getItem('startingbloch_token')}`
+                },
+                body: JSON.stringify(clientWithUserData)
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+              }
+              
+            } else {
+              // Créer client simple
+              console.log('🔄 Création client simple');
+              await clientService.create(values);
+            }
             handleAddSuccess();
           } catch (error) {
+            console.error('❌ Erreur création client:', error);
             addNotification({
               type: 'error',
               message: 'Erreur lors de la création du client'
@@ -417,6 +469,7 @@ const ClientsPage: React.FC = () => {
               handleEditSuccess();
             }
           } catch (error) {
+            console.error('Erreur lors de la modification:', error);
             addNotification({
               type: 'error',
               message: 'Erreur lors de la modification du client'

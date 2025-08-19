@@ -16,3 +16,5 @@ export { paysService } from './paysService';
 export { statutsService } from './statutsService';
 export { statutService } from './statutService';
 export { userAdminService } from './userAdminService';
+export { logService } from './logService';
+export { roleService } from './roleService';

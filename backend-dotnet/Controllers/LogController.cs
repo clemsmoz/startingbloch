@@ -124,4 +124,81 @@ public class LogController : ControllerBase
             
         return Ok(result);
     }
+
+    /// <summary>
+    /// Récupère les logs d'un utilisateur spécifique avec pagination
+    /// 
+    /// Fonctionnalité Métier:
+    /// - Consultation des logs d'activité d'un utilisateur particulier
+    /// - Audit trail personnalisé pour analyse comportement utilisateur
+    /// - Support investigation incidents utilisateur spécifique
+    /// 
+    /// Cas d'Usage:
+    /// - Audit actions utilisateur pour conformité
+    /// - Investigation incidents sécurité utilisateur
+    /// - Analyse activité utilisateur pour support
+    /// - Historique complet actions utilisateur
+    /// 
+    /// Sécurité:
+    /// - Accès exclusif administrateur
+    /// - Validation identifiant utilisateur
+    /// - Pagination pour performance
+    /// </summary>
+    /// <param name="userId">Identifiant de l'utilisateur</param>
+    /// <param name="page">Numéro de page pour pagination (défaut: 1)</param>
+    /// <param name="pageSize">Nombre d'éléments par page (défaut: 10)</param>
+    /// <returns>Page de logs de l'utilisateur spécifique</returns>
+    [HttpGet("user/{userId}")]
+    [AdminOnly]
+    public async Task<ActionResult<PagedResponse<List<LogDto>>>> GetUserLogs(
+        int userId,
+        int page = 1, 
+        int pageSize = 10)
+    {
+        Console.WriteLine($"🎯 LogController - Requête reçue pour logs utilisateur {userId}, page {page}, taille {pageSize}");
+        
+        var result = await _logService.GetLogsByUserAsync(userId, page, pageSize);
+        
+        Console.WriteLine($"🎯 LogController - Résultat du service: Success={result.Success}, Count={result.Data?.Count ?? 0}");
+        
+        if (!result.Success)
+        {
+            Console.WriteLine($"❌ LogController - Erreur du service: {result.Message}");
+            return BadRequest(result);
+        }
+            
+        Console.WriteLine($"✅ LogController - Retour de {result.Data.Count} logs pour utilisateur {userId}");
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Supprime tous les logs de consultation (méthodes GET) pour optimisation base données
+    /// 
+    /// Fonctionnalité Métier:
+    /// - Nettoyage ciblé des logs non-critiques (consultations GET)
+    /// - Optimisation espace stockage et performance requêtes
+    /// - Conservation uniquement des actions importantes (POST/PUT/DELETE)
+    /// 
+    /// Justification Business:
+    /// - Les logs GET peuvent être très nombreux et peu critiques pour l'audit
+    /// - Seules les modifications de données sont importantes pour la traçabilité
+    /// - Réduction significative du volume de la base de données
+    /// 
+    /// Sécurité:
+    /// - Accès exclusif administrateur
+    /// - Action irréversible, à utiliser avec précaution
+    /// - Log de l'action de nettoyage pour audit
+    /// </summary>
+    /// <returns>Nombre de logs GET supprimés</returns>
+    [HttpDelete("clear-get-logs")]
+    [AdminOnly]
+    public async Task<ActionResult<ApiResponse<int>>> ClearGetLogs()
+    {
+        var result = await _logService.ClearGetLogsAsync();
+        
+        if (!result.Success)
+            return BadRequest(result);
+            
+        return Ok(result);
+    }
 }

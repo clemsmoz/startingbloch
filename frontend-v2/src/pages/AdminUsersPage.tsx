@@ -38,10 +38,13 @@ import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { PageHeader } from '../components/common';
 import { useNotificationStore } from '../store/notificationStore';
-import { userAdminService } from '../services';
-import type { User, UserRole } from '../types';
+import { userAdminService, clientService, roleService } from '../services';
+import type { User, UserRole, RoleItem, Client } from '../types';
 
 const { Option } = Select;
+
+// Fonction d'icône pour le champ mot de passe (stabilisée hors composant)
+const passwordIconRender = (visible: boolean) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />);
 
 const StatsCard = styled(Card)`
   border-radius: 12px;
@@ -60,22 +63,26 @@ const TableCard = styled(Card)`
 `;
 
 interface CreateUserDto {
-  nom: string;
   prenom: string;
+  nom: string;
   email: string;
   username: string;
   password: string;
-  role: UserRole;
+  role: UserRole; // 'Admin' | 'User' | 'Client'
   isActive: boolean;
+  canWrite?: boolean;
+  clientId?: number; // obligatoire si role = Client
 }
 
 interface UpdateUserDto {
-  nom?: string;
   prenom?: string;
+  nom?: string;
   email?: string;
   username?: string;
   role?: UserRole;
   isActive?: boolean;
+  canWrite?: boolean;
+  clientId?: number | null;
 }
 
 /**
@@ -87,12 +94,14 @@ const AdminUsersPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form] = Form.useForm();
+  const [roles, setRoles] = useState<RoleItem[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  // Note: pagination serveur future – totalPages non utilisé pour le moment
   
   const { addNotification } = useNotificationStore();
 
@@ -101,157 +110,69 @@ const AdminUsersPage: React.FC = () => {
     total: users.length,
     active: users.filter(u => u.isActive).length,
     admins: users.filter(u => u.role === 'Admin').length,
-    clients: users.filter(u => u.role === 'User').length
+    clients: users.filter(u => u.role === 'Client').length
+  };
+
+  // Helpers pour lisibilité (évite les ternaires imbriqués)
+  const roleMeta: Record<UserRole, { color: string; label: string }> = {
+    Admin: { color: 'red', label: 'Administrateur' },
+    User: { color: 'blue', label: 'Utilisateur' },
+    Client: { color: 'purple', label: 'Client' },
+  };
+
+  const normalizeRoleFromDb = (name: string): UserRole => {
+    const n = name.trim().toLowerCase();
+    if (n === 'admin') return 'Admin';
+    if (n === 'client') return 'Client';
+    return 'User';
   };
 
   // Chargement des utilisateurs avec pagination
   const loadUsers = async (page: number = currentPage, size: number = pageSize) => {
     setLoading(true);
     try {
-      console.log(`📊 AdminUsersPage - Chargement des utilisateurs (page ${page}, taille ${size})...`);
       const response = await userAdminService.getAll(page, size);
-      console.log('📊 AdminUsersPage - Réponse reçue:', response);
-      
-      // Le backend retourne un PagedResponse avec des propriétés en PascalCase
-      const success = response.success || (response as any).Success;
-      const data = response.data || (response as any).Data;
-      
-      if (success && data && Array.isArray(data)) {
-        setUsers(data);
-        setTotalCount(response.totalCount || 0);
-        setTotalPages(response.totalPages || 0);
-        setCurrentPage(response.page || page);
-        console.log('✅ AdminUsersPage - Utilisateurs chargés:', data.length);
-      } else if (success && data) {
-        // Si data n'est pas un tableau, vérifier s'il y a une propriété qui contient les données
-        console.log('🔍 AdminUsersPage - data n\'est pas un tableau, exploration...');
-        console.log('📊 AdminUsersPage - Propriétés de data:', Object.keys(data));
-        
-        // Vérifier différentes propriétés possibles
-        const possibleDataArrays = ['items', 'data', 'users', 'results'];
-        let dataFound = false;
-        
-        for (const prop of possibleDataArrays) {
-          if ((data as any)[prop] && Array.isArray((data as any)[prop])) {
-            setUsers((data as any)[prop]);
-            setTotalCount(response.totalCount || (data as any)[prop].length);
-            setTotalPages(response.totalPages || 1);
-            setCurrentPage(response.page || page);
-            console.log(`✅ AdminUsersPage - Utilisateurs trouvés dans data.${prop}:`, (data as any)[prop].length);
-            dataFound = true;
-            break;
-          }
-        }
-        
-        if (!dataFound) {
-          console.warn('⚠️ AdminUsersPage - Aucun tableau trouvé dans la réponse, utilisation de données de test');
-          const testUsers = [
-            {
-              id: 1,
-              nom: 'Dubois',
-              prenom: 'Jean',
-              email: 'jean.dubois@example.com',
-              username: 'jean.dubois',
-              role: 'Admin' as UserRole,
-              isActive: true,
-              createdAt: '2024-01-01T00:00:00Z',
-              updatedAt: '2024-01-01T00:00:00Z'
-            },
-            {
-              id: 2,
-              nom: 'Martin',
-              prenom: 'Marie',
-              email: 'marie.martin@example.com',
-              username: 'marie.martin',
-              role: 'User' as UserRole,
-              isActive: true,
-              createdAt: '2024-01-02T00:00:00Z',
-              updatedAt: '2024-01-02T00:00:00Z'
-            }
-          ];
-          setUsers(testUsers);
-          setTotalCount(testUsers.length);
-          setTotalPages(1);
-          setCurrentPage(1);
-        }
-      } else {
-        console.warn('⚠️ AdminUsersPage - Réponse sans succès, utilisation de données de test');
-        // Fallback avec données de test si l'API n'est pas encore implémentée
-        setUsers([
-          {
-            id: 1,
-            nom: 'Dubois',
-            prenom: 'Jean',
-            email: 'jean.dubois@example.com',
-            username: 'jean.dubois',
-            role: 'Admin',
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00Z',
-            updatedAt: '2024-01-01T00:00:00Z'
-          },
-          {
-            id: 2,
-            nom: 'Martin',
-            prenom: 'Marie',
-            email: 'marie.martin@example.com',
-            username: 'marie.martin',
-            role: 'User',
-            isActive: true,
-            createdAt: '2024-01-02T00:00:00Z',
-            updatedAt: '2024-01-02T00:00:00Z'
-          }
-        ]);
+      // Le backend retourne un PagedResponse standard
+      const success = response.success ?? (response as any).Success;
+      const data = (response.data ?? (response as any).Data) as any;
+
+      let items: User[] = [];
+      if (Array.isArray(data)) {
+        items = data as User[];
+      } else if (Array.isArray(data?.items)) {
+        items = data.items as User[];
+      } else if (Array.isArray(data?.users)) {
+        items = data.users as User[];
+      }
+
+      if (success) {
+        setUsers(items);
+        setTotalCount(response.totalCount || (data?.totalCount ?? items.length) || 0);
+        setCurrentPage(response.page || data?.page || page);
       }
     } catch (error) {
       console.error('❌ AdminUsersPage - Erreur lors du chargement des utilisateurs:', error);
-      if (error instanceof Error) {
-        console.error('Message:', error.message);
-      }
-      if ((error as any).response) {
-        console.error('Status:', (error as any).response?.status);
-        console.error('Data:', (error as any).response?.data);
-      }
-      
-      // Utiliser des données de test en cas d'erreur
-      console.log('🔄 AdminUsersPage - Utilisation de données de test de fallback');
-      setUsers([
-        {
-          id: 1,
-          nom: 'Dubois',
-          prenom: 'Jean',
-          email: 'jean.dubois@example.com',
-          username: 'jean.dubois',
-          role: 'Admin',
-          isActive: true,
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: 2,
-          nom: 'Martin',
-          prenom: 'Marie',
-          email: 'marie.martin@example.com',
-          username: 'marie.martin',
-          role: 'User',
-          isActive: true,
-          createdAt: '2024-01-02T00:00:00Z',
-          updatedAt: '2024-01-02T00:00:00Z'
-        }
-      ]);
-      
-      addNotification({
-        type: 'warning',
-        message: 'Mode de démonstration',
-        description: 'Utilisation de données de test - API non disponible'
-      });
+      addNotification({ type: 'error', message: 'Impossible de charger les utilisateurs' });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
+    (async () => {
+      await Promise.all([loadUsers(), loadRoles(), loadClients()]);
+    })();
   }, []);
+
+  const loadRoles = async () => {
+    const res = await roleService.getAll();
+    if (res.success) setRoles(res.data);
+  };
+
+  const loadClients = async () => {
+    const res = await clientService.getAll(1, 1000);
+    if (res.success) setClients(res.data);
+  };
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
@@ -294,9 +215,7 @@ const AdminUsersPage: React.FC = () => {
       dataIndex: 'role',
       key: 'role',
       render: (role: UserRole) => (
-        <Tag color={role === 'Admin' ? 'red' : role === 'User' ? 'blue' : 'default'}>
-          {role === 'Admin' ? 'Administrateur' : role === 'User' ? 'Utilisateur' : 'Lecture seule'}
-        </Tag>
+        <Tag color={roleMeta[role].color}>{roleMeta[role].label}</Tag>
       ),
     },
     {
@@ -308,6 +227,22 @@ const AdminUsersPage: React.FC = () => {
           {isActive ? 'Actif' : 'Inactif'}
         </Tag>
       ),
+    },
+    {
+      title: "Écriture",
+      key: 'canWrite',
+      render: (_, record) => (
+        <Switch
+          checked={!!(record as any).canWrite}
+          onChange={async (checked) => {
+            await userAdminService.updatePermissions(record.id, true, checked);
+            await loadUsers();
+          }}
+          disabled={record.role === 'Admin'}
+          checkedChildren="Oui"
+          unCheckedChildren="Non"
+        />
+      )
     },
     {
       title: 'Créé le',
@@ -366,43 +301,75 @@ const AdminUsersPage: React.FC = () => {
   const handleSubmit = async (values: CreateUserDto | UpdateUserDto) => {
     try {
       if (editingUser) {
-        // Mise à jour
-        const updatedUser = { ...editingUser, ...values };
-        setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
+        // Mise à jour via API
+        const selRole = (values as any).role as UserRole | undefined;
+        const payload: UpdateUserDto = {
+          email: (values as any).email,
+          username: (values as any).username,
+          role: selRole,
+          isActive: (values as any).isActive,
+          canWrite: (values as any).canWrite,
+          clientId: (values as any).role === 'Client' ? (values as any).clientId : null,
+        };
+        await userAdminService.update(editingUser.id, payload);
+        await loadUsers();
         message.success('Utilisateur modifié avec succès');
       } else {
-        // Création
-        const newUser: User = {
-          id: Date.now(),
-          ...values as CreateUserDto,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        setUsers(prev => [...prev, newUser]);
+        // Création via API
+        const role = (values as any).role as UserRole;
+        if (role === 'Admin' || role === 'User') {
+          await userAdminService.createEmployee({
+            username: (values as any).username,
+            email: (values as any).email,
+            password: (values as any).password,
+            role: role === 'Admin' ? 'admin' : 'user',
+            canWrite: (values as any).canWrite ?? false,
+            isActive: (values as any).isActive ?? true,
+          });
+        } else {
+          // Client
+          await userAdminService.createClientAccount({
+            clientId: (values as any).clientId,
+            username: (values as any).username,
+            email: (values as any).email,
+            password: (values as any).password,
+            canWrite: (values as any).canWrite ?? false,
+            isActive: (values as any).isActive ?? true,
+          });
+        }
+        await loadUsers();
         message.success('Utilisateur créé avec succès');
       }
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
+      console.error(error);
       message.error('Erreur lors de la sauvegarde');
     }
   };
 
   const handleToggleActive = async (user: User) => {
     try {
-      const updatedUser = { ...user, isActive: !user.isActive };
-      setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
-      message.success(`Utilisateur ${updatedUser.isActive ? 'activé' : 'désactivé'}`);
+      if (user.isActive) {
+        await userAdminService.deactivate(user.id);
+      } else {
+        await userAdminService.activate(user.id);
+      }
+      await loadUsers();
+      message.success(`Utilisateur ${!user.isActive ? 'activé' : 'désactivé'}`);
     } catch (error) {
+      console.error(error);
       message.error('Erreur lors de la modification du statut');
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
-      setUsers(prev => prev.filter(u => u.id !== id));
-      message.success('Utilisateur supprimé avec succès');
+  await userAdminService.delete(id);
+  setUsers(prev => prev.filter(u => u.id !== id));
+  message.success('Utilisateur supprimé avec succès');
     } catch (error) {
+      console.error(error);
       message.error('Erreur lors de la suppression');
     }
   };
@@ -554,7 +521,7 @@ const AdminUsersPage: React.FC = () => {
             >
               <Input.Password
                 placeholder="Mot de passe"
-                iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+                iconRender={passwordIconRender}
               />
             </Form.Item>
           )}
@@ -566,10 +533,13 @@ const AdminUsersPage: React.FC = () => {
                 label="Rôle"
                 rules={[{ required: true, message: 'Le rôle est requis' }]}
               >
-                <Select placeholder="Sélectionner un rôle">
-                  <Option value="Admin">Administrateur</Option>
-                  <Option value="User">Utilisateur</Option>
-                  <Option value="ReadOnly">Lecture seule</Option>
+                <Select placeholder="Sélectionner un rôle" onChange={() => form.validateFields(['clientId'])}>
+                  {roles.map(r => {
+                    const uiRole = normalizeRoleFromDb(r.name);
+                    return (
+                      <Option key={r.id} value={uiRole}>{roleMeta[uiRole].label}</Option>
+                    );
+                  })}
                 </Select>
               </Form.Item>
             </Col>
@@ -587,6 +557,44 @@ const AdminUsersPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          {/* Permissions écriture si rôle User ou Client */}
+          <Form.Item shouldUpdate={(prev, curr) => prev.role !== curr.role}>
+            {() => {
+              const role = form.getFieldValue('role') as UserRole;
+              if (role === 'User' || role === 'Client') {
+                return (
+                  <Form.Item name="canWrite" label="Droit d'écriture" valuePropName="checked" initialValue={false}>
+                    <Switch checkedChildren="Oui" unCheckedChildren="Non" />
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
+
+          {/* Sélecteur Client requis si rôle Client */}
+          <Form.Item shouldUpdate={(prev, curr) => prev.role !== curr.role}>
+            {() => {
+              const role = form.getFieldValue('role') as UserRole;
+              if (role === 'Client') {
+                return (
+                  <Form.Item
+                    name="clientId"
+                    label="Client lié"
+                    rules={[{ required: true, message: 'Le client est requis pour un compte client' }]}
+                  >
+                    <Select placeholder="Sélectionner un client">
+                      {clients.map(c => (
+                        <Option key={c.id} value={c.id}>{c.nomClient}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
 
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>

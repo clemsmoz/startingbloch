@@ -78,6 +78,7 @@ using System.Security.Claims;
 using System.Text;
 using StartingBloch.Backend.Configuration;
 using StartingBloch.Backend.DTOs;
+using StartingBloch.Backend.Models;
 using Microsoft.Extensions.Options;
 
 namespace StartingBloch.Backend.Services;
@@ -97,6 +98,14 @@ public interface IJwtService
     /// <param name="role">Rôle utilisateur pour contrôle permissions</param>
     /// <returns>Token JWT signé avec claims utilisateur</returns>
     string GenerateToken(string userId, string email, string role);
+    
+    /// <summary>
+    /// Génère token JWT avec tous les claims de l'utilisateur (permissions complètes).
+    /// Inclut canWrite, canRead, isBlocked pour autorisation granulaire.
+    /// </summary>
+    /// <param name="user">Utilisateur complet avec toutes les propriétés</param>
+    /// <returns>Token JWT signé avec claims complets</returns>
+    string GenerateTokenWithClaims(UserDto user);
     
     /// <summary>
     /// Génère token JWT accès pour utilisateur avec claims personnalisés.
@@ -166,11 +175,14 @@ public class JwtService : IJwtService
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
             
+            // Normaliser le rôle pour correspondre aux attributs [AdminOnly]/[EmployeeOnly]/[ClientOnly]
+            var normalizedRole = NormalizeRole(role);
+
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, userId),
                 new(ClaimTypes.Email, email),
-                new(ClaimTypes.Role, role),
+                new(ClaimTypes.Role, normalizedRole),
                 new("jti", Guid.NewGuid().ToString()), // JWT ID pour une meilleure sécurité
                 new("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
@@ -195,6 +207,78 @@ public class JwtService : IJwtService
             _logger.LogError(ex, "Error generating JWT token for user {UserId}", userId);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Génère token JWT avec tous les claims de l'utilisateur (permissions complètes).
+    /// Inclut canWrite, canRead, isBlocked pour autorisation granulaire.
+    /// </summary>
+    /// <param name="user">Utilisateur complet avec toutes les propriétés</param>
+    /// <returns>Token JWT signé avec claims complets</returns>
+    public string GenerateTokenWithClaims(UserDto user)
+    {
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+            
+            // Normaliser le rôle pour correspondre aux attributs d'autorisation
+            var normalizedRole = NormalizeRole(user.Role);
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Role, normalizedRole),
+                new(ClaimTypes.Name, $"{user.FirstName?.Trim()} {user.LastName?.Trim()}".Trim()),
+                new("canRead", user.CanRead.ToString()),
+                new("canWrite", user.CanWrite.ToString()),
+                new("isBlocked", user.IsBlocked.ToString()),
+                new("jti", Guid.NewGuid().ToString()), // JWT ID pour une meilleure sécurité
+                new("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            };
+
+            // Ajouter clientId si présent
+            if (user.ClientId.HasValue)
+            {
+                claims.Add(new("clientId", user.ClientId.Value.ToString()));
+            }
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpireMinutes),
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
+            _logger.LogInformation("JWT token with full claims generated for user {UserId} (Role: {Role}, CanWrite: {CanWrite})", 
+                user.Id, normalizedRole, user.CanWrite);
+            return tokenString;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating JWT token with claims for user {UserId}", user.Id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Normalise la chaîne de rôle pour assurer la compatibilité avec les attributs d'autorisation.
+    /// AdminOnly attend "Admin", EmployeeOnly attend "Admin,User", ClientOnly attend "client".
+    /// </summary>
+    private static string NormalizeRole(string? role)
+    {
+        var r = role?.Trim();
+        if (string.IsNullOrEmpty(r)) return "User"; // défaut sûr côté employé interne
+        if (string.Equals(r, "admin", StringComparison.OrdinalIgnoreCase)) return "Admin";
+        if (string.Equals(r, "user", StringComparison.OrdinalIgnoreCase)) return "User";
+        if (string.Equals(r, "client", StringComparison.OrdinalIgnoreCase)) return "client";
+        return r; // conserver tel quel pour rôles futurs spécifiques
     }
 
     /// <summary>

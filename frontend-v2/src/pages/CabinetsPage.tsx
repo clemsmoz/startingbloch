@@ -74,7 +74,6 @@ const CabinetsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const { addNotification } = useNotificationStore();
 
@@ -127,6 +126,8 @@ const CabinetsPage: React.FC = () => {
       key: 'actions',
       width: 120,
       render: (_, record) => {
+        const userRole = (useNotificationStore.getState() as any)?.user?.role || (JSON.parse(sessionStorage.getItem('startingbloch_user') || 'null')?.role);
+        const isClient = String(userRole || '').toLowerCase() === 'client';
         const menuItems: MenuProps['items'] = [
           {
             key: 'view',
@@ -140,22 +141,23 @@ const CabinetsPage: React.FC = () => {
             label: 'Voir contacts',
             onClick: () => handleViewContacts(record),
           },
-          {
-            key: 'edit',
-            icon: <EditOutlined />,
-            label: 'Modifier',
-            onClick: () => handleEditCabinet(record),
-          },
-          {
-            type: 'divider',
-          },
-          {
-            key: 'delete',
-            icon: <DeleteOutlined />,
-            label: 'Supprimer',
-            danger: true,
-            onClick: () => handleDeleteCabinet(record),
-          },
+          // Pour les clients, pas de modification/suppression
+          ...(!isClient ? [
+            {
+              key: 'edit',
+              icon: <EditOutlined />,
+              label: 'Modifier',
+              onClick: () => handleEditCabinet(record),
+            },
+            { type: 'divider' as const },
+            {
+              key: 'delete',
+              icon: <DeleteOutlined />,
+              label: 'Supprimer',
+              danger: true,
+              onClick: () => handleDeleteCabinet(record),
+            },
+          ] : []),
         ];
 
         return (
@@ -188,15 +190,24 @@ const CabinetsPage: React.FC = () => {
         console.error('❌ CabinetsPage - Erreur récupération utilisateur:', userError);
       }
       
-      console.log(`🏢 CabinetsPage - Début du chargement des cabinets (page ${page}, taille ${size})...`);
-      const response = await cabinetService.getAll(page, size);
+      // Si l'utilisateur est un client, appeler l'endpoint dédié
+      const storedUser = sessionStorage.getItem('startingbloch_user');
+      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+      console.log(`🏢 CabinetsPage - Début du chargement des cabinets (page ${page}, taille ${size})... Rôle=${role}`);
+      const response = role === 'client'
+        ? await (async () => {
+            const r = await cabinetService.getMine();
+            // Adapter en PagedApiResponse minimal pour le code existant
+            return { ...r, page: 1, pageSize: r.data?.length ?? 0, totalCount: r.data?.length ?? 0 } as any;
+          })()
+        : await cabinetService.getAll(page, size);
       console.log('🏢 CabinetsPage - Réponse reçue:', response);
       
       // Le backend retourne un PagedResponse avec des propriétés en PascalCase
       const success = response.success || (response as any).Success;
       const data = response.data || (response as any).Data;
       
-      if (success) {
+  if (success) {
         console.log('📊 CabinetsPage - Type de données reçues:', typeof data);
         console.log('📊 CabinetsPage - Est-ce un tableau?', Array.isArray(data));
         console.log('📊 CabinetsPage - Données brutes:', data);
@@ -205,20 +216,20 @@ const CabinetsPage: React.FC = () => {
         if (Array.isArray(data)) {
           console.log('🔍 Premier cabinet pour debug:', data[0]);
           setCabinets(data);
-          setTotalCount(response.totalCount || 0);
-          setTotalPages(response.totalPages || 0);
-          setCurrentPage(response.page || page);
+          // Pour un client, pas de pagination serveur
+          const storedRole = (JSON.parse(sessionStorage.getItem('startingbloch_user') || 'null')?.role || '').toLowerCase();
+          const isClient = storedRole === 'client';
+          setTotalCount(isClient ? data.length : (response.totalCount || 0));
+          setCurrentPage(isClient ? 1 : (response.page || page));
           console.log('✅ CabinetsPage - Cabinets chargés directement:', data.length);
         } else if (data && (data as any).data && Array.isArray((data as any).data)) {
           setCabinets((data as any).data);
           setTotalCount(response.totalCount || 0);
-          setTotalPages(response.totalPages || 0);
           setCurrentPage(response.page || page);
           console.log('✅ CabinetsPage - Cabinets trouvés dans data.data:', (data as any).data.length);
         } else if (data && (data as any).items && Array.isArray((data as any).items)) {
           setCabinets((data as any).items);
           setTotalCount(response.totalCount || 0);
-          setTotalPages(response.totalPages || 0);
           setCurrentPage(response.page || page);
           console.log('✅ CabinetsPage - Cabinets trouvés dans data.items:', (data as any).items.length);
         } else {
@@ -226,7 +237,6 @@ const CabinetsPage: React.FC = () => {
           console.log('🔍 CabinetsPage - Propriétés disponibles:', Object.keys(data || {}));
           setCabinets([]);
           setTotalCount(0);
-          setTotalPages(0);
         }
         
         console.log('✅ CabinetsPage - Cabinets chargés:', Array.isArray(data) ? data.length : 'Format non-tableau');
@@ -272,9 +282,10 @@ const CabinetsPage: React.FC = () => {
   const filteredCabinets = Array.isArray(cabinets) ? cabinets.filter(cabinet =>
     searchValue === '' ||
     cabinet.nomCabinet.toLowerCase().includes(searchValue.toLowerCase()) ||
-    (cabinet.type || '').toLowerCase().includes(searchValue.toLowerCase()) ||
+    getTypeLabel(cabinet.type).toLowerCase().includes(searchValue.toLowerCase()) ||
     cabinet.emailCabinet?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    cabinet.referenceCabinet?.toLowerCase().includes(searchValue.toLowerCase())
+    cabinet.adresseCabinet?.toLowerCase().includes(searchValue.toLowerCase()) ||
+    cabinet.paysCabinet?.toLowerCase().includes(searchValue.toLowerCase())
   ) : [];
 
   // Actions
@@ -304,7 +315,11 @@ const CabinetsPage: React.FC = () => {
 
   const handleCreateCabinet = async (values: CreateCabinetDto) => {
     try {
-      const response = await cabinetService.create(values);
+      const storedUser = sessionStorage.getItem('startingbloch_user');
+      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+      const response = role === 'client'
+        ? await cabinetService.createForMe(values)
+        : await cabinetService.create(values);
       if (response.success) {
         message.success('Cabinet créé avec succès');
         setIsAddModalVisible(false);
@@ -387,6 +402,7 @@ const CabinetsPage: React.FC = () => {
     >
       Exporter
     </Button>,
+    // Bouton ajout désactivé pour clients si aucune création côté client ? Ici on autorise via endpoint /my
     <Button
       key="add"
       type="primary"
@@ -416,7 +432,7 @@ const CabinetsPage: React.FC = () => {
         loading={loading}
         rowKey="id"
         scroll={{ x: 1000 }}
-        pagination={searchValue ? false : {
+  pagination={(searchValue ? false : ((JSON.parse(sessionStorage.getItem('startingbloch_user') || 'null')?.role || '').toLowerCase() === 'client' ? false : {
           current: currentPage,
           pageSize: pageSize,
           total: totalCount,
@@ -427,7 +443,7 @@ const CabinetsPage: React.FC = () => {
           pageSizeOptions: ['10', '20', '50', '100'],
           onChange: handleTableChange,
           onShowSizeChange: handleTableChange,
-        }}
+  }))}
       />
 
       {/* Modal d'ajout */}
@@ -500,10 +516,22 @@ const CabinetsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Type</label>
-              <Tag color={selectedCabinet.type === 'annuite' ? 'blue' : 'green'}>
-                {selectedCabinet.type?.toUpperCase() || 'N/A'}
+              <Tag color={getTypeColor(selectedCabinet.type)}>
+                {getTypeLabel(selectedCabinet.type)}
               </Tag>
             </div>
+            {selectedCabinet.adresseCabinet && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Adresse</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedCabinet.adresseCabinet}</p>
+              </div>
+            )}
+            {selectedCabinet.paysCabinet && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Pays</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedCabinet.paysCabinet}</p>
+              </div>
+            )}
             {selectedCabinet.emailCabinet && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -514,12 +542,6 @@ const CabinetsPage: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Téléphone</label>
                 <p className="mt-1 text-sm text-gray-900">{selectedCabinet.telephoneCabinet}</p>
-              </div>
-            )}
-            {selectedCabinet.referenceCabinet && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Référence</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedCabinet.referenceCabinet}</p>
               </div>
             )}
           </div>

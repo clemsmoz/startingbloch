@@ -92,8 +92,13 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
       const clientsResponse = await clientService.getAll();
       if (clientsResponse.success) setClients(clientsResponse.data || []);
       
-      const cabinetsResponse = await cabinetService.getAll();
-      if (cabinetsResponse.success) setCabinets(cabinetsResponse.data || []);
+      const storedUser = sessionStorage.getItem('startingbloch_user');
+      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+      const cabinetsResponse = role === 'client' ? await (async () => {
+        const r = await cabinetService.getMine();
+        return { success: r.success, data: r.data } as any;
+      })() : await cabinetService.getAll();
+  if (cabinetsResponse.success) setCabinets(cabinetsResponse.data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des données de référence:', error);
     }

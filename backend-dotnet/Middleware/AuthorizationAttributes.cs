@@ -54,6 +54,8 @@
  */
 
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace StartingBloch.Backend.Middleware;
 
@@ -185,6 +187,13 @@ public class WritePermissionRequirement : IAuthorizationRequirement
 /// </summary>
 public class AdminOrOwnerHandler : AuthorizationHandler<AdminOrOwnerRequirement>
 {
+    private readonly ILogger<AdminOrOwnerHandler> _logger;
+
+    public AdminOrOwnerHandler(ILogger<AdminOrOwnerHandler> logger)
+    {
+        _logger = logger;
+    }
+
     /// <summary>
     /// Évalue l'autorisation selon rôle et propriété ressource.
     /// </summary>
@@ -195,12 +204,19 @@ public class AdminOrOwnerHandler : AuthorizationHandler<AdminOrOwnerRequirement>
         AuthorizationHandlerContext context,
         AdminOrOwnerRequirement requirement)
     {
-        var userRole = context.User.FindFirst("role")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
         var userClientId = context.User.FindFirst("clientId")?.Value;
+        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userName = context.User.FindFirst(ClaimTypes.Name)?.Value;
+
+        _logger.LogInformation("🔐 AdminOrOwner - Évaluation pour utilisateur {UserId} ({UserName})", userId, userName);
+        _logger.LogInformation("🔐 AdminOrOwner - Rôle: '{UserRole}', ClientId: '{UserClientId}', ResourceClientId: {ResourceClientId}", 
+            userRole, userClientId, requirement.ResourceClientId);
 
         // Admin : Accès complet toutes ressources
-        if (userRole == "admin")
+        if (userRole?.ToLower() == "admin")
         {
+            _logger.LogInformation("✅ AdminOrOwner - ACCORDÉE pour admin {UserId}", userId);
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
@@ -211,11 +227,14 @@ public class AdminOrOwnerHandler : AuthorizationHandler<AdminOrOwnerRequirement>
             int.TryParse(userClientId, out var clientId) &&
             clientId == requirement.ResourceClientId.Value)
         {
+            _logger.LogInformation("✅ AdminOrOwner - ACCORDÉE pour client {UserId} propriétaire de la ressource", userId);
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
         // Échec autorisation : rôle insuffisant ou ressource non propriétaire
+        _logger.LogWarning("❌ AdminOrOwner - REFUSÉE pour utilisateur {UserId} - Rôle: '{UserRole}', ClientId: '{UserClientId}', ResourceClientId: {ResourceClientId}", 
+            userId, userRole, userClientId, requirement.ResourceClientId);
         context.Fail();
         return Task.CompletedTask;
     }
@@ -232,6 +251,13 @@ public class AdminOrOwnerHandler : AuthorizationHandler<AdminOrOwnerRequirement>
 /// </summary>
 public class WritePermissionHandler : AuthorizationHandler<WritePermissionRequirement>
 {
+    private readonly ILogger<WritePermissionHandler> _logger;
+
+    public WritePermissionHandler(ILogger<WritePermissionHandler> logger)
+    {
+        _logger = logger;
+    }
+
     /// <summary>
     /// Évalue l'autorisation d'écriture selon rôle et permissions.
     /// </summary>
@@ -243,11 +269,22 @@ public class WritePermissionHandler : AuthorizationHandler<WritePermissionRequir
         WritePermissionRequirement requirement)
     {
         var canWrite = context.User.FindFirst("canWrite")?.Value;
-        var userRole = context.User.FindFirst("role")?.Value;
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        var userName = context.User.FindFirst(ClaimTypes.Name)?.Value;
+        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        _logger.LogInformation("🔐 WritePermission - Évaluation pour utilisateur {UserId} ({UserName})", userId, userName);
+        _logger.LogInformation("🔐 WritePermission - Rôle trouvé: '{UserRole}' (via ClaimTypes.Role)", userRole);
+        _logger.LogInformation("🔐 WritePermission - CanWrite trouvé: '{CanWrite}'", canWrite);
+        
+        // Log de tous les claims pour debug
+        var allClaims = context.User.Claims.Select(c => $"{c.Type}='{c.Value}'").ToArray();
+        _logger.LogInformation("🔐 WritePermission - Tous les claims: {Claims}", string.Join(", ", allClaims));
 
         // Admin : Droits écriture automatiques
-        if (userRole == "admin")
+        if (userRole?.ToLower() == "admin")
         {
+            _logger.LogInformation("✅ WritePermission - ACCORDÉE pour admin {UserId}", userId);
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
@@ -255,11 +292,14 @@ public class WritePermissionHandler : AuthorizationHandler<WritePermissionRequir
         // Autres rôles : Validation claim permissions
         if (bool.TryParse(canWrite, out var hasWritePermission) && hasWritePermission)
         {
+            _logger.LogInformation("✅ WritePermission - ACCORDÉE pour utilisateur {UserId} avec canWrite=true", userId);
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
         // Échec autorisation : permissions insuffisantes
+        _logger.LogWarning("❌ WritePermission - REFUSÉE pour utilisateur {UserId} - Rôle: '{UserRole}', CanWrite: '{CanWrite}'", 
+            userId, userRole, canWrite);
         context.Fail();
         return Task.CompletedTask;
     }

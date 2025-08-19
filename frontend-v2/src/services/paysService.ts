@@ -34,7 +34,7 @@ export const paysService = {
     try {
       console.log('🌍 Pays Service - Récupération de tous les pays...');
       
-      const response = await api.get('/pays');
+  const response = await api.get(config.api.endpoints.pays);
       
       console.log('✅ Pays Service - Réponse reçue:', response.data);
       
@@ -83,7 +83,7 @@ export const paysService = {
   // Récupérer un pays par son ID
   getById: async (id: number): Promise<ApiResponse<Pays>> => {
     try {
-      const response = await api.get(`/pays/${id}`);
+  const response = await api.get(`${config.api.endpoints.pays}/${id}`);
       return {
         data: response.data.data || response.data,
         success: true,
@@ -102,7 +102,7 @@ export const paysService = {
   // Créer un nouveau pays
   create: async (paysData: CreatePaysDto): Promise<ApiResponse<Pays>> => {
     try {
-      const response = await api.post('/pays', {
+  const response = await api.post(config.api.endpoints.pays, {
         nom_pays: paysData.nomPays,
         code_pays: paysData.codePays,
         iso_pays: paysData.isoPays
@@ -125,7 +125,7 @@ export const paysService = {
   // Mettre à jour un pays existant
   update: async (paysData: UpdatePaysDto): Promise<ApiResponse<Pays>> => {
     try {
-      const response = await api.put(`/pays/${paysData.id}`, {
+  const response = await api.put(`${config.api.endpoints.pays}/${paysData.id}`, {
         nom_pays: paysData.nomPays,
         code_pays: paysData.codePays,
         iso_pays: paysData.isoPays
@@ -148,7 +148,7 @@ export const paysService = {
   // Supprimer un pays
   delete: async (id: number): Promise<ApiResponse<void>> => {
     try {
-      await api.delete(`/pays/${id}`);
+  await api.delete(`${config.api.endpoints.pays}/${id}`);
       return {
         data: undefined,
         success: true,

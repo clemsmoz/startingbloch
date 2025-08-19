@@ -5,21 +5,25 @@
  */
 
 import React, { useState } from 'react';
-import { Modal, Form, Input, Row, Col } from 'antd';
+import { Modal, Form, Input, Row, Col, message } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
 import { inventeurService } from '../../services';
-import type { CreateInventeurDto } from '../../types';
+import type { CreateInventeurDto, Inventeur } from '../../types';
 
 interface CreateInventeurModalProps {
   visible: boolean;
   onCancel: () => void;
   onSuccess: (inventeur: any) => void;
+  existing?: Inventeur[];
+  onDuplicate?: (inventeur: any) => void;
 }
 
 const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
   visible,
   onCancel,
-  onSuccess
+  onSuccess,
+  existing = [],
+  onDuplicate
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -27,6 +31,30 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
+      // Détection doublon: par email si fourni, sinon (nom + prénom)
+      const norm = (s?: string) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+      const email = norm(values.emailInventeur);
+      const nom = norm(values.nomInventeur);
+      const prenom = norm(values.prenomInventeur);
+
+      const duplicate = existing.find(i => {
+        const iEmail = norm(i.emailInventeur);
+        const iNom = norm(i.nomInventeur);
+        const iPrenom = norm(i.prenomInventeur);
+        if (email) return iEmail && iEmail === email;
+        // sinon comparer nom + prénom (si prénom absent, on match que sur nom)
+        if (prenom) return iNom === nom && iPrenom === prenom;
+        return iNom === nom;
+      });
+
+      if (duplicate) {
+        message.info("Cet inventeur existe déjà, il a été sélectionné.");
+        onDuplicate?.(duplicate);
+        form.resetFields();
+        onCancel();
+        return;
+      }
+
       // Mapper les valeurs vers le format attendu par l'API
       const inventeurData: CreateInventeurDto = {
         nomInventeur: values.nomInventeur,

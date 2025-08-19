@@ -113,8 +113,12 @@ public class BrevetController : ControllerBase
             var hasAccess = await _brevetService.UserCanAccessBrevetAsync(currentUserId.Value, id);
             if (!hasAccess)
             {
-                // Retour immédiat si l'utilisateur n'a pas les droits
-                return Forbid("Vous n'avez pas accès à ce brevet");
+                // 403 explicite sans utiliser un schéma d'auth inexistant
+                return StatusCode(403, new ApiResponse<BrevetDto>
+                {
+                    Success = false,
+                    Message = "Vous n'avez pas accès à ce brevet"
+                });
             }
         }
 

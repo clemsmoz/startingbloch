@@ -30,24 +30,25 @@ api.interceptors.request.use(authInterceptor.request, authInterceptor.error);
 
 export const deposantService = {
   // Récupérer tous les déposants
-  getAll: async (): Promise<PagedApiResponse<Deposant>> => {
+  getAll: async (page: number = 1, pageSize: number = 100): Promise<PagedApiResponse<Deposant>> => {
     try {
       console.log('👤 Deposant Service - Récupération de tous les déposants...');
       
-      const response = await api.get('/deposant');
+  const response = await api.get(config.api.endpoints.deposants || '/api/deposant', { params: { page, pageSize } });
       
       console.log('✅ Deposant Service - Réponse reçue:', response.data);
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((deposant: any) => ({
         id: deposant.Id,
-        nomDeposant: deposant.NomDeposant,
-        prenomDeposant: deposant.PrenomDeposant,
+        nomDeposant: deposant.Nom,
+        prenomDeposant: deposant.Prenom,
+        emailDeposant: deposant.Email,
+        // Champs facultatifs non présents côté backend gardés pour compat.
         adresseDeposant: deposant.AdresseDeposant,
-        emailDeposant: deposant.EmailDeposant,
         telephoneDeposant: deposant.TelephoneDeposant,
-        createdAt: deposant.CreatedAt,
-        updatedAt: deposant.UpdatedAt
+        createdAt: deposant.CreatedAt ?? '',
+        updatedAt: deposant.UpdatedAt ?? ''
       })) || [];
       
       console.log('🔄 Deposant Service - Données transformées:', transformedData);
@@ -84,7 +85,7 @@ export const deposantService = {
   // Récupérer un déposant par son ID
   getById: async (id: number): Promise<ApiResponse<Deposant>> => {
     try {
-      const response = await api.get(`/deposant/${id}`);
+  const response = await api.get(`${config.api.endpoints.deposants || '/api/deposant'}/${id}`);
       return {
         data: response.data.data || response.data,
         success: true,
@@ -103,12 +104,11 @@ export const deposantService = {
   // Créer un nouveau déposant
   create: async (deposantData: CreateDeposantDto): Promise<ApiResponse<Deposant>> => {
     try {
-      const response = await api.post('/deposant', {
-        nom_deposant: deposantData.nomDeposant,
-        prenom_deposant: deposantData.prenomDeposant,
-        adresse_deposant: deposantData.adresseDeposant,
-        email_deposant: deposantData.emailDeposant,
-        telephone_deposant: deposantData.telephoneDeposant
+      const response = await api.post(config.api.endpoints.deposants || '/api/deposant', {
+        // Backend attend Nom, Prenom, Email
+        nom: deposantData.nomDeposant,
+        prenom: deposantData.prenomDeposant,
+        email: deposantData.emailDeposant,
       });
       return {
         data: response.data,
@@ -128,12 +128,10 @@ export const deposantService = {
   // Mettre à jour un déposant existant
   update: async (deposantData: UpdateDeposantDto): Promise<ApiResponse<Deposant>> => {
     try {
-      const response = await api.put(`/deposant/${deposantData.id}`, {
-        nom_deposant: deposantData.nomDeposant,
-        prenom_deposant: deposantData.prenomDeposant,
-        adresse_deposant: deposantData.adresseDeposant,
-        email_deposant: deposantData.emailDeposant,
-        telephone_deposant: deposantData.telephoneDeposant
+      const response = await api.put(`${config.api.endpoints.deposants || '/api/deposant'}/${deposantData.id}`, {
+        nom: deposantData.nomDeposant,
+        prenom: deposantData.prenomDeposant,
+        email: deposantData.emailDeposant,
       });
       return {
         data: response.data.data || response.data,
@@ -153,7 +151,7 @@ export const deposantService = {
   // Supprimer un déposant
   delete: async (id: number): Promise<ApiResponse<void>> => {
     try {
-      await api.delete(`/deposant/${id}`);
+  await api.delete(`${config.api.endpoints.deposants || '/api/deposant'}/${id}`);
       return {
         data: undefined,
         success: true,

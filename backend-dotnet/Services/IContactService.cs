@@ -101,4 +101,22 @@ public interface IContactService
     /// <param name="id">Identifiant contact à supprimer</param>
     /// <returns>Confirmation succès suppression avec audit trail</returns>
     Task<ApiResponse<bool>> DeleteContactAsync(int id);
+
+    /// <summary>
+    /// Récupère la liste paginée des contacts associés à un client spécifique.
+    /// </summary>
+    /// <param name="clientId">Identifiant du client</param>
+    /// <param name="page">Numéro de page</param>
+    /// <param name="pageSize">Taille de la page</param>
+    /// <returns>Réponse paginée des contacts du client</returns>
+    Task<PagedResponse<List<ContactDto>>> GetContactsByClientAsync(int clientId, int page = 1, int pageSize = 10);
+
+    /// <summary>
+    /// Récupère la liste paginée des contacts associés à un cabinet spécifique.
+    /// </summary>
+    /// <param name="cabinetId">Identifiant du cabinet</param>
+    /// <param name="page">Numéro de page</param>
+    /// <param name="pageSize">Taille de la page</param>
+    /// <returns>Réponse paginée des contacts du cabinet</returns>
+    Task<PagedResponse<List<ContactDto>>> GetContactsByCabinetAsync(int cabinetId, int page = 1, int pageSize = 10);
 }

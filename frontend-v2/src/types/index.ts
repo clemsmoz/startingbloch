@@ -37,7 +37,14 @@ export interface AuthResponse {
   expiresAt: string;
 }
 
-export type UserRole = 'Admin' | 'User' | 'ReadOnly';
+export type UserRole = 'Admin' | 'User' | 'Client';
+
+export interface RoleItem {
+  id: number;
+  name: string; // 'admin' | 'user' | 'client' (côté backend, souvent en minuscule)
+  description?: string;
+  createdAt: string;
+}
 
 // Types d'entités métier
 export interface Client {
@@ -96,10 +103,12 @@ export interface Contact {
 export interface Cabinet {
   id: number;
   nomCabinet: string;
+  adresseCabinet?: string;
+  codePostal?: string;
+  paysCabinet?: string;
   emailCabinet?: string;
   telephoneCabinet?: string;
-  referenceCabinet?: string;
-  type?: string; // 'annuite' | 'procedure'
+  type?: number; // CabinetType enum: 1 = Annuité, 2 = Procédure
   createdAt: string;
   updatedAt: string;
 }
@@ -145,6 +154,9 @@ export interface InformationDepot {
   // Relations navigationelles
   pays?: Pays;
   statuts?: Statuts;
+  // Cabinets liés par information de dépôt (lecture)
+  cabinetsAnnuites?: InformationDepotCabinetItemDto[];
+  cabinetsProcedures?: InformationDepotCabinetItemDto[];
 }
 
 export interface Inventeur {
@@ -195,10 +207,23 @@ export interface Log {
   id: number;
   userId?: number;
   userEmail?: string;
+  userName?: string;
+  userFullName?: string;
   action: string;
   details?: string;
   ipAddress?: string;
-  timestamp: string;
+  timestamp?: string;
+  createdAt?: string;
+  timeStamp?: string;
+  entityType?: string;
+  entityId?: number;
+  entityName?: string;
+  message?: string;
+  oldValues?: string;
+  newValues?: string;
+  tableName?: string;
+  userAgent?: string;
+  level?: string;
 }
 
 // Types pour DTOs (Data Transfer Objects)
@@ -213,6 +238,30 @@ export interface CreateClientDto {
   canWrite?: boolean;
   canRead?: boolean;
   isBlocked?: boolean;
+}
+
+// DTO pour créer un client avec un compte utilisateur
+export interface CreateClientWithUserDto {
+  // Informations client
+  nomClient: string;
+  referenceClient?: string;
+  adresseClient?: string;
+  codePostal?: string;
+  paysClient?: string;
+  emailClient?: string;
+  telephoneClient?: string;
+  
+  // Informations compte utilisateur
+  username: string;
+  userEmail: string;
+  password: string;
+  
+  // Permissions utilisateur
+  canWrite?: boolean;
+  canRead?: boolean;
+  isActive?: boolean;
+  
+  notes?: string;
 }
 
 export interface UpdateClientDto {
@@ -449,6 +498,9 @@ export interface CreateInformationDepotDto {
   dateDelivrance?: string;
   licence?: boolean;
   commentaire?: string;
+  // Cabinets par catégorie (écriture)
+  cabinetsAnnuites?: InformationDepotCabinetInputDto[];
+  cabinetsProcedures?: InformationDepotCabinetInputDto[];
 }
 
 export interface UpdateBrevetDto {
@@ -478,23 +530,44 @@ export interface UpdateInformationDepotDto {
   dateDelivrance?: string;
   licence?: boolean;
   commentaire?: string;
+  // Cabinets par catégorie (mise à jour)
+  cabinetsAnnuites?: InformationDepotCabinetInputDto[];
+  cabinetsProcedures?: InformationDepotCabinetInputDto[];
 }
 
 export interface CreateCabinetDto {
   nomCabinet: string;
+  adresseCabinet: string;
+  codePostal?: string;
+  paysCabinet: string;
   emailCabinet?: string;
   telephoneCabinet?: string;
-  referenceCabinet?: string;
-  type?: string; // 'annuite' | 'procedure'
+  type: number; // CabinetType enum: 1 = Annuité, 2 = Procédure
 }
 
 export interface UpdateCabinetDto {
   id: number;
   nomCabinet?: string;
+  adresseCabinet?: string;
+  codePostal?: string;
+  paysCabinet?: string;
   emailCabinet?: string;
   telephoneCabinet?: string;
-  referenceCabinet?: string;
-  type?: string; // 'annuite' | 'procedure'
+  type?: number; // CabinetType enum: 1 = Annuité, 2 = Procédure
+}
+
+// DTOs cabinets par information de dépôt
+export interface InformationDepotCabinetInputDto {
+  cabinetId: number;
+  roles: string[]; // 'premier' | 'deuxieme' | 'troisieme'
+  contactIds: number[];
+}
+
+export interface InformationDepotCabinetItemDto {
+  cabinetId: number;
+  cabinetNom: string;
+  roles: string[];
+  contacts: Contact[]; // lecture détaillée
 }
 
 export type SortDirection = 'asc' | 'desc';

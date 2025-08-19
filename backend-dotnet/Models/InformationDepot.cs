@@ -160,4 +160,7 @@ public class InformationDepot
     /// </summary>
     [ForeignKey("IdStatuts")]
     public virtual Statuts? Statuts { get; set; }
+
+    // Cabinets liés à cette information de dépôt (par catégorie)
+    public virtual ICollection<InformationDepotCabinet> InformationDepotCabinets { get; set; } = new List<InformationDepotCabinet>();
 }

@@ -92,6 +92,16 @@ public interface ILogService
     Task<ApiResponse<List<LogDto>>> GetLogsByUserAsync(int userId);
     
     /// <summary>
+    /// Récupère logs utilisateur avec pagination optimisée.
+    /// Audit trail utilisateur spécifique avec navigation efficace.
+    /// </summary>
+    /// <param name="userId">Identifiant utilisateur pour historique</param>
+    /// <param name="page">Numéro page pour pagination</param>
+    /// <param name="pageSize">Taille page pour limitation résultats</param>
+    /// <returns>Réponse paginée logs utilisateur avec métadonnées</returns>
+    Task<PagedResponse<List<LogDto>>> GetLogsByUserAsync(int userId, int page = 1, int pageSize = 10);
+    
+    /// <summary>
     /// Crée nouveau log événement avec horodatage et métadonnées.
     /// Enregistrement audit trail avec informations contextuelles complètes.
     /// </summary>
@@ -106,4 +116,11 @@ public interface ILogService
     /// <param name="beforeDate">Date limite pour purge logs anciens</param>
     /// <returns>Confirmation succès purge avec statistiques</returns>
     Task<ApiResponse<bool>> ClearOldLogsAsync(DateTime beforeDate);
+    
+    /// <summary>
+    /// Supprime tous les logs de consultation (méthodes GET) pour optimisation.
+    /// Nettoyage ciblé des logs non-critiques pour réduire volume base données.
+    /// </summary>
+    /// <returns>Confirmation succès avec nombre logs supprimés</returns>
+    Task<ApiResponse<int>> ClearGetLogsAsync();
 }

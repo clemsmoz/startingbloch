@@ -93,6 +93,27 @@ public class CabinetController : ControllerBase
     }
 
     /// <summary>
+    /// Récupère les cabinets du client connecté (portail client).
+    /// </summary>
+    [HttpGet("my")]
+    [ClientOnly]
+    public async Task<ActionResult<ApiResponse<List<CabinetDto>>>> GetMyCabinets()
+    {
+        var clientIdStr = User.FindFirst("clientId")?.Value;
+        if (!int.TryParse(clientIdStr, out var clientId))
+        {
+            return BadRequest(new ApiResponse<List<CabinetDto>>
+            {
+                Success = false,
+                Message = "Utilisateur non associé à un client"
+            });
+        }
+
+        var result = await _cabinetService.GetCabinetsByClientAsync(clientId);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Récupère les détails complets d'un cabinet spécifique par son identifiant
     /// 
     /// INFORMATIONS RETOURNÉES :
@@ -154,7 +175,7 @@ public class CabinetController : ControllerBase
     /// <param name="createCabinetDto">Données du nouveau cabinet à créer</param>
     /// <returns>Cabinet créé avec ID généré ou erreurs de validation</returns>
     [HttpPost]
-    [EmployeeOnly] // Restriction : employés autorisés uniquement
+    [WritePermission] // Nécessite canWrite=true ou Admin
     public async Task<ActionResult<ApiResponse<CabinetDto>>> CreateCabinet(CreateCabinetDto createCabinetDto)
     {
         // Validation préalable du modèle de données
@@ -170,6 +191,56 @@ public class CabinetController : ControllerBase
             
         // Retour HTTP 201 Created avec localisation de la ressource
         return CreatedAtAction(nameof(GetCabinet), new { id = result.Data!.Id }, result);
+    }
+
+    /// <summary>
+    /// Crée un cabinet et le lie au client courant (portail client).
+    /// </summary>
+    [HttpPost("my")]
+    [ClientOnly]
+    public async Task<ActionResult<ApiResponse<CabinetDto>>> CreateCabinetForMe(CreateCabinetDto createCabinetDto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var clientIdStr = User.FindFirst("clientId")?.Value;
+        if (!int.TryParse(clientIdStr, out var clientId))
+        {
+            return BadRequest(new ApiResponse<CabinetDto>
+            {
+                Success = false,
+                Message = "Utilisateur non associé à un client"
+            });
+        }
+
+        var result = await _cabinetService.CreateCabinetForClientAsync(clientId, createCabinetDto);
+        if (!result.Success)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetCabinet), new { id = result.Data!.Id }, result);
+    }
+
+    /// <summary>
+    /// Lie un cabinet existant au client courant.
+    /// </summary>
+    [HttpPost("my/link/{cabinetId}")]
+    [ClientOnly]
+    public async Task<ActionResult<ApiResponse<bool>>> LinkExistingCabinetToMe(int cabinetId)
+    {
+        var clientIdStr = User.FindFirst("clientId")?.Value;
+        if (!int.TryParse(clientIdStr, out var clientId))
+        {
+            return BadRequest(new ApiResponse<bool>
+            {
+                Success = false,
+                Message = "Utilisateur non associé à un client"
+            });
+        }
+
+        var result = await _cabinetService.LinkExistingCabinetToClientAsync(clientId, cabinetId);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
     }
 
     /// <summary>
@@ -200,7 +271,7 @@ public class CabinetController : ControllerBase
     /// <param name="updateCabinetDto">Nouvelles données du cabinet</param>
     /// <returns>Cabinet mis à jour ou erreurs de validation</returns>
     [HttpPut("{id}")]
-    [EmployeeOnly] // Restriction : employés autorisés uniquement
+    [WritePermission] // Nécessite canWrite=true ou Admin
     public async Task<ActionResult<ApiResponse<CabinetDto>>> UpdateCabinet(int id, UpdateCabinetDto updateCabinetDto)
     {
         // Validation préalable du modèle de données

@@ -51,7 +51,6 @@ export const cabinetService = {
         paysCabinet: cabinet.PaysCabinet,
         emailCabinet: cabinet.EmailCabinet,
         telephoneCabinet: cabinet.TelephoneCabinet,
-        referenceCabinet: cabinet.ReferenceCabinet,
         type: cabinet.Type,
         createdAt: cabinet.CreatedAt,
         updatedAt: cabinet.UpdatedAt,
@@ -92,6 +91,40 @@ export const cabinetService = {
     }
   },
 
+  // Récupérer les cabinets du client connecté
+  getMine: async (): Promise<ApiResponse<Cabinet[]>> => {
+    try {
+      const response = await api.get(`${config.api.endpoints.cabinets}/my`);
+
+      const list = response.data.Data || response.data.data || [];
+      const transformed: Cabinet[] = (list as any[]).map((cabinet: any) => ({
+        id: cabinet.Id ?? cabinet.id,
+        nomCabinet: cabinet.NomCabinet ?? cabinet.nomCabinet,
+        adresseCabinet: cabinet.AdresseCabinet ?? cabinet.adresseCabinet,
+        codePostal: cabinet.CodePostal ?? cabinet.codePostal,
+        paysCabinet: cabinet.PaysCabinet ?? cabinet.paysCabinet,
+        emailCabinet: cabinet.EmailCabinet ?? cabinet.emailCabinet,
+        telephoneCabinet: cabinet.TelephoneCabinet ?? cabinet.telephoneCabinet,
+        type: cabinet.Type ?? cabinet.type,
+        createdAt: cabinet.CreatedAt ?? cabinet.createdAt ?? new Date().toISOString(),
+        updatedAt: cabinet.UpdatedAt ?? cabinet.updatedAt ?? new Date().toISOString(),
+      }));
+
+      return {
+        success: true,
+        data: transformed,
+        message: response.data.Message || response.data.message || 'Cabinets du client récupérés',
+      };
+    } catch (error: any) {
+      return {
+        data: [],
+        success: false,
+        message: error.response?.data?.message || 'Erreur lors de la récupération de vos cabinets',
+        errors: error.response?.data?.errors,
+      };
+    }
+  },
+
   // Récupérer un cabinet par son ID
   getById: async (id: number): Promise<ApiResponse<Cabinet>> => {
     try {
@@ -114,24 +147,85 @@ export const cabinetService = {
   // Créer un nouveau cabinet
   create: async (cabinetData: CreateCabinetDto): Promise<ApiResponse<Cabinet>> => {
     try {
-      const response = await api.post(config.api.endpoints.cabinets, {
-        nom_cabinet: cabinetData.nomCabinet,
-        email_cabinet: cabinetData.emailCabinet,
-        telephone_cabinet: cabinetData.telephoneCabinet,
-        reference_cabinet: cabinetData.referenceCabinet,
-        type: cabinetData.type
-      });
+      console.log('🏢 Cabinet Service - Création avec données:', cabinetData);
+      
+      const requestData = {
+        NomCabinet: cabinetData.nomCabinet,
+        AdresseCabinet: cabinetData.adresseCabinet,
+        CodePostal: cabinetData.codePostal,
+        PaysCabinet: cabinetData.paysCabinet,
+        EmailCabinet: cabinetData.emailCabinet,
+        TelephoneCabinet: cabinetData.telephoneCabinet,
+        Type: cabinetData.type
+      };
+      
+      console.log('🔄 Cabinet Service - Données envoyées au backend:', requestData);
+      
+      const response = await api.post(config.api.endpoints.cabinets, requestData);
+      
+      console.log('✅ Cabinet Service - Réponse du backend:', response.data);
+      
       return {
-        data: response.data,
+        data: response.data.data || response.data,
         success: true,
         message: 'Cabinet créé avec succès'
+      };
+    } catch (error: any) {
+      console.error('❌ Cabinet Service - Erreur lors de la création:', error);
+      console.error('❌ Détails de l\'erreur:', error.response?.data);
+      
+      return {
+        data: {} as Cabinet,
+        success: false,
+        message: error.response?.data?.Message || error.response?.data?.message || 'Erreur lors de la création du cabinet',
+        errors: error.response?.data?.Errors || error.response?.data?.errors
+      };
+    }
+  },
+
+  // Créer un cabinet pour le client connecté (et le lier)
+  createForMe: async (cabinetData: CreateCabinetDto): Promise<ApiResponse<Cabinet>> => {
+    try {
+      const requestData = {
+        NomCabinet: cabinetData.nomCabinet,
+        AdresseCabinet: cabinetData.adresseCabinet,
+        CodePostal: cabinetData.codePostal,
+        PaysCabinet: cabinetData.paysCabinet,
+        EmailCabinet: cabinetData.emailCabinet,
+        TelephoneCabinet: cabinetData.telephoneCabinet,
+        Type: cabinetData.type,
+      };
+      const response = await api.post(`${config.api.endpoints.cabinets}/my`, requestData);
+      return {
+        data: response.data.data || response.data,
+        success: true,
+        message: 'Cabinet créé et lié au client avec succès',
       };
     } catch (error: any) {
       return {
         data: {} as Cabinet,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la création du cabinet',
-        errors: error.response?.data?.errors
+        message: error.response?.data?.Message || error.response?.data?.message || 'Erreur lors de la création du cabinet (client)',
+        errors: error.response?.data?.Errors || error.response?.data?.errors,
+      };
+    }
+  },
+
+  // Lier un cabinet existant au client connecté
+  linkExistingForMe: async (cabinetId: number): Promise<ApiResponse<boolean>> => {
+    try {
+      const response = await api.post(`${config.api.endpoints.cabinets}/my/link/${cabinetId}`, {});
+      return {
+        data: true as any,
+        success: true,
+        message: response.data.Message || response.data.message || 'Cabinet lié au client',
+      };
+    } catch (error: any) {
+      return {
+        data: false as any,
+        success: false,
+        message: error.response?.data?.message || 'Erreur lors du lien du cabinet',
+        errors: error.response?.data?.errors,
       };
     }
   },
@@ -139,24 +233,36 @@ export const cabinetService = {
   // Mettre à jour un cabinet existant
   update: async (cabinetData: UpdateCabinetDto): Promise<ApiResponse<Cabinet>> => {
     try {
-      const response = await api.put(`${config.api.endpoints.cabinets}/${cabinetData.id}`, {
-        nom_cabinet: cabinetData.nomCabinet,
-        email_cabinet: cabinetData.emailCabinet,
-        telephone_cabinet: cabinetData.telephoneCabinet,
-        reference_cabinet: cabinetData.referenceCabinet,
-        type: cabinetData.type
-      });
+      console.log('🏢 Cabinet Service - Mise à jour avec données:', cabinetData);
+      
+      const requestData = {
+        NomCabinet: cabinetData.nomCabinet,
+        AdresseCabinet: cabinetData.adresseCabinet,
+        CodePostal: cabinetData.codePostal,
+        PaysCabinet: cabinetData.paysCabinet,
+        EmailCabinet: cabinetData.emailCabinet,
+        TelephoneCabinet: cabinetData.telephoneCabinet,
+        Type: cabinetData.type
+      };
+      
+      console.log('🔄 Cabinet Service - Données envoyées au backend:', requestData);
+      
+      const response = await api.put(`${config.api.endpoints.cabinets}/${cabinetData.id}`, requestData);
+      
       return {
         data: response.data.data || response.data,
         success: true,
         message: 'Cabinet mis à jour avec succès'
       };
     } catch (error: any) {
+      console.error('❌ Cabinet Service - Erreur lors de la mise à jour:', error);
+      console.error('❌ Détails de l\'erreur:', error.response?.data);
+      
       return {
         data: {} as Cabinet,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la mise à jour du cabinet',
-        errors: error.response?.data?.errors
+        message: error.response?.data?.Message || error.response?.data?.message || 'Erreur lors de la mise à jour du cabinet',
+        errors: error.response?.data?.Errors || error.response?.data?.errors
       };
     }
   },

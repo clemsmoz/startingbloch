@@ -131,7 +131,17 @@ public class LogService : ILogService
                 OldValues = l.OldValues,
                 NewValues = l.NewValues,
                 UserId = string.IsNullOrEmpty(l.UserId) ? null : int.TryParse(l.UserId, out int uid) ? uid : null,
-                CreatedAt = l.CreatedAt
+                CreatedAt = l.CreatedAt,
+                TimeStamp = l.Timestamp,
+                Details = l.Details,
+                Message = l.Message ?? string.Empty,
+                IpAddress = l.IpAddress ?? string.Empty,
+                UserAgent = l.UserAgent ?? string.Empty,
+                Level = l.Level ?? string.Empty,
+                // Champs additionnels pour frontend
+                EntityType = l.TableName,
+                EntityName = l.Message,
+                EntityId = l.RecordId
             }).ToList();
 
             return new PagedResponse<List<LogDto>>
@@ -161,7 +171,144 @@ public class LogService : ILogService
     /// </summary>
     /// <param name="userId">Identifiant utilisateur pour historique activités</param>
     /// <returns>Liste logs utilisateur avec détails actions</returns>
-    public Task<ApiResponse<List<LogDto>>> GetLogsByUserAsync(int userId) => throw new NotImplementedException();
+    public async Task<ApiResponse<List<LogDto>>> GetLogsByUserAsync(int userId)
+    {
+        try
+        {
+            var logs = await _context.Logs
+                .Where(l => l.UserId == userId.ToString())
+                .OrderByDescending(l => l.CreatedAt)
+                .ToListAsync();
+
+            var logDtos = logs.Select(l => new LogDto
+            {
+                Id = l.Id,
+                Action = l.Action,
+                TableName = l.TableName,
+                RecordId = l.RecordId,
+                OldValues = l.OldValues,
+                NewValues = l.NewValues,
+                UserId = string.IsNullOrEmpty(l.UserId) ? null : int.TryParse(l.UserId, out int uid) ? uid : null,
+                CreatedAt = l.CreatedAt,
+                TimeStamp = l.Timestamp,
+                Details = l.Details,
+                Message = l.Message ?? string.Empty,
+                IpAddress = l.IpAddress ?? string.Empty,
+                UserAgent = l.UserAgent ?? string.Empty,
+                Level = l.Level ?? string.Empty,
+                EntityType = l.TableName,
+                EntityName = l.Message,
+                EntityId = l.RecordId
+            }).ToList();
+
+            return new ApiResponse<List<LogDto>>
+            {
+                Success = true,
+                Data = logDtos,
+                Message = $"Logs utilisateur {userId} récupérés avec succès"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<List<LogDto>>
+            {
+                Success = false,
+                Data = new List<LogDto>(),
+                Message = "Erreur lors de la récupération des logs utilisateur",
+                Errors = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Récupère logs utilisateur avec pagination optimisée.
+    /// Audit trail utilisateur spécifique avec navigation efficace.
+    /// </summary>
+    /// <param name="userId">Identifiant utilisateur pour historique</param>
+    /// <param name="page">Numéro page pour pagination</param>
+    /// <param name="pageSize">Taille page pour limitation résultats</param>
+    /// <returns>Réponse paginée logs utilisateur avec métadonnées</returns>
+    public async Task<PagedResponse<List<LogDto>>> GetLogsByUserAsync(int userId, int page = 1, int pageSize = 10)
+    {
+        try
+        {
+            Console.WriteLine($"🔍 LogService - Recherche logs pour utilisateur {userId}, page {page}, taille {pageSize}");
+            
+            var query = _context.Logs.Where(l => l.UserId == userId.ToString());
+            Console.WriteLine($"🔍 LogService - Query créé pour UserId = '{userId}'");
+
+            var totalItems = await query.CountAsync();
+            Console.WriteLine($"🔍 LogService - Total logs trouvés pour utilisateur {userId}: {totalItems}");
+            
+            // Debug: Afficher tous les UserId distincts en base
+            var allUserIds = await _context.Logs.Select(l => l.UserId).Distinct().ToListAsync();
+            Console.WriteLine($"🔍 LogService - Tous les UserId en base: [{string.Join(", ", allUserIds.Where(u => !string.IsNullOrEmpty(u)))}]");
+            
+            var logs = await query
+                .OrderByDescending(l => l.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            Console.WriteLine($"🔍 LogService - Logs récupérés après pagination: {logs.Count}");
+            Console.WriteLine($"🔍 LogService - Détails des logs:");
+            foreach (var log in logs)
+            {
+                Console.WriteLine($"  - ID: {log.Id}, Action: '{log.Action}', CreatedAt: {log.CreatedAt}");
+            }
+
+            var logDtos = logs.Select(l => new LogDto
+            {
+                Id = l.Id,
+                Action = l.Action,
+                TableName = l.TableName,
+                RecordId = l.RecordId,
+                OldValues = l.OldValues,
+                NewValues = l.NewValues,
+                UserId = string.IsNullOrEmpty(l.UserId) ? null : int.TryParse(l.UserId, out int uid) ? uid : null,
+                CreatedAt = l.CreatedAt,
+                TimeStamp = l.Timestamp,
+                Details = l.Details,
+                Message = l.Message ?? string.Empty,
+                IpAddress = l.IpAddress ?? string.Empty,
+                UserAgent = l.UserAgent ?? string.Empty,
+                Level = l.Level ?? string.Empty,
+                EntityType = l.TableName,
+                EntityName = l.Message,
+                EntityId = l.RecordId
+            }).ToList();
+
+            Console.WriteLine($"✅ LogService - Returning {logDtos.Count} logs pour utilisateur {userId}");
+
+            return new PagedResponse<List<LogDto>>
+            {
+                Success = true,
+                Data = logDtos,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalItems,
+                TotalPages = (int)Math.Ceiling((double)totalItems / pageSize),
+                Message = $"Logs utilisateur {userId} récupérés avec succès"
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ LogService - ERREUR lors récupération logs utilisateur {userId}: {ex.Message}");
+            Console.WriteLine($"❌ LogService - Stack trace: {ex.StackTrace}");
+            
+            return new PagedResponse<List<LogDto>>
+            {
+                Success = false,
+                Data = new List<LogDto>(),
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = 0,
+                TotalPages = 0,
+                Message = "Erreur lors de la récupération des logs utilisateur",
+                Errors = ex.Message
+            };
+        }
+    }
     
     /// <summary>
     /// Crée nouvelle entrée audit trail avec données complètes action.
@@ -178,4 +325,45 @@ public class LogService : ILogService
     /// <param name="beforeDate">Date limite pour suppression logs anciens</param>
     /// <returns>Confirmation nettoyage avec statistiques suppression</returns>
     public Task<ApiResponse<bool>> ClearOldLogsAsync(DateTime beforeDate) => throw new NotImplementedException();
+    
+    /// <summary>
+    /// Supprime tous les logs de consultation (méthodes GET) pour optimisation.
+    /// Nettoyage ciblé des logs non-critiques pour réduire volume base données.
+    /// </summary>
+    /// <returns>Confirmation succès avec nombre logs supprimés</returns>
+    public async Task<ApiResponse<int>> ClearGetLogsAsync()
+    {
+        try
+        {
+            // Rechercher tous les logs de type GET
+            var getLogsQuery = _context.Logs.Where(l => 
+                l.Action != null && l.Action.StartsWith("GET "));
+            
+            var logsToDelete = await getLogsQuery.ToListAsync();
+            var countToDelete = logsToDelete.Count;
+            
+            if (countToDelete > 0)
+            {
+                _context.Logs.RemoveRange(logsToDelete);
+                await _context.SaveChangesAsync();
+            }
+            
+            return new ApiResponse<int>
+            {
+                Success = true,
+                Data = countToDelete,
+                Message = $"✅ {countToDelete} logs GET supprimés avec succès"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ApiResponse<int>
+            {
+                Success = false,
+                Data = 0,
+                Message = "❌ Erreur lors de la suppression des logs GET",
+                Errors = ex.Message
+            };
+        }
+    }
 }

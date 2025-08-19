@@ -7,25 +7,35 @@
 import axios from 'axios';
 import { config } from '../config';
 import { createAuthInterceptor } from '../utils/auth';
-import type { User, ApiResponse, UserRole, PagedApiResponse } from '../types';
+import type { User, ApiResponse, PagedApiResponse } from '../types';
 
-interface CreateUserDto {
-  nom: string;
-  prenom: string;
-  email: string;
+// Payloads adaptés aux endpoints backend .NET
+export interface CreateEmployeeDto {
   username: string;
+  email: string;
   password: string;
-  role: UserRole;
-  isActive: boolean;
+  role: 'admin' | 'user'; // attendu en minuscule par l'API
+  canWrite?: boolean;
+  isActive?: boolean;
 }
 
-interface UpdateUserDto {
-  nom?: string;
-  prenom?: string;
+export interface CreateUserForClientDto {
+  clientId: number;
+  username: string;
+  email: string;
+  password: string;
+  canWrite?: boolean;
+  isActive?: boolean;
+  notes?: string;
+}
+
+export interface UpdateUserDto {
   email?: string;
   username?: string;
-  role?: UserRole;
+  role?: 'Admin' | 'User' | 'Client';
   isActive?: boolean;
+  canWrite?: boolean;
+  clientId?: number | null;
 }
 
 const api = axios.create({
@@ -41,19 +51,20 @@ export const userAdminService = {
   // Récupérer tous les utilisateurs
   getAll: async (page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<User>> => {
     try {
-      // console.log(`👥 UserAdmin Service - Récupération des utilisateurs (page ${page}, taille ${pageSize})...`);
-      // console.log('URL complète:', `${config.api.baseUrl}${config.api.endpoints.users}/users`);
       
-      const response = await api.get(`${config.api.endpoints.users}/users`, {
+  const response = await api.get(`${config.api.endpoints.users}/users`, {
         params: { page, pageSize }
       });
       
-      // console.log('✅ UserAdmin Service - Réponse reçue:', response.data);
-      // console.log('🔍 UserAdmin Service - Structure de response.data:', Object.keys(response.data || {}));
-      // console.log('🔍 UserAdmin Service - response.data.Success:', response.data?.Success);
-      // console.log('🔍 UserAdmin Service - response.data.Data:', response.data?.Data);
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
+      const mapRole = (r: any) => {
+        const v = (String(r || '')).toLowerCase();
+        if (v === 'admin') return 'Admin';
+        if (v === 'user') return 'User';
+        if (v === 'client') return 'Client';
+        return 'User';
+      };
       const transformedData = response.data.Data?.map((user: any) => ({
         id: user.Id,
         username: user.Username,
@@ -62,7 +73,7 @@ export const userAdminService = {
         prenom: user.FirstName,    // Map vers prenom pour compatibilité
         firstName: user.FirstName,
         lastName: user.LastName,
-        role: user.Role,
+        role: mapRole(user.Role),
         isActive: user.IsActive,
         isBlocked: user.IsBlocked,
         lastLogin: user.LastLogin,
@@ -89,11 +100,6 @@ export const userAdminService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      // console.error('❌ UserAdmin Service - Erreur:', error);
-      // console.error('Status:', error.response?.status);
-      // console.error('Status Text:', error.response?.statusText);
-      // console.error('Data:', error.response?.data);
-      // console.error('URL:', error.config?.url);
       
       return {
         data: [],
@@ -110,33 +116,48 @@ export const userAdminService = {
     }
   },
 
-  // Récupérer un utilisateur par ID
-  getById: async (id: number): Promise<ApiResponse<User>> => {
-    const response = await api.get(`${config.api.endpoints.users}/${id}`);
+  // Création employé (admin/user)
+  createEmployee: async (payload: CreateEmployeeDto): Promise<ApiResponse<User>> => {
+    const response = await api.post(`${config.api.endpoints.users}/create-employee`, payload);
     return response.data;
   },
 
-  // Créer un nouvel utilisateur
-  create: async (user: CreateUserDto): Promise<ApiResponse<User>> => {
-    const response = await api.post(config.api.endpoints.users, user);
+  // Création compte pour client existant
+  createClientAccount: async (payload: CreateUserForClientDto): Promise<ApiResponse<User>> => {
+    const response = await api.post(`${config.api.endpoints.users}/create-client-account`, payload);
     return response.data;
   },
 
   // Mettre à jour un utilisateur
   update: async (id: number, user: UpdateUserDto): Promise<ApiResponse<User>> => {
-    const response = await api.put(`${config.api.endpoints.users}/${id}`, user);
+    const payload: any = { ...user };
+    if (user.role) {
+      const map: Record<string, string> = { Admin: 'admin', User: 'user', Client: 'client' };
+      payload.role = map[user.role];
+    }
+    const response = await api.put(`${config.api.endpoints.users}/${id}`, payload);
     return response.data;
   },
 
   // Supprimer un utilisateur
   delete: async (id: number): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`${config.api.endpoints.users}/${id}`);
+  const response = await api.delete(`${config.api.endpoints.users}/user/${id}`);
     return response.data;
   },
 
-  // Changer le statut actif/inactif
-  toggleActive: async (id: number): Promise<ApiResponse<User>> => {
-    const response = await api.patch(`${config.api.endpoints.users}/${id}/toggle-active`);
+  // Activer / désactiver
+  activate: async (id: number): Promise<ApiResponse<boolean>> => {
+    const response = await api.put(`${config.api.endpoints.users}/user/${id}/activate`);
+    return response.data;
+  },
+  deactivate: async (id: number): Promise<ApiResponse<boolean>> => {
+    const response = await api.put(`${config.api.endpoints.users}/user/${id}/deactivate`);
+    return response.data;
+  },
+
+  // Mettre à jour permissions (lecture/écriture)
+  updatePermissions: async (id: number, canRead: boolean, canWrite: boolean): Promise<ApiResponse<boolean>> => {
+    const response = await api.put(`${config.api.endpoints.users}/user/${id}/permissions`, { canRead, canWrite });
     return response.data;
   },
 

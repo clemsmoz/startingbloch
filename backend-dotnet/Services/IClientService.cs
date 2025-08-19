@@ -92,7 +92,7 @@ public interface IClientService
     /// <param name="id">Identifiant client à modifier</param>
     /// <param name="updateClientDto">Nouvelles données client partielles</param>
     /// <returns>Client modifié avec informations mises à jour</returns>
-    Task<ApiResponse<ClientDto>> UpdateClientAsync(int id, CreateClientDto updateClientDto);
+    Task<ApiResponse<ClientDto>> UpdateClientAsync(int id, UpdateClientDto updateClientDto);
     
     /// <summary>
     /// Supprime client avec gestion relations dépendantes et audit.

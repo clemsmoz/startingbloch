@@ -118,25 +118,39 @@ const ContactsPage: React.FC = () => {
   const loadContacts = async (page: number = currentPage, size: number = pageSize) => {
     setLoading(true);
     try {
-      const response = await contactService.getAll(page, size);
-      if (response.success && response.data) {
-        let filteredContacts = response.data;
-        
-        // Filtrer selon le client ou cabinet si spécifié dans l'URL
-        if (clientId) {
-          filteredContacts = response.data.filter(contact => 
-            contact.idClient?.toString() === clientId
-          );
-        } else if (cabinetId) {
-          filteredContacts = response.data.filter(contact => 
-            contact.idCabinet?.toString() === cabinetId
-          );
-        }
-        
-        setContacts(filteredContacts);
-        setTotalCount(filteredContacts.length);
-        setCurrentPage(page);
+      console.log('🔍 Chargement des contacts...', { 
+        clientId, 
+        cabinetId, 
+        page, 
+        size 
+      });
+      
+      let response;
+      
+      // Utiliser les nouveaux endpoints spécialisés
+      if (clientId) {
+        console.log('🎯 Chargement contacts par client ID:', clientId);
+        response = await contactService.getByClient(parseInt(clientId), page, size);
+      } else if (cabinetId) {
+        console.log('🎯 Chargement contacts par cabinet ID:', cabinetId);
+        response = await contactService.getByCabinet(parseInt(cabinetId), page, size);
+      } else {
+        console.log('🎯 Chargement tous les contacts');
+        response = await contactService.getAll(page, size);
       }
+      
+      if (response.success && response.data) {
+        setContacts(response.data);
+        setTotalCount(response.totalCount || 0);
+        setCurrentPage(page);
+        
+        console.log('📊 Contacts chargés:', response.data.length, 'Total:', response.totalCount);
+      } else {
+        console.warn('⚠️ Réponse API:', response);
+        setContacts([]);
+        setTotalCount(0);
+      }
+      
     } catch (error) {
       console.error('Erreur lors du chargement des contacts:', error);
       addNotification({
@@ -144,6 +158,8 @@ const ContactsPage: React.FC = () => {
         message: 'Erreur',
         description: 'Impossible de charger la liste des contacts'
       });
+      setContacts([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -423,9 +439,19 @@ const ContactsPage: React.FC = () => {
       <PageHeader
         title={getPageTitle()}
         description={getPageDescription()}
-        breadcrumbs={[
-          { title: 'Contacts' }
-        ]}
+        breadcrumbs={
+          clientId && clientName ? [
+            { title: 'Clients', href: '/clients' },
+            { title: decodeURIComponent(clientName) },
+            { title: 'Contacts' }
+          ] : cabinetId && cabinetName ? [
+            { title: 'Cabinets', href: '/cabinets' },
+            { title: decodeURIComponent(cabinetName) },
+            { title: 'Contacts' }
+          ] : [
+            { title: 'Contacts' }
+          ]
+        }
         actions={headerActions}
       />
 
@@ -441,18 +467,21 @@ const ContactsPage: React.FC = () => {
           data={contacts}
           loading={loading}
           rowKey="id"
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: totalCount,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} sur ${total} contacts`,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            onChange: handleTableChange,
-            onShowSizeChange: handleTableChange,
-          }}
+          pagination={
+            // Désactiver la pagination quand on filtre par client/cabinet
+            clientId || cabinetId ? false : {
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalCount,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => 
+                `${range[0]}-${range[1]} sur ${total} contacts`,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: handleTableChange,
+              onShowSizeChange: handleTableChange,
+            }
+          }
         />
       </Space>
 
@@ -537,6 +566,8 @@ const ContactsPage: React.FC = () => {
         onCancel={() => setAddModalVisible(false)}
         onSubmit={handleContactCreated}
         loading={loading}
+        prefilledClientId={clientId ? parseInt(clientId) : undefined}
+        prefilledCabinetId={cabinetId ? parseInt(cabinetId) : undefined}
       />
 
       <EditContactModal

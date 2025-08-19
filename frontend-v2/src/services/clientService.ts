@@ -7,7 +7,7 @@
 import axios from 'axios';
 import { config } from '../config';
 import { createAuthInterceptor } from '../utils/auth';
-import type { Client, ApiResponse, CreateClientDto, UpdateClientDto, PagedApiResponse } from '../types';
+import type { Client, ApiResponse, CreateClientDto, CreateClientWithUserDto, UpdateClientDto, PagedApiResponse } from '../types';
 
 const api = axios.create({
   baseURL: config.api.baseUrl,
@@ -90,6 +90,14 @@ export const clientService = {
   // Créer un nouveau client
   create: async (client: CreateClientDto): Promise<ApiResponse<Client>> => {
     const response = await api.post(config.api.endpoints.clients, client);
+    return response.data;
+  },
+
+  // Créer un nouveau client avec compte utilisateur
+  createWithUser: async (clientWithUser: CreateClientWithUserDto): Promise<ApiResponse<Client>> => {
+    console.log('🚀 Client Service - Création client avec utilisateur:', clientWithUser);
+    const response = await api.post('/api/clients/create-with-user', clientWithUser);
+    console.log('✅ Client Service - Réponse création client+user:', response.data);
     return response.data;
   },
 

@@ -30,24 +30,24 @@ api.interceptors.request.use(authInterceptor.request, authInterceptor.error);
 
 export const inventeurService = {
   // Récupérer tous les inventeurs
-  getAll: async (): Promise<PagedApiResponse<Inventeur>> => {
+  getAll: async (page: number = 1, pageSize: number = 100): Promise<PagedApiResponse<Inventeur>> => {
     try {
       console.log('🧑‍💼 Inventeur Service - Récupération de tous les inventeurs...');
       
-      const response = await api.get('/inventeur');
+  const response = await api.get(config.api.endpoints.inventeurs, { params: { page, pageSize } });
       
       console.log('✅ Inventeur Service - Réponse reçue:', response.data);
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((inventeur: any) => ({
         id: inventeur.Id,
-        nomInventeur: inventeur.NomInventeur,
-        prenomInventeur: inventeur.PrenomInventeur,
-        adresseInventeur: inventeur.AdresseInventeur,
-        emailInventeur: inventeur.EmailInventeur,
-        telephoneInventeur: inventeur.TelephoneInventeur,
-        createdAt: inventeur.CreatedAt,
-        updatedAt: inventeur.UpdatedAt
+        nomInventeur: inventeur.Nom,
+        prenomInventeur: inventeur.Prenom,
+        adresseInventeur: inventeur.AdresseInventeur, // peut être null/absent côté backend
+        emailInventeur: inventeur.Email,
+        telephoneInventeur: inventeur.TelephoneInventeur, // peut être null/absent
+        createdAt: inventeur.CreatedAt ?? '',
+        updatedAt: inventeur.UpdatedAt ?? ''
       })) || [];
       
       console.log('🔄 Inventeur Service - Données transformées:', transformedData);
@@ -84,7 +84,7 @@ export const inventeurService = {
   // Récupérer un inventeur par son ID
   getById: async (id: number): Promise<ApiResponse<Inventeur>> => {
     try {
-      const response = await api.get(`/inventeur/${id}`);
+  const response = await api.get(`${config.api.endpoints.inventeurs}/${id}`);
       return {
         data: response.data.data || response.data,
         success: true,
@@ -103,12 +103,11 @@ export const inventeurService = {
   // Créer un nouvel inventeur
   create: async (inventeurData: CreateInventeurDto): Promise<ApiResponse<Inventeur>> => {
     try {
-      const response = await api.post('/inventeur', {
-        nom_inventeur: inventeurData.nomInventeur,
-        prenom_inventeur: inventeurData.prenomInventeur,
-        adresse_inventeur: inventeurData.adresseInventeur,
-        email_inventeur: inventeurData.emailInventeur,
-        telephone_inventeur: inventeurData.telephoneInventeur
+      const response = await api.post(config.api.endpoints.inventeurs, {
+        // L'API .NET attend Nom, Prenom, Email (case-insensitive). On envoie camelCase correspondant.
+        nom: inventeurData.nomInventeur,
+        prenom: inventeurData.prenomInventeur,
+        email: inventeurData.emailInventeur,
       });
       return {
         data: response.data,
@@ -128,12 +127,10 @@ export const inventeurService = {
   // Mettre à jour un inventeur existant
   update: async (inventeurData: UpdateInventeurDto): Promise<ApiResponse<Inventeur>> => {
     try {
-      const response = await api.put(`/inventeur/${inventeurData.id}`, {
-        nom_inventeur: inventeurData.nomInventeur,
-        prenom_inventeur: inventeurData.prenomInventeur,
-        adresse_inventeur: inventeurData.adresseInventeur,
-        email_inventeur: inventeurData.emailInventeur,
-        telephone_inventeur: inventeurData.telephoneInventeur
+      const response = await api.put(`${config.api.endpoints.inventeurs}/${inventeurData.id}`, {
+        nom: inventeurData.nomInventeur,
+        prenom: inventeurData.prenomInventeur,
+        email: inventeurData.emailInventeur,
       });
       return {
         data: response.data.data || response.data,
@@ -153,7 +150,7 @@ export const inventeurService = {
   // Supprimer un inventeur
   delete: async (id: number): Promise<ApiResponse<void>> => {
     try {
-      await api.delete(`/inventeur/${id}`);
+  await api.delete(`${config.api.endpoints.inventeurs}/${id}`);
       return {
         data: undefined,
         success: true,

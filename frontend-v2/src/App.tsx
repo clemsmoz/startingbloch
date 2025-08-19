@@ -27,8 +27,10 @@ import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import ClientsPage from './pages/ClientsPage';
 import BrevetsPage from './pages/BrevetsPage';
+import ClientBrevetsPage from './pages/ClientBrevetsPage';
 import ContactsPage from './pages/ContactsPage';
 import CabinetsPage from './pages/CabinetsPage';
+import LogsPage from './pages/LogsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 
 // Stores
@@ -57,6 +59,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
   
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+// Garde supplémentaire: bloque l'accès aux clients pour le rôle 'client'
+const ClientsRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuthStore();
+  const role = (user?.role || '').toLowerCase();
+  if (role === 'client') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
 };
 
 /**
@@ -105,10 +117,19 @@ const App: React.FC = () => {
         }>
           <Route index element={<HomePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="clients" element={<ClientsPage />} />
+          <Route
+            path="clients"
+            element={
+              <ClientsRouteGuard>
+                <ClientsPage />
+              </ClientsRouteGuard>
+            }
+          />
           <Route path="brevets" element={<BrevetsPage />} />
+          <Route path="clients/:clientId/brevets" element={<ClientBrevetsPage />} />
           <Route path="contacts" element={<ContactsPage />} />
           <Route path="cabinets" element={<CabinetsPage />} />
+          <Route path="logs" element={<LogsPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
         </Route>
 

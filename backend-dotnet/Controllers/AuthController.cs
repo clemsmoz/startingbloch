@@ -58,7 +58,7 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { error = "Email ou mot de passe incorrect" });
             }
 
-            var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Role);
+            var token = _jwtService.GenerateTokenWithClaims(user);
             
             // Mise à jour de la dernière connexion
             await _userService.UpdateLastLoginAsync(user.Id);

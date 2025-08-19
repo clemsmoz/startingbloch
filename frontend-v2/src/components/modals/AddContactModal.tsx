@@ -9,26 +9,33 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Row, Col, Tabs, Button, Space } from 'antd';
-import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Select, Row, Col, Tabs, Button, Space, Card, Descriptions, Typography } from 'antd';
+import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, PlusOutlined, DeleteOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import type { CreateContactDto, Client, Cabinet } from '../../types';
 import { clientService, cabinetService } from '../../services';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
+const { Title } = Typography;
 
 interface AddContactModalProps {
   visible: boolean;
   onCancel: () => void;
   onSubmit: (values: CreateContactDto) => Promise<void>;
   loading?: boolean;
+  prefilledClientId?: number; // ID du client pré-sélectionné
+  prefilledCabinetId?: number; // ID du cabinet pré-sélectionné
+  prefilledContactId?: number; // ID du contact parent pré-sélectionné
 }
 
 const AddContactModal: React.FC<AddContactModalProps> = ({
   visible,
   onCancel,
   onSubmit,
-  loading = false
+  loading = false,
+  prefilledClientId,
+  prefilledCabinetId,
+  prefilledContactId
 }) => {
   const [form] = Form.useForm();
   const [clients, setClients] = useState<Client[]>([]);
@@ -36,6 +43,10 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
   const [emails, setEmails] = useState<{ id: string; value: string }[]>([{ id: crypto.randomUUID(), value: '' }]);
   const [phones, setPhones] = useState<{ id: string; value: string }[]>([{ id: crypto.randomUUID(), value: '' }]);
   const [roles, setRoles] = useState<{ id: string; value: string }[]>([{ id: crypto.randomUUID(), value: '' }]);
+  
+  // États pour le système de récapitulatif
+  const [currentStep, setCurrentStep] = useState<'form' | 'recap'>('form');
+  const [formData, setFormData] = useState<any>({});
 
   // Charger les données de référence
   useEffect(() => {
@@ -44,38 +55,72 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
     }
   }, [visible]);
 
+  // Pré-remplir le formulaire avec les IDs fournis
+  useEffect(() => {
+    if (visible) {
+      const initialValues: any = {};
+      
+      if (prefilledClientId) {
+        initialValues.idClient = prefilledClientId;
+      }
+      
+      if (prefilledCabinetId) {
+        initialValues.idCabinet = prefilledCabinetId;
+      }
+      
+      if (prefilledContactId) {
+        initialValues.idContact = prefilledContactId;
+      }
+      
+      form.setFieldsValue(initialValues);
+    }
+  }, [visible, prefilledClientId, prefilledCabinetId, prefilledContactId, form]);
+
   const loadReferenceData = async () => {
     try {
       const clientsResponse = await clientService.getAll();
       if (clientsResponse.success) setClients(clientsResponse.data || []);
       
-      const cabinetsResponse = await cabinetService.getAll();
-      if (cabinetsResponse.success) setCabinets(cabinetsResponse.data || []);
+      const storedUser = sessionStorage.getItem('startingbloch_user');
+      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+      const cabinetsResponse = role === 'client' ? await (async () => {
+        const r = await cabinetService.getMine();
+        return { success: r.success, data: r.data } as any;
+      })() : await cabinetService.getAll();
+  if (cabinetsResponse.success) setCabinets(cabinetsResponse.data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des données de référence:', error);
     }
   };
 
-  const handleFinish = async (values: any) => {
+  const handleFormSubmit = async (values: any) => {
+    // Stocker les données du formulaire et passer au récapitulatif
+    setFormData({
+      ...values,
+      emails: emails.filter(email => email.value.trim() !== '').map(email => email.value),
+      phones: phones.filter(phone => phone.value.trim() !== '').map(phone => phone.value),
+      roles: roles.filter(role => role.value.trim() !== '').map(role => role.value),
+    });
+    setCurrentStep('recap');
+  };
+
+  const handleFinalSubmit = async () => {
     try {
       const contactData: CreateContactDto = {
-        nom: values.nom,
-        prenom: values.prenom,
-        email: values.email,
-        telephone: values.telephone,
-        role: values.role,
-        idCabinet: values.idCabinet,
-        idClient: values.idClient,
-        emails: emails.filter(email => email.value.trim() !== '').map(email => email.value),
-        phones: phones.filter(phone => phone.value.trim() !== '').map(phone => phone.value),
-        roles: roles.filter(role => role.value.trim() !== '').map(role => role.value),
+        nom: formData.nom,
+        prenom: formData.prenom,
+        email: formData.email,
+        telephone: formData.telephone,
+        role: formData.role,
+        idCabinet: formData.idCabinet,
+        idClient: formData.idClient,
+        emails: formData.emails || [],
+        phones: formData.phones || [],
+        roles: formData.roles || [],
       };
 
       await onSubmit(contactData);
-      form.resetFields();
-      setEmails([{ id: crypto.randomUUID(), value: '' }]);
-      setPhones([{ id: crypto.randomUUID(), value: '' }]);
-      setRoles([{ id: crypto.randomUUID(), value: '' }]);
+      handleCancel();
     } catch (error) {
       console.error('Erreur lors de la soumission:', error);
     }
@@ -86,7 +131,13 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
     setEmails([{ id: crypto.randomUUID(), value: '' }]);
     setPhones([{ id: crypto.randomUUID(), value: '' }]);
     setRoles([{ id: crypto.randomUUID(), value: '' }]);
+    setCurrentStep('form');
+    setFormData({});
     onCancel();
+  };
+
+  const handleBackToForm = () => {
+    setCurrentStep('form');
   };
 
   // Fonctions pour gérer les emails multiples
@@ -128,21 +179,96 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
     setRoles(newRoles);
   };
 
+  const renderRecapStep = () => (
+    <div>
+      <Title level={4} style={{ textAlign: 'center', marginBottom: 24 }}>
+        <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+        Récapitulatif de création du contact
+      </Title>
+      
+      <Card title="Informations du contact" style={{ marginBottom: 16 }}>
+        <Descriptions bordered size="small">
+          <Descriptions.Item label="Nom" span={1}>
+            {formData.nom}
+          </Descriptions.Item>
+          <Descriptions.Item label="Prénom" span={2}>
+            {formData.prenom}
+          </Descriptions.Item>
+          
+          {formData.idClient && (
+            <Descriptions.Item label="Client" span={3}>
+              {clients.find(c => c.id === formData.idClient)?.nomClient}
+            </Descriptions.Item>
+          )}
+          
+          {formData.idCabinet && (
+            <Descriptions.Item label="Cabinet" span={3}>
+              {cabinets.find(c => c.id === formData.idCabinet)?.nomCabinet}
+            </Descriptions.Item>
+          )}
+          
+          {formData.emails && formData.emails.length > 0 && (
+            <Descriptions.Item label="Emails" span={3}>
+              {formData.emails.join(', ')}
+            </Descriptions.Item>
+          )}
+          
+          {formData.phones && formData.phones.length > 0 && (
+            <Descriptions.Item label="Téléphones" span={3}>
+              {formData.phones.join(', ')}
+            </Descriptions.Item>
+          )}
+          
+          {formData.roles && formData.roles.length > 0 && (
+            <Descriptions.Item label="Rôles" span={3}>
+              {formData.roles.join(', ')}
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+      </Card>
+    </div>
+  );
+
   return (
     <Modal
-      title="Ajouter un nouveau contact"
+      title={currentStep === 'form' ? "Ajouter un nouveau contact" : "Confirmer la création"}
       open={visible}
       onCancel={handleCancel}
-      onOk={() => form.submit()}
-      confirmLoading={loading}
       width={800}
+      footer={
+        currentStep === 'form' ? [
+          <Button key="cancel" onClick={handleCancel}>
+            Annuler
+          </Button>,
+          <Button key="next" type="primary" onClick={() => form.submit()}>
+            Suivant - Récapitulatif
+          </Button>
+        ] : [
+          <Button key="back" icon={<ArrowLeftOutlined />} onClick={handleBackToForm}>
+            Retour au formulaire
+          </Button>,
+          <Button key="cancel" onClick={handleCancel}>
+            Annuler
+          </Button>,
+          <Button 
+            key="submit" 
+            type="primary" 
+            loading={loading}
+            onClick={handleFinalSubmit}
+            icon={<CheckCircleOutlined />}
+          >
+            Créer le contact
+          </Button>
+        ]
+      }
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleFinish}
-        autoComplete="off"
-      >
+      {currentStep === 'form' ? (
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFormSubmit}
+          autoComplete="off"
+        >
         <Tabs defaultActiveKey="1">
           <TabPane tab="Informations générales" key="1">
             <Row gutter={16}>
@@ -172,58 +298,6 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
                   <Input
                     prefix={<UserOutlined />}
                     placeholder="Nom de famille du contact"
-                    maxLength={100}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="email"
-                  label="Email principal"
-                  rules={[
-                    { type: 'email', message: 'Format d\'email invalide' },
-                    { max: 100, message: 'L\'email ne peut pas dépasser 100 caractères' }
-                  ]}
-                >
-                  <Input
-                    prefix={<MailOutlined />}
-                    placeholder="contact@example.com"
-                    maxLength={100}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="telephone"
-                  label="Téléphone principal"
-                  rules={[
-                    { max: 50, message: 'Le téléphone ne peut pas dépasser 50 caractères' }
-                  ]}
-                >
-                  <Input
-                    prefix={<PhoneOutlined />}
-                    placeholder="+33 1 23 45 67 89"
-                    maxLength={50}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col span={24}>
-                <Form.Item
-                  name="role"
-                  label="Rôle principal"
-                  rules={[
-                    { max: 100, message: 'Le rôle ne peut pas dépasser 100 caractères' }
-                  ]}
-                >
-                  <Input
-                    prefix={<TeamOutlined />}
-                    placeholder="Ex: Directeur PI, Assistant juridique"
                     maxLength={100}
                   />
                 </Form.Item>
@@ -381,7 +455,10 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
             ))}
           </TabPane>
         </Tabs>
-      </Form>
+        </Form>
+      ) : (
+        renderRecapStep()
+      )}
     </Modal>
   );
 };

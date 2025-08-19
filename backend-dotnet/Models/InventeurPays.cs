@@ -61,6 +61,13 @@ public class InventeurPays
     public int IdPays { get; set; }
 
     /// <summary>
+    /// Référence optionnelle vers le brevet auquel cette association s'applique
+    /// Permet de lier des pays par inventeur au contexte d'un brevet précis
+    /// </summary>
+    [Column("id_brevet")]
+    public int? IdBrevet { get; set; }
+
+    /// <summary>
     /// Date d'établissement de la relation inventeur-pays
     /// Traçabilité des changements de nationalité/résidence
     /// Important pour calculs de droits territoriaux
@@ -85,4 +92,10 @@ public class InventeurPays
     /// </summary>
     [ForeignKey("IdPays")]
     public virtual Pays Pays { get; set; } = null!;
+
+    /// <summary>
+    /// Brevet concerné (optionnel)
+    /// </summary>
+    [ForeignKey("IdBrevet")]
+    public virtual Brevet? Brevet { get; set; }
 }

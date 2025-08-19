@@ -89,7 +89,13 @@ public class BrevetService : IBrevetService
                 .Include(b => b.BrevetTitulaires).ThenInclude(bt => bt.Titulaire)
                 .Include(b => b.BrevetCabinets).ThenInclude(bc => bc.Cabinet)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Pays)
-                .Include(b => b.InformationsDepot).ThenInclude(id => id.Statuts);
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.Statuts)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Cabinet)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Roles)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Contacts).ThenInclude(c => c.Contact);
 
             // Si c'est un utilisateur client, filtrer par son ClientId
             if (currentUserId.HasValue)
@@ -159,6 +165,12 @@ public class BrevetService : IBrevetService
                 .Include(b => b.BrevetCabinets).ThenInclude(bc => bc.Cabinet)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Pays)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Statuts)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Cabinet)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Roles)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Contacts).ThenInclude(c => c.Contact)
                 .FirstOrDefaultAsync(b => b.IdBrevet == id);
 
             if (brevet == null)
@@ -280,7 +292,7 @@ public class BrevetService : IBrevetService
             {
                 foreach (var infoDepot in createBrevetDto.InformationsDepot)
                 {
-                    _context.InformationsDepot.Add(new InformationDepot
+                    var entity = new InformationDepot
                     {
                         IdBrevet = brevet.Id,
                         IdPays = infoDepot.IdPays,
@@ -293,7 +305,162 @@ public class BrevetService : IBrevetService
                         DateDelivrance = infoDepot.DateDelivrance,
                         Licence = infoDepot.Licence,
                         Commentaire = infoDepot.Commentaire
-                    });
+                    };
+                    _context.InformationsDepot.Add(entity);
+                    await _context.SaveChangesAsync();
+
+                    // Cabinets Annuités
+                    if (infoDepot.CabinetsAnnuites?.Any() == true)
+                    {
+                        foreach (var cab in infoDepot.CabinetsAnnuites)
+                        {
+                            var link = new InformationDepotCabinet
+                            {
+                                InformationDepotId = entity.Id,
+                                CabinetId = cab.CabinetId,
+                                Category = CabinetType.Annuite
+                            };
+                            _context.InformationDepotCabinets.Add(link);
+                            await _context.SaveChangesAsync();
+
+                            if (cab.Roles?.Any() == true)
+                            {
+                                foreach (var role in cab.Roles.Distinct(StringComparer.OrdinalIgnoreCase))
+                                {
+                                    _context.InformationDepotCabinetRoles.Add(new InformationDepotCabinetRole
+                                    {
+                                        InformationDepotCabinetId = link.Id,
+                                        Role = role.Trim().ToLowerInvariant()
+                                    });
+                                }
+                            }
+
+                            if (cab.ContactIds?.Any() == true)
+                            {
+                                foreach (var contactId in cab.ContactIds.Distinct())
+                                {
+                                    _context.InformationDepotCabinetContacts.Add(new InformationDepotCabinetContact
+                                    {
+                                        InformationDepotCabinetId = link.Id,
+                                        ContactId = contactId
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    // Cabinets Procédures
+                    if (infoDepot.CabinetsProcedures?.Any() == true)
+                    {
+                        foreach (var cab in infoDepot.CabinetsProcedures)
+                        {
+                            var link = new InformationDepotCabinet
+                            {
+                                InformationDepotId = entity.Id,
+                                CabinetId = cab.CabinetId,
+                                Category = CabinetType.Procedure
+                            };
+                            _context.InformationDepotCabinets.Add(link);
+                            await _context.SaveChangesAsync();
+
+                            if (cab.Roles?.Any() == true)
+                            {
+                                foreach (var role in cab.Roles.Distinct(StringComparer.OrdinalIgnoreCase))
+                                {
+                                    _context.InformationDepotCabinetRoles.Add(new InformationDepotCabinetRole
+                                    {
+                                        InformationDepotCabinetId = link.Id,
+                                        Role = role.Trim().ToLowerInvariant()
+                                    });
+                                }
+                            }
+
+                            if (cab.ContactIds?.Any() == true)
+                            {
+                                foreach (var contactId in cab.ContactIds.Distinct())
+                                {
+                                    _context.InformationDepotCabinetContacts.Add(new InformationDepotCabinetContact
+                                    {
+                                        InformationDepotCabinetId = link.Id,
+                                        ContactId = contactId
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Persister les pays par inventeur si fournis
+            if (createBrevetDto.InventeursPays?.Any() == true)
+            {
+                foreach (var link in createBrevetDto.InventeursPays)
+                {
+                    if (link.PaysIds?.Any() != true) continue;
+                    // Charger existants pour éviter doublons
+                    var existing = await _context.InventeurPays
+                        .Where(ip => ip.IdInventeur == link.InventeurId && ip.IdBrevet == brevet.Id)
+                        .Select(ip => ip.IdPays)
+                        .ToListAsync();
+
+                    var toAdd = link.PaysIds.Distinct().Except(existing).ToList();
+                    foreach (var pid in toAdd)
+                    {
+                        _context.InventeurPays.Add(new InventeurPays
+                        {
+                            IdInventeur = link.InventeurId,
+                            IdPays = pid,
+                            IdBrevet = brevet.Id
+                        });
+                    }
+                }
+            }
+
+            // Persister les pays par déposant si fournis
+            if (createBrevetDto.DeposantsPays?.Any() == true)
+            {
+                foreach (var link in createBrevetDto.DeposantsPays)
+                {
+                    if (link.PaysIds?.Any() != true) continue;
+                    var existing = await _context.DeposantPays
+                        .Where(dp => dp.IdDeposant == link.DeposantId && dp.IdBrevet == brevet.Id)
+                        .Select(dp => dp.IdPays)
+                        .ToListAsync();
+
+                    var toAdd = link.PaysIds.Distinct().Except(existing).ToList();
+                    foreach (var pid in toAdd)
+                    {
+                        _context.DeposantPays.Add(new DeposantPays
+                        {
+                            IdDeposant = link.DeposantId,
+                            IdPays = pid,
+                            IdBrevet = brevet.Id
+                        });
+                    }
+                }
+            }
+
+            // Persister les pays par titulaire si fournis
+            if (createBrevetDto.TitulairesPays?.Any() == true)
+            {
+                foreach (var link in createBrevetDto.TitulairesPays)
+                {
+                    if (link.PaysIds?.Any() != true) continue;
+                    var existing = await _context.TitulairePays
+                        .Where(tp => tp.IdTitulaire == link.TitulaireId && tp.IdBrevet == brevet.Id)
+                        .Select(tp => tp.IdPays)
+                        .ToListAsync();
+
+                    var toAdd = link.PaysIds.Distinct().Except(existing).ToList();
+                    foreach (var pid in toAdd)
+                    {
+                        _context.TitulairePays.Add(new TitulairePays
+                        {
+                            IdTitulaire = link.TitulaireId,
+                            IdPays = pid,
+                            IdBrevet = brevet.Id
+                        });
+                    }
                 }
             }
 
@@ -455,6 +622,12 @@ public class BrevetService : IBrevetService
                 .Include(b => b.BrevetCabinets).ThenInclude(bc => bc.Cabinet)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Pays)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Statuts)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Cabinet)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Roles)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Contacts).ThenInclude(c => c.Contact)
                 .Where(b => (b.Titre != null && b.Titre.Contains(searchTerm)) ||
                            (b.ReferenceFamille != null && b.ReferenceFamille.Contains(searchTerm)) ||
                            (b.Commentaire != null && b.Commentaire.Contains(searchTerm)))
@@ -499,6 +672,12 @@ public class BrevetService : IBrevetService
                 .Include(b => b.BrevetCabinets).ThenInclude(bc => bc.Cabinet)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Pays)
                 .Include(b => b.InformationsDepot).ThenInclude(id => id.Statuts)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Cabinet)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Roles)
+                .Include(b => b.InformationsDepot).ThenInclude(id => id.InformationDepotCabinets)
+                    .ThenInclude(x => x.Contacts).ThenInclude(c => c.Contact)
                 .Where(b => b.BrevetClients.Any(bc => bc.ClientId == clientId))
                 .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync();
@@ -599,7 +778,10 @@ public class BrevetService : IBrevetService
                 Nom = bi.Inventeur.Nom ?? "",
                 Prenom = bi.Inventeur.Prenom,
                 Email = bi.Inventeur.Email,
-                Pays = bi.Inventeur.InventeurPays?.Select(ip => new PaysDto
+                // Afficher uniquement les pays liés à ce brevet pour cet inventeur
+                Pays = bi.Inventeur.InventeurPays?
+                    .Where(ip => ip.IdBrevet == brevet.IdBrevet)
+                    .Select(ip => new PaysDto
                 {
                     Id = ip.Pays.Id,
                     NomFrFr = ip.Pays.NomFrFr,
@@ -614,7 +796,10 @@ public class BrevetService : IBrevetService
                 Nom = bd.Deposant.Nom ?? "",
                 Prenom = bd.Deposant.Prenom,
                 Email = bd.Deposant.Email,
-                Pays = bd.Deposant.DeposantPays?.Select(dp => new PaysDto
+                // Afficher uniquement les pays liés à ce brevet pour ce déposant
+                Pays = bd.Deposant.DeposantPays?
+                    .Where(dp => dp.IdBrevet == brevet.IdBrevet)
+                    .Select(dp => new PaysDto
                 {
                     Id = dp.Pays.Id,
                     NomPays = dp.Pays.NomFrFr ?? "",
@@ -632,7 +817,10 @@ public class BrevetService : IBrevetService
                 Nom = bt.Titulaire.Nom ?? "",
                 Prenom = bt.Titulaire.Prenom,
                 Email = bt.Titulaire.Email,
-                Pays = bt.Titulaire.TitulairePays?.Select(tp => new PaysDto
+                // Afficher uniquement les pays liés à ce brevet pour ce titulaire
+                Pays = bt.Titulaire.TitulairePays?
+                    .Where(tp => tp.IdBrevet == brevet.IdBrevet)
+                    .Select(tp => new PaysDto
                 {
                     Id = tp.Pays.Id,
                     NomPays = tp.Pays.NomFrFr ?? "",
@@ -688,7 +876,39 @@ public class BrevetService : IBrevetService
                 DatePublication = id.DatePublication,
                 DateDelivrance = id.DateDelivrance,
                 Licence = id.Licence,
-                Commentaire = id.Commentaire
+                Commentaire = id.Commentaire,
+                CabinetsAnnuites = id.InformationDepotCabinets?
+                    .Where(c => c.Category == CabinetType.Annuite)
+                    .Select(c => new InformationDepotCabinetItemDto
+                    {
+                        CabinetId = c.CabinetId,
+                        CabinetNom = c.Cabinet.NomCabinet,
+                        Roles = c.Roles.Select(r => r.Role).ToList(),
+                        Contacts = c.Contacts.Select(cc => new ContactDto
+                        {
+                            Id = cc.Contact.Id,
+                            Nom = cc.Contact.Nom,
+                            Prenom = cc.Contact.Prenom,
+                            Email = cc.Contact.Email,
+                            Telephone = cc.Contact.Telephone
+                        }).ToList()
+                    }).ToList() ?? new List<InformationDepotCabinetItemDto>(),
+                CabinetsProcedures = id.InformationDepotCabinets?
+                    .Where(c => c.Category == CabinetType.Procedure)
+                    .Select(c => new InformationDepotCabinetItemDto
+                    {
+                        CabinetId = c.CabinetId,
+                        CabinetNom = c.Cabinet.NomCabinet,
+                        Roles = c.Roles.Select(r => r.Role).ToList(),
+                        Contacts = c.Contacts.Select(cc => new ContactDto
+                        {
+                            Id = cc.Contact.Id,
+                            Nom = cc.Contact.Nom,
+                            Prenom = cc.Contact.Prenom,
+                            Email = cc.Contact.Email,
+                            Telephone = cc.Contact.Telephone
+                        }).ToList()
+                    }).ToList() ?? new List<InformationDepotCabinetItemDto>()
             }).ToList() ?? new List<InformationDepotDto>()
         };
     }
@@ -708,11 +928,12 @@ public class BrevetService : IBrevetService
             if (user == null) return false;
 
             // Employés StartingBloch (admin/user) ont accès à tous les brevets
-            if (user.Role == "admin" || user.Role == "user")
+            var role = user.Role?.ToLowerInvariant();
+            if (role == "admin" || role == "user")
                 return true;
 
             // Clients ont accès uniquement à leurs brevets
-            if (user.Role == "client" && user.ClientId.HasValue)
+            if (role == "client" && user.ClientId.HasValue)
             {
                 var brevetExists = await _context.BrevetClients
                     .AnyAsync(bc => bc.BrevetId == brevetId && bc.ClientId == user.ClientId.Value);

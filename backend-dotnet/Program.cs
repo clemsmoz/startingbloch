@@ -144,22 +144,22 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 // 2. Monitoring de sécurité (détection d'intrusion en temps réel)
 app.UseMiddleware<SecurityMonitoringMiddleware>();
 
-// 3. Logging des requêtes (audit trail pour conformité)
-app.UseMiddleware<RequestLoggingMiddleware>();
-
 // *** ÉTAPE 6: CONTRÔLES D'ACCÈS ET LIMITATION ***
-// 4. Rate Limiting - Protection anti-DDoS (AVANT CORS et Authentication)
+// 3. Rate Limiting - Protection anti-DDoS (AVANT CORS et Authentication)
 app.UseIpRateLimiting();
 
-// 5. CORS - Politique de partage inter-domaines (APRÈS Rate Limiting)
+// 4. CORS - Politique de partage inter-domaines (APRÈS Rate Limiting)
 app.UseCors("AllowReactApp");
 
 // *** ÉTAPE 7: AUTHENTIFICATION ET AUTORISATION ***
-// 6. Authentification JWT (validation des tokens)
+// 5. Authentification JWT (validation des tokens)
 app.UseAuthentication();
 
-// 7. Autorisation (vérification des permissions)
+// 6. Autorisation (vérification des permissions)
 app.UseAuthorization();
+
+// 7. Logging des requêtes (APRÈS authentification pour capturer l'utilisateur)
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Mappage des contrôleurs
 app.MapControllers();
@@ -178,6 +178,8 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<StartingBlochDbContext>();
     await context.Database.EnsureCreatedAsync();
+    // Seed des comptes de test pour développement (admin/manager/client1/reader)
+    try { await SeedTestUsers.EnsureTestUsersAsync(context); } catch { /* non bloquant */ }
     
     // Seed des données de test massives uniquement si argument --seed-massive
     if (args.Contains("--seed-massive"))

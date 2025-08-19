@@ -389,4 +389,122 @@ public class ContactService : IContactService
             };
         }
     }
+
+    /// <summary>
+    /// Récupère la liste paginée des contacts associés à un client spécifique.
+    /// </summary>
+    /// <param name="clientId">Identifiant du client</param>
+    /// <param name="page">Numéro de page</param>
+    /// <param name="pageSize">Taille de la page</param>
+    /// <returns>Réponse paginée des contacts du client</returns>
+    public async Task<PagedResponse<List<ContactDto>>> GetContactsByClientAsync(int clientId, int page = 1, int pageSize = 10)
+    {
+        try
+        {
+            var query = _context.Contacts.Where(c => c.IdClient == clientId);
+            var totalItems = await query.CountAsync();
+            var contacts = await query
+                .Include(c => c.Cabinet)
+                .Include(c => c.Client)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var contactDtos = contacts.Select(c => new ContactDto
+            {
+                Id = c.Id,
+                Nom = c.Nom,
+                Prenom = c.Prenom,
+                Email = c.Email,
+                Telephone = c.Telephone,
+                Role = c.Role,
+                IdCabinet = c.IdCabinet,
+                IdClient = c.IdClient,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt,
+                Emails = c.Emails,
+                Phones = c.Phones,
+                Roles = c.Roles,
+                CabinetNom = c.Cabinet?.Nom,
+                ClientNom = c.Client?.Nom
+            }).ToList();
+            return new PagedResponse<List<ContactDto>>
+            {
+                Success = true,
+                Data = contactDtos,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalItems,
+                TotalPages = (int)Math.Ceiling((double)totalItems / pageSize),
+                Message = $"{contactDtos.Count} contacts trouvés pour le client"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new PagedResponse<List<ContactDto>>
+            {
+                Success = false,
+                Message = "Erreur lors de la récupération des contacts du client",
+                Errors = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Récupère la liste paginée des contacts associés à un cabinet spécifique.
+    /// </summary>
+    /// <param name="cabinetId">Identifiant du cabinet</param>
+    /// <param name="page">Numéro de page</param>
+    /// <param name="pageSize">Taille de la page</param>
+    /// <returns>Réponse paginée des contacts du cabinet</returns>
+    public async Task<PagedResponse<List<ContactDto>>> GetContactsByCabinetAsync(int cabinetId, int page = 1, int pageSize = 10)
+    {
+        try
+        {
+            var query = _context.Contacts.Where(c => c.IdCabinet == cabinetId);
+            var totalItems = await query.CountAsync();
+            var contacts = await query
+                .Include(c => c.Cabinet)
+                .Include(c => c.Client)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var contactDtos = contacts.Select(c => new ContactDto
+            {
+                Id = c.Id,
+                Nom = c.Nom,
+                Prenom = c.Prenom,
+                Email = c.Email,
+                Telephone = c.Telephone,
+                Role = c.Role,
+                IdCabinet = c.IdCabinet,
+                IdClient = c.IdClient,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt,
+                Emails = c.Emails,
+                Phones = c.Phones,
+                Roles = c.Roles,
+                CabinetNom = c.Cabinet?.Nom,
+                ClientNom = c.Client?.Nom
+            }).ToList();
+            return new PagedResponse<List<ContactDto>>
+            {
+                Success = true,
+                Data = contactDtos,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalItems,
+                TotalPages = (int)Math.Ceiling((double)totalItems / pageSize),
+                Message = $"{contactDtos.Count} contacts trouvés pour le cabinet"
+            };
+        }
+        catch (Exception ex)
+        {
+            return new PagedResponse<List<ContactDto>>
+            {
+                Success = false,
+                Message = "Erreur lors de la récupération des contacts du cabinet",
+                Errors = ex.Message
+            };
+        }
+    }
 }
