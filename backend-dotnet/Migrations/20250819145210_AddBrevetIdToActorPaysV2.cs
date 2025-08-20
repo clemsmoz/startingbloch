@@ -29,26 +29,6 @@ namespace StartingBloch.Backend.Migrations
                 type: "INTEGER",
                 nullable: true);
 
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 1,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 14, 52, 9, 731, DateTimeKind.Utc).AddTicks(5999), new DateTime(2025, 8, 19, 14, 52, 9, 731, DateTimeKind.Utc).AddTicks(6002) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 2,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 14, 52, 9, 731, DateTimeKind.Utc).AddTicks(6005), new DateTime(2025, 8, 19, 14, 52, 9, 731, DateTimeKind.Utc).AddTicks(6005) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 3,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 14, 52, 9, 731, DateTimeKind.Utc).AddTicks(6006), new DateTime(2025, 8, 19, 14, 52, 9, 731, DateTimeKind.Utc).AddTicks(6007) });
 
             migrationBuilder.CreateIndex(
                 name: "IX_TitulairePays_id_brevet",
@@ -126,26 +106,6 @@ namespace StartingBloch.Backend.Migrations
                 name: "id_brevet",
                 table: "DeposantPays");
 
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 1,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3268), new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3270) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 2,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3273), new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3273) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 3,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3274), new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3274) });
         }
     }
 }

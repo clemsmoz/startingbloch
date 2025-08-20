@@ -126,10 +126,40 @@ Interface optimisée pour :
 
 ## 🚀 Déploiement
 
-### Build de production
+### Cloudflare Pages (pas à pas)
+
+Checklist rapide:
+- Repo GitHub connecté à Cloudflare Pages
+- Dossier du projet: `frontend-v2`
+- Fichier `public/_redirects` présent (SPA) → déjà ajouté
+- Variable d’env: `VITE_API_URL` pointant vers l’URL publique de l’API
+
+Étapes:
+1) Créer le projet Pages
+  - Sur Cloudflare Pages → Create a project → Connect to Git → choisir le repo.
+  - Root directory: `frontend-v2`.
+2) Config build
+  - Build command: `npm ci && npm run build`
+  - Output directory: `dist`
+  - Node version: 18+ (par défaut OK)
+3) Variables d’environnement (Production)
+  - `VITE_API_URL=https://<ton-api>.azurewebsites.net` (ou ton domaine API)
+  - `VITE_APP_ENV=production` (optionnel)
+4) Déployer
+  - Lancer le déploiement; vérifier que l’URL publique s’affiche.
+5) Vérifier
+  - Ouvre l’app → navigation client-side OK (grâce à `public/_redirects`).
+  - Les appels API vont vers `VITE_API_URL`. Assure-toi que le backend autorise l’origine (CORS).
+
+Remarques:
+- Si le backend n’est pas encore en ligne, tu peux déployer le front, puis mettre à jour `VITE_API_URL` plus tard dans Pages → Settings → Environment Variables → Re-deploy.
+- Cloudflare Pages ne peut pas appeler `localhost`; il faut une API publique.
+
+### Build local de production
 
 ```bash
 npm run build
+npm run preview
 ```
 
 Le dossier `dist/` contient les fichiers optimisés pour la production.

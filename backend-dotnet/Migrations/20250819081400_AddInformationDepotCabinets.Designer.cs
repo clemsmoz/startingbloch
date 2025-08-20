@@ -258,32 +258,7 @@ namespace StartingBloch.Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Cabinets");
-                });
 
-            modelBuilder.Entity("StartingBloch.Backend.Models.Client", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AdresseClient")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("adresse_client");
-
-                    b.Property<bool>("CanRead")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("can_read");
-
-                    b.Property<bool>("CanWrite")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("can_write");
-
-                    b.Property<string>("CodePostal")
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("code_postal");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT")
@@ -930,31 +905,6 @@ namespace StartingBloch.Backend.Migrations
 
                     b.ToTable("Roles");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3268),
-                            Description = "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs",
-                            Name = "admin",
-                            UpdatedAt = new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3270)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3273),
-                            Description = "Employé StartingBloch - Utilisateur standard avec droits configurables",
-                            Name = "user",
-                            UpdatedAt = new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3273)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3274),
-                            Description = "Client StartingBloch - Accès restreint à ses propres brevets uniquement",
-                            Name = "client",
-                            UpdatedAt = new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3274)
-                        });
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Statuts", b =>

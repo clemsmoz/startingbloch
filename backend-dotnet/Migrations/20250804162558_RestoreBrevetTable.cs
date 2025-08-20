@@ -17,12 +17,12 @@ namespace StartingBloch.Backend.Migrations
                 columns: table => new
                 {
                     id_brevet = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                        .Annotation("Npgsql:ValueGenerationStrategy", Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy.SerialColumn),
                     reference_famille = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
                     titre = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
                     commentaire = table.Column<string>(type: "TEXT", nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {

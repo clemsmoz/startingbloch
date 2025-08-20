@@ -938,32 +938,6 @@ namespace StartingBloch.Backend.Migrations
                         .HasDatabaseName("IX_Roles_Name");
 
                     b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1806),
-                            Description = "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs",
-                            Name = "admin",
-                            UpdatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1808)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1811),
-                            Description = "Employé StartingBloch - Utilisateur standard avec droits configurables",
-                            Name = "user",
-                            UpdatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1811)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1812),
-                            Description = "Client StartingBloch - Accès restreint à ses propres brevets uniquement",
-                            Name = "client",
-                            UpdatedAt = new DateTime(2025, 8, 19, 14, 54, 2, 634, DateTimeKind.Utc).AddTicks(1813)
-                        });
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Statuts", b =>

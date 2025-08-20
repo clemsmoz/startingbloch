@@ -67,10 +67,12 @@
  */
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Text.Json;
 using StartingBloch.Backend.Models;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using System.Globalization;
 
 namespace StartingBloch.Backend.Data;
 
@@ -188,10 +190,82 @@ public class StartingBlochDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Option de compatibilité: forcer tous les noms de tables en minuscules (PostgreSQL non quoté)
+        // Activez-la en définissant EF_TABLES_LOWERCASE=true (utile si les tables existent déjà en minuscules)
+        var lowerCaseTables = Environment.GetEnvironmentVariable("EF_TABLES_LOWERCASE")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+        if (lowerCaseTables)
+        {
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                var schema = entity.GetSchema();
+                if (!string.IsNullOrWhiteSpace(tableName))
+                {
+                    var lower = tableName!.ToLowerInvariant();
+                    if (string.IsNullOrWhiteSpace(schema))
+                        modelBuilder.Entity(entity.ClrType).ToTable(lower);
+                    else
+                        modelBuilder.Entity(entity.ClrType).ToTable(lower, schema);
+                }
+            }
+        }
+
+        // Compat Postgres: convertir int(0/1) <-> bool pour colonnes importées en integer
+    var providerName = Database.ProviderName ?? string.Empty;
+    var isNpgsql = providerName.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (isNpgsql)
+        {
+            var boolProps = modelBuilder.Model.GetEntityTypes()
+                .SelectMany(et => et.GetProperties())
+                .Where(p => p.ClrType == typeof(bool));
+
+            foreach (var prop in boolProps)
+            {
+                // Applique une conversion bool <-> int pour lecture/écriture
+                modelBuilder.Entity(prop.DeclaringType.ClrType)
+                    .Property(prop.Name)
+                    .HasConversion<int>();
+            }
+
+            // Option: colonnes DateTime stockées en TEXT (import SQLite) -> conversion string ISO <-> DateTime
+            var datesAsText = Environment.GetEnvironmentVariable("EF_DATETIME_AS_TEXT")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+            if (datesAsText)
+            {
+                var dtConverter = new ValueConverter<DateTime, string>(
+                    v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture) : v.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+                    s => DateTime.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                );
+                var ndtConverter = new ValueConverter<DateTime?, string?>(
+                    v => v.HasValue ? (v.Value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture) : v.Value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)) : null,
+                    s => string.IsNullOrWhiteSpace(s) ? (DateTime?)null : DateTime.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                );
+
+                var dtProps = modelBuilder.Model.GetEntityTypes()
+                    .SelectMany(et => et.GetProperties())
+                    .Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?));
+
+                foreach (var prop in dtProps)
+                {
+                    if (prop.ClrType == typeof(DateTime))
+                    {
+                        modelBuilder.Entity(prop.DeclaringType.ClrType)
+                            .Property(prop.Name)
+                            .HasConversion(dtConverter);
+                    }
+                    else
+                    {
+                        modelBuilder.Entity(prop.DeclaringType.ClrType)
+                            .Property(prop.Name)
+                            .HasConversion(ndtConverter);
+                    }
+                }
+            }
+        }
+
         ConfigureIndexes(modelBuilder);
         ConfigureRelations(modelBuilder);
         ConfigureDefaultValues(modelBuilder);
-        ConfigureSeedData(modelBuilder);
+    ConfigureSeedData(modelBuilder);
     }
 
     /// <summary>
@@ -427,12 +501,8 @@ public class StartingBlochDbContext : DbContext
     /// <param name="modelBuilder">Builder pour configuration seed data</param>
     private static void ConfigureSeedData(ModelBuilder modelBuilder)
     {
-        // Rôles système avec descriptions métier explicites
-        modelBuilder.Entity<Role>().HasData(
-            new Role { Id = 1, Name = "admin", Description = "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs" },
-            new Role { Id = 2, Name = "user", Description = "Employé StartingBloch - Utilisateur standard avec droits configurables" },
-            new Role { Id = 3, Name = "client", Description = "Client StartingBloch - Accès restreint à ses propres brevets uniquement" }
-        );
+        // Note: Le seed des rôles est effectué au démarrage (SeedData.InitializeAsync)
+        // pour éviter les InsertData/UpdateData dépendants du provider dans les migrations.
     }
 
     /// <summary>

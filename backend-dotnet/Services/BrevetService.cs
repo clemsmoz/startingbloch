@@ -209,9 +209,12 @@ public class BrevetService : IBrevetService
     /// <returns>Brevet créé complet ou erreur validation</returns>
     public async Task<ApiResponse<BrevetDto>> CreateBrevetAsync(CreateBrevetDto createBrevetDto)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
             var brevet = new Brevet
             {
                 ReferenceFamille = createBrevetDto.ReferenceFamille,
@@ -472,17 +475,18 @@ public class BrevetService : IBrevetService
             result.Message = "Brevet créé avec succès";
             
             return result;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return new ApiResponse<BrevetDto>
+            }
+            catch (Exception ex)
             {
-                Success = false,
-                Message = "Erreur lors de la création du brevet",
-                Errors = ex.Message
-            };
-        }
+                await transaction.RollbackAsync();
+                return new ApiResponse<BrevetDto>
+                {
+                    Success = false,
+                    Message = "Erreur lors de la création du brevet",
+                    Errors = ex.Message
+                };
+            }
+        });
     }
 
     /// <summary>
@@ -494,9 +498,12 @@ public class BrevetService : IBrevetService
     /// <returns>Brevet modifié complet ou erreur validation</returns>
     public async Task<ApiResponse<BrevetDto>> UpdateBrevetAsync(int id, UpdateBrevetDto updateBrevetDto)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
             var brevet = await _context.Brevets.FindAsync(id);
 
             if (brevet == null)
@@ -545,17 +552,18 @@ public class BrevetService : IBrevetService
             result.Message = "Brevet mis à jour avec succès";
             
             return result;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return new ApiResponse<BrevetDto>
+            }
+            catch (Exception ex)
             {
-                Success = false,
-                Message = "Erreur lors de la mise à jour du brevet",
-                Errors = ex.Message
-            };
-        }
+                await transaction.RollbackAsync();
+                return new ApiResponse<BrevetDto>
+                {
+                    Success = false,
+                    Message = "Erreur lors de la mise à jour du brevet",
+                    Errors = ex.Message
+                };
+            }
+        });
     }
 
     /// <summary>
@@ -566,9 +574,12 @@ public class BrevetService : IBrevetService
     /// <returns>Succès suppression ou erreur contraintes</returns>
     public async Task<ApiResponse<bool>> DeleteBrevetAsync(int id)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
             var brevet = await _context.Brevets.FindAsync(id);
 
             if (brevet == null)
@@ -590,17 +601,18 @@ public class BrevetService : IBrevetService
                 Data = true,
                 Message = "Brevet supprimé avec succès"
             };
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            return new ApiResponse<bool>
+            }
+            catch (Exception ex)
             {
-                Success = false,
-                Message = "Erreur lors de la suppression du brevet",
-                Errors = ex.Message
-            };
-        }
+                await transaction.RollbackAsync();
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = "Erreur lors de la suppression du brevet",
+                    Errors = ex.Message
+                };
+            }
+        });
     }
 
     /// <summary>

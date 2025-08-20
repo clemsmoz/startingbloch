@@ -1,61 +1,4 @@
-/*
- * ================================================================================================
- * STAR// *** ÉTAPE 8: ROUTAGE ET ENDPOINTS ***
-// Mappage des contrôleurs - Activation des routes API
-app.MapControllers();
-
-// *** ENDPOINT DE SANTÉ SYSTÈME ***
-// Point de contrôle pour monitoring et load balancers
-// Accessible sans authentification pour les checks automatiques
-app.MapGet("/api/health", () => new { 
-    status = "healthy", 
-    timestamp = DateTime.UtcNow,
-    version = "1.0.0",
-    database = "SQLite",
-    framework = ".NET 8"
-}).AllowAnonymous();
-
-// ================================================================================================
-// INITIALISATION DE LA BASE DE DONNÉES
-// ================================================================================================
-
-// *** MIGRATION ET CRÉATION DE LA BASE AUTOMATIQUE ***
-// Assure que la base de données SQLite existe et est à jour au démarrage
-// Utilisation d'un scope pour éviter les fuites mémoire
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<StartingBlochDbContext>();
-    await context.Database.EnsureCreatedAsync();
-}
-
-// ================================================================================================
-// DÉMARRAGE DE L'APPLICATION
-// ================================================================================================
-
-// Lancement du serveur web avec tous les middlewares configurés
-app.Run();I - POINT D'ENTRÉE PRINCIPAL
- * ================================================================================================
- * 
- * Description: Configuration et démarrage de l'API REST pour la gestion des brevets d'entreprise.
- * 
- * Fonctionnalités principales:
- * - Gestion des brevets et de leur cycle de vie
- * - Système d'authentification JWT sécurisé
- * - Interface multi-clients avec isolation des données
- * - Audit trail complet pour conformité RGPD
- * - Protection contre les attaques (Rate limiting, XSS, CSRF, etc.)
- * 
- * Architecture:
- * - .NET 8 avec Entity Framework Core
- * - Base de données SQLite pour développement
- * - Logging avancé avec Serilog
- * - Validation avec FluentValidation
- * - Sécurité multi-couches (8 niveaux de protection)
- * 
- * Auteur: StartingBloch Team
- * Dernière mise à jour: 2025-07-28
- * ================================================================================================
- */
+/* Point d'entrée API */
 
 using Microsoft.EntityFrameworkCore;
 using StartingBloch.Backend.Data;
@@ -66,16 +9,19 @@ using System.Text.Json.Serialization;
 using AspNetCoreRateLimit;
 using Serilog;
 using DotNetEnv;
+using Microsoft.EntityFrameworkCore.Storage;
 
 // ================================================================================================
 // CONFIGURATION DE L'APPLICATION
 // ================================================================================================
 
+// Charger .env AVANT de construire la configuration pour permettre la surcouche env
+Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // *** CHARGEMENT DES VARIABLES D'ENVIRONNEMENT ***
-// Chargement du fichier .env pour les variables de configuration
-Env.Load();
+// Déjà chargé plus haut via Env.Load()
 
 // *** CONFIGURATION PERSONNALISÉE AVEC VARIABLES D'ENVIRONNEMENT ***
 // Remplacement des placeholders ${VAR} dans appsettings.json
@@ -164,34 +110,341 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 // Mappage des contrôleurs
 app.MapControllers();
 
-// Endpoint de santé sécurisé
-app.MapGet("/api/health", () => new { 
-    status = "healthy", 
-    timestamp = DateTime.UtcNow,
-    version = "1.0.0",
-    database = "SQLite",
-    framework = ".NET 8"
+// Endpoint de santé (provider basé sur la chaîne de connexion)
+app.MapGet("/api/health", (IConfiguration cfg) =>
+{
+    var raw = cfg.GetConnectionString("DefaultConnection") ?? string.Empty;
+    var lower = raw.Trim().ToLowerInvariant();
+    var isPg = lower.StartsWith("postgresql://") || lower.StartsWith("postgres://") || (lower.Contains("host=") && lower.Contains("database="));
+    return Results.Json(new {
+        status = "healthy",
+        timestamp = DateTime.UtcNow,
+        version = "1.0.0",
+        database = isPg ? "PostgreSQL" : "SQLite",
+        framework = ".NET 8"
+    });
 }).AllowAnonymous();
 
-// Initialisation de la base de données
+// Endpoint de santé DB détaillé (provider réel EF, connectivité et migrations)
+app.MapGet("/api/health/db", async (StartingBlochDbContext db) =>
+{
+    var provider = db.Database.ProviderName ?? "unknown";
+    bool canConnect;
+    try { canConnect = await db.Database.CanConnectAsync(); }
+    catch { canConnect = false; }
+
+    string[] applied = Array.Empty<string>();
+    string[] pending = Array.Empty<string>();
+    try
+    {
+        applied = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
+        pending = (await db.Database.GetPendingMigrationsAsync()).ToArray();
+    }
+    catch
+    {
+        // Si la table __EFMigrationsHistory n'existe pas ou schéma non géré par EF
+    }
+
+    return Results.Json(new
+    {
+        provider,
+        canConnect,
+        appliedMigrations = applied,
+        pendingMigrations = pending
+    });
+}).AllowAnonymous();
+
+// Migration + seeding runtime (sécurisé)
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<StartingBlochDbContext>();
-    await context.Database.EnsureCreatedAsync();
-    // Seed des comptes de test pour développement (admin/manager/client1/reader)
-    try { await SeedTestUsers.EnsureTestUsersAsync(context); } catch { /* non bloquant */ }
-    
-    // Seed des données de test massives uniquement si argument --seed-massive
-    if (args.Contains("--seed-massive"))
+    var providerName = context.Database.ProviderName ?? string.Empty;
+    var isNpgsql = providerName.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0;
+    var autoMigEnv = Environment.GetEnvironmentVariable("EF_AUTO_MIGRATE");
+    var autoMigrate = !isNpgsql // Toujours migrer en SQLite (dev local)
+                      || (autoMigEnv != null && autoMigEnv.Equals("true", StringComparison.OrdinalIgnoreCase));
+
+    if (autoMigrate)
     {
-        Console.WriteLine("🌱 Initialisation des données de test...");
-        await SeedMassiveData.SeedAsync(context);
-        Console.WriteLine("✅ Seed des données de test terminé !");
-        return; // Arrêter l'application après le seed
+        try
+        {
+            await context.Database.MigrateAsync();
+        }
+        catch (Exception ex)
+        {
+            // Ne pas bloquer le démarrage si la base est déjà provisionnée (ex: Postgres importée hors EF)
+            app.Logger.LogWarning(ex, "EF migration skipped due to error. Database might be pre-provisioned.");
+        }
     }
+
+    // Baseline migrations: marque les migrations EF comme appliquées sans modifier le schéma (PostgreSQL uniquement)
+    var doBaseline = isNpgsql && (Environment.GetEnvironmentVariable("EF_BASELINE_MIGRATIONS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true);
+    if (doBaseline)
+    {
+        try
+        {
+            var pending = (await context.Database.GetPendingMigrationsAsync()).ToArray();
+            if (pending.Length > 0)
+            {
+                // S'assure que la table d'historique existe
+                const string ensureSql = """
+                CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+                    "MigrationId" character varying(150) NOT NULL,
+                    "ProductVersion" character varying(32) NOT NULL,
+                    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+                );
+                """;
+                await context.Database.ExecuteSqlRawAsync(ensureSql);
+
+                foreach (var id in pending)
+                {
+                    await context.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT (\"MigrationId\") DO NOTHING;",
+                        id, "8.0.0");
+                }
+                app.Logger.LogInformation("EF baseline completed: {Count} migrations marked as applied.", pending.Length);
+            }
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogWarning(ex, "EF baseline failed.");
+        }
+    }
+
+    var doSeed = !isNpgsql || (Environment.GetEnvironmentVariable("EF_RUNTIME_SEED")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true);
+    if (doSeed)
+    {
+        await SeedData.InitializeAsync(context);
+    }
+
+        // Réparations de schéma spécifiques PostgreSQL (si base importée sans identités auto)
+        if (isNpgsql)
+        {
+                try
+                {
+                        // Ajoute IDENTITY si absent pour public.logs(id) et public.brevets(id_brevet)
+                                    const string fixIdentitySql = @"DO $$
+BEGIN
+    -- logs.id
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='logs' AND column_name='id' AND is_identity='YES'
+    ) THEN
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema='public' AND table_name='logs' AND column_name='id' AND column_default IS NULL
+        ) THEN
+            EXECUTE 'ALTER TABLE public.logs ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+        END IF;
+    END IF;
+
+    -- brevets.id_brevet
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='brevets' AND column_name='id_brevet' AND is_identity='YES'
+    ) THEN
+        IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema='public' AND table_name='brevets' AND column_name='id_brevet' AND column_default IS NULL
+        ) THEN
+            EXECUTE 'ALTER TABLE public.brevets ALTER COLUMN id_brevet ADD GENERATED BY DEFAULT AS IDENTITY';
+        END IF;
+    END IF;
+
+                -- brevetclients.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='brevetclients' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='brevetclients' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.brevetclients ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                -- brevetdeposants.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='brevetdeposants' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='brevetdeposants' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.brevetdeposants ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                -- brevetinventeurs.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='brevetinventeurs' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='brevetinventeurs' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.brevetinventeurs ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                -- brevettitulaires.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='brevettitulaires' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='brevettitulaires' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.brevettitulaires ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                -- informationsdepot.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='informationsdepot' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='informationsdepot' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.informationsdepot ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                    -- deposantpays.id
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='deposantpays' AND column_name='id' AND is_identity='YES'
+                    ) THEN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_schema='public' AND table_name='deposantpays' AND column_name='id' AND column_default IS NULL
+                        ) THEN
+                            EXECUTE 'ALTER TABLE public.deposantpays ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                        END IF;
+                    END IF;
+
+                    -- inventeurpays.id
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='inventeurpays' AND column_name='id' AND is_identity='YES'
+                    ) THEN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_schema='public' AND table_name='inventeurpays' AND column_name='id' AND column_default IS NULL
+                        ) THEN
+                            EXECUTE 'ALTER TABLE public.inventeurpays ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                        END IF;
+                    END IF;
+
+                    -- titulairepays.id
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='titulairepays' AND column_name='id' AND is_identity='YES'
+                    ) THEN
+                        IF EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_schema='public' AND table_name='titulairepays' AND column_name='id' AND column_default IS NULL
+                        ) THEN
+                            EXECUTE 'ALTER TABLE public.titulairepays ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                        END IF;
+                    END IF;
+
+                -- clients.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='clients' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='clients' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.clients ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                -- cabinets.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='cabinets' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='cabinets' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.cabinets ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+
+                -- contacts.id
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='contacts' AND column_name='id' AND is_identity='YES'
+                ) THEN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema='public' AND table_name='contacts' AND column_name='id' AND column_default IS NULL
+                    ) THEN
+                        EXECUTE 'ALTER TABLE public.contacts ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY';
+                    END IF;
+                END IF;
+END
+$$;";
+
+                        await context.Database.ExecuteSqlRawAsync(fixIdentitySql);
+
+                        // Réinitialise/avance les séquences à MAX+1 si disponibles
+                        const string reseedSql = @"
+            SELECT setval(pg_get_serial_sequence('public.logs','id'), COALESCE((SELECT MAX(id) FROM public.logs), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.logs','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.brevets','id_brevet'), COALESCE((SELECT MAX(id_brevet) FROM public.brevets), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.brevets','id_brevet') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.brevetclients','id'), COALESCE((SELECT MAX(id) FROM public.brevetclients), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.brevetclients','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.brevetdeposants','id'), COALESCE((SELECT MAX(id) FROM public.brevetdeposants), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.brevetdeposants','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.brevetinventeurs','id'), COALESCE((SELECT MAX(id) FROM public.brevetinventeurs), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.brevetinventeurs','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.brevettitulaires','id'), COALESCE((SELECT MAX(id) FROM public.brevettitulaires), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.brevettitulaires','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.informationsdepot','id'), COALESCE((SELECT MAX(id) FROM public.informationsdepot), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.informationsdepot','id') IS NOT NULL;";
+                        
+                        await context.Database.ExecuteSqlRawAsync(reseedSql);
+
+                        // Reseed pour clients/cabinets/contacts
+                        const string reseedMoreSql = @"
+            SELECT setval(pg_get_serial_sequence('public.clients','id'), COALESCE((SELECT MAX(id) FROM public.clients), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.clients','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.cabinets','id'), COALESCE((SELECT MAX(id) FROM public.cabinets), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.cabinets','id') IS NOT NULL;
+
+            SELECT setval(pg_get_serial_sequence('public.contacts','id'), COALESCE((SELECT MAX(id) FROM public.contacts), 0) + 1, false)
+            WHERE pg_get_serial_sequence('public.contacts','id') IS NOT NULL;";
+
+                        await context.Database.ExecuteSqlRawAsync(reseedMoreSql);
+
+                        app.Logger.LogInformation("PostgreSQL identity fixups applied.");
+                }
+                catch (Exception ex)
+                {
+                        app.Logger.LogWarning(ex, "PostgreSQL identity fixups skipped/failed. Tables may already be configured.");
+                }
+        }
 }
 
 await app.RunAsync();
 
-// Classe Program publique pour tests d'intégration
 public partial class Program { }

@@ -107,7 +107,7 @@ public class ClientOnlyAttribute : AuthorizeAttribute
     /// </summary>
     public ClientOnlyAttribute()
     {
-        Roles = "client";
+    Roles = "Client";
     }
 }
 

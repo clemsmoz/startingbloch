@@ -22,8 +22,8 @@ namespace StartingBloch.Backend.Migrations
                     reference_famille = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
                     titre = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
                     commentaire = table.Column<string>(type: "TEXT", nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -42,8 +42,8 @@ namespace StartingBloch.Backend.Migrations
                     pays_cabinet = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     email_cabinet = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     telephone_cabinet = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -66,8 +66,8 @@ namespace StartingBloch.Backend.Migrations
                     can_write = table.Column<bool>(type: "INTEGER", nullable: false),
                     can_read = table.Column<bool>(type: "INTEGER", nullable: false),
                     is_blocked = table.Column<bool>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -85,8 +85,8 @@ namespace StartingBloch.Backend.Migrations
                     adresse = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
                     telephone = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
                     email = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -104,8 +104,8 @@ namespace StartingBloch.Backend.Migrations
                     adresse = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
                     telephone = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
                     email = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -120,7 +120,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     level = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     message = table.Column<string>(type: "TEXT", nullable: false),
-                    timestamp = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     userId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     action = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     table_name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
@@ -129,7 +129,7 @@ namespace StartingBloch.Backend.Migrations
                     new_values = table.Column<string>(type: "TEXT", nullable: true),
                     ip_address = table.Column<string>(type: "TEXT", maxLength: 45, nullable: true),
                     user_agent = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     details = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -146,8 +146,8 @@ namespace StartingBloch.Backend.Migrations
                     nom_fr_fr = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     code_iso = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
                     code_iso3 = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -162,8 +162,8 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -177,8 +177,8 @@ namespace StartingBloch.Backend.Migrations
                     id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     description = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -196,8 +196,8 @@ namespace StartingBloch.Backend.Migrations
                     adresse = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
                     telephone = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
                     email = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -213,7 +213,7 @@ namespace StartingBloch.Backend.Migrations
                     id_brevet = table.Column<int>(type: "INTEGER", nullable: false),
                     id_cabinet = table.Column<int>(type: "INTEGER", nullable: false),
                     type = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -240,7 +240,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_brevet = table.Column<int>(type: "INTEGER", nullable: false),
                     id_client = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -269,8 +269,8 @@ namespace StartingBloch.Backend.Migrations
                     CabinetId = table.Column<int>(type: "INTEGER", nullable: false),
                     Type = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -302,8 +302,8 @@ namespace StartingBloch.Backend.Migrations
                     role = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     id_cabinet = table.Column<int>(type: "INTEGER", nullable: true),
                     id_client = table.Column<int>(type: "INTEGER", nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     emails_json = table.Column<string>(type: "TEXT", nullable: false),
                     phones_json = table.Column<string>(type: "TEXT", nullable: false),
                     roles_json = table.Column<string>(type: "TEXT", nullable: false)
@@ -341,9 +341,9 @@ namespace StartingBloch.Backend.Migrations
                     isBlocked = table.Column<bool>(type: "INTEGER", nullable: false),
                     nom = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     prenom = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    lastLogin = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    lastLogin = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     clientId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
@@ -365,7 +365,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_brevet = table.Column<int>(type: "INTEGER", nullable: false),
                     id_deposant = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -392,7 +392,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_brevet = table.Column<int>(type: "INTEGER", nullable: false),
                     id_inventeur = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -419,7 +419,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_deposant = table.Column<int>(type: "INTEGER", nullable: false),
                     id_pays = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -446,7 +446,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_inventeur = table.Column<int>(type: "INTEGER", nullable: false),
                     id_pays = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -475,8 +475,8 @@ namespace StartingBloch.Backend.Migrations
                     numero = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     description = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     is_active = table.Column<bool>(type: "INTEGER", nullable: false),
-                    created_at = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     PaysId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
@@ -501,13 +501,13 @@ namespace StartingBloch.Backend.Migrations
                     numero_depot = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     numero_publication = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     numero_delivrance = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    date_depot = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    date_publication = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    date_delivrance = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    date_depot = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_publication = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_delivrance = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     licence = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
                     commentaire = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    updatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -538,7 +538,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_brevet = table.Column<int>(type: "INTEGER", nullable: false),
                     id_titulaire = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -565,7 +565,7 @@ namespace StartingBloch.Backend.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     id_titulaire = table.Column<int>(type: "INTEGER", nullable: false),
                     id_pays = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -593,8 +593,8 @@ namespace StartingBloch.Backend.Migrations
                     UserId = table.Column<int>(type: "INTEGER", nullable: false),
                     RoleId = table.Column<int>(type: "INTEGER", nullable: false),
                     ClientId = table.Column<int>(type: "INTEGER", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -619,15 +619,7 @@ namespace StartingBloch.Backend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.InsertData(
-                table: "Roles",
-                columns: new[] { "Id", "CreatedAt", "Description", "Name", "UpdatedAt" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2025, 8, 1, 9, 14, 52, 420, DateTimeKind.Utc).AddTicks(8480), "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs", "admin", new DateTime(2025, 8, 1, 9, 14, 52, 420, DateTimeKind.Utc).AddTicks(8482) },
-                    { 2, new DateTime(2025, 8, 1, 9, 14, 52, 420, DateTimeKind.Utc).AddTicks(8485), "Employé StartingBloch - Utilisateur standard avec droits configurables", "user", new DateTime(2025, 8, 1, 9, 14, 52, 420, DateTimeKind.Utc).AddTicks(8485) },
-                    { 3, new DateTime(2025, 8, 1, 9, 14, 52, 420, DateTimeKind.Utc).AddTicks(8486), "Client StartingBloch - Accès restreint à ses propres brevets uniquement", "client", new DateTime(2025, 8, 1, 9, 14, 52, 420, DateTimeKind.Utc).AddTicks(8486) }
-                });
+            // Seed des rôles déplacé au runtime (SeedData.InitializeAsync) pour éviter des InsertData dépendants du provider.
 
             migrationBuilder.CreateIndex(
                 name: "IX_BrevetCabinets_id_brevet",

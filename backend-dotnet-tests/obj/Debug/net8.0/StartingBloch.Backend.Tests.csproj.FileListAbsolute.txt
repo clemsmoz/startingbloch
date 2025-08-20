@@ -1,0 +1,9 @@
+C:\Users\clems\startingbloch\backend-dotnet-tests\bin\Debug\net8.0\.msCoverageSourceRootsMapping_StartingBloch.Backend.Tests
+C:\Users\clems\startingbloch\backend-dotnet-tests\bin\Debug\net8.0\CoverletSourceRootsMapping_StartingBloch.Backend.Tests
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\StartingBloch.Backend.Tests.csproj.AssemblyReference.cache
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\MvcTestingAppManifest.json
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\StartingBloch.Backend.Tests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\StartingBloch.Backend.Tests.AssemblyInfoInputs.cache
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\StartingBloch.Backend.Tests.AssemblyInfo.cs
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\StartingBloch.Backend.Tests.csproj.CoreCompileInputs.cache
+C:\Users\clems\startingbloch\backend-dotnet-tests\obj\Debug\net8.0\StartingBloch.Backend.Tests.sourcelink.json

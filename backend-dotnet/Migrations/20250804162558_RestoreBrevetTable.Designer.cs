@@ -844,31 +844,6 @@ namespace StartingBloch.Backend.Migrations
 
                     b.ToTable("Roles");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4015),
-                            Description = "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs",
-                            Name = "admin",
-                            UpdatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4017)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4020),
-                            Description = "Employé StartingBloch - Utilisateur standard avec droits configurables",
-                            Name = "user",
-                            UpdatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4020)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4021),
-                            Description = "Client StartingBloch - Accès restreint à ses propres brevets uniquement",
-                            Name = "client",
-                            UpdatedAt = new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4021)
-                        });
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Statuts", b =>

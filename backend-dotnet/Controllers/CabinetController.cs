@@ -198,6 +198,7 @@ public class CabinetController : ControllerBase
     /// </summary>
     [HttpPost("my")]
     [ClientOnly]
+    [WritePermission]
     public async Task<ActionResult<ApiResponse<CabinetDto>>> CreateCabinetForMe(CreateCabinetDto createCabinetDto)
     {
         if (!ModelState.IsValid)
@@ -225,6 +226,7 @@ public class CabinetController : ControllerBase
     /// </summary>
     [HttpPost("my/link/{cabinetId}")]
     [ClientOnly]
+    [WritePermission]
     public async Task<ActionResult<ApiResponse<bool>>> LinkExistingCabinetToMe(int cabinetId)
     {
         var clientIdStr = User.FindFirst("clientId")?.Value;

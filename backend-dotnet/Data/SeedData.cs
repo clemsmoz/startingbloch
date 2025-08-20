@@ -69,14 +69,14 @@ public static class SeedData
             // Création base données si inexistante (dev/test)
             await context.Database.EnsureCreatedAsync();
 
-            // Vérification données existantes (évite re-initialisation)
-            if (await context.Users.AnyAsync())
-            {
-                return; // Données déjà initialisées - arrêt gracieux
-            }
+            // Initialisation idempotente des rôles de base
+            await SeedRolesAsync(context);
 
             // Initialisation référentiels par ordre dépendances
-            await SeedPaysAsync(context);
+            if (!await context.Pays.AnyAsync())
+            {
+                await SeedPaysAsync(context);
+            }
             await SeedStatutsAsync(context);
 
             Console.WriteLine("✅ Données initiales créées avec succès");
@@ -84,6 +84,19 @@ public static class SeedData
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Erreur lors de l'initialisation des données: {ex.Message}");
+        }
+    }
+
+    private static async Task SeedRolesAsync(StartingBlochDbContext context)
+    {
+        if (!await context.Roles.AnyAsync())
+        {
+            context.Roles.AddRange(
+                new Role { Id = 1, Name = "admin", Description = "Employé StartingBloch - Administrateur avec accès complet et gestion des utilisateurs" },
+                new Role { Id = 2, Name = "user", Description = "Employé StartingBloch - Utilisateur standard avec droits configurables" },
+                new Role { Id = 3, Name = "client", Description = "Client StartingBloch - Accès restreint à ses propres brevets uniquement" }
+            );
+            await context.SaveChangesAsync();
         }
     }
 

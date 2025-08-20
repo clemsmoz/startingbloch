@@ -157,8 +157,26 @@ public static class ServiceCollectionExtensions
         // BASE DE DONNÉES ET CONFIGURATION
         // ============================================================================================
         
+        var rawConn = configuration.GetConnectionString("DefaultConnection") ?? string.Empty;
+
         services.AddDbContext<StartingBlochDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+        {
+            // Auto-détection du provider selon la chaîne
+            var lower = rawConn.Trim().ToLowerInvariant();
+            var isUriPg = lower.StartsWith("postgresql://") || lower.StartsWith("postgres://");
+            var isKvPg = lower.Contains("host=") && lower.Contains("port=") && lower.Contains("database=");
+
+            if (isUriPg || isKvPg)
+            {
+                var npgConn = NormalizeNpgsqlConnectionString(rawConn);
+                options.UseNpgsql(npgConn, o => o.EnableRetryOnFailure());
+            }
+            else
+            {
+                // Fallback: SQLite (ex: Data Source=database-dev.sqlite)
+                options.UseSqlite(rawConn);
+            }
+        });
 
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
         services.Configure<SecuritySettings>(configuration.GetSection("Security"));
@@ -310,5 +328,61 @@ public static class ServiceCollectionExtensions
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
         return services;
+    }
+
+    private static string NormalizeNpgsqlConnectionString(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return input ?? string.Empty;
+
+        // If already key=value pairs, return as is
+        if (input.Contains('=') && !input.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+            return input;
+
+        if (!input.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+            return input;
+
+        try
+        {
+            var uri = new Uri(input);
+            var userInfo = uri.UserInfo.Split(':');
+            var username = Uri.UnescapeDataString(userInfo.ElementAtOrDefault(0) ?? "");
+            var password = Uri.UnescapeDataString(userInfo.ElementAtOrDefault(1) ?? "");
+            var database = uri.AbsolutePath.Trim('/');
+
+            // Parse query params manually
+            var sslmode = "require";
+            if (!string.IsNullOrEmpty(uri.Query))
+            {
+                var q = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var pair in q)
+                {
+                    var kv = pair.Split('=', 2);
+                    var key = Uri.UnescapeDataString(kv[0] ?? "").ToLowerInvariant();
+                    var val = Uri.UnescapeDataString(kv.Length > 1 ? kv[1] : "");
+                    if (key == "sslmode") sslmode = val;
+                }
+            }
+
+            // Optional extras
+            var parts = new List<string>
+            {
+                $"Host={uri.Host}",
+                uri.IsDefaultPort ? "Port=5432" : $"Port={uri.Port}",
+                $"Database={database}",
+                $"Username={username}",
+                $"Password={password}",
+                $"SSL Mode={(sslmode.Equals("require", StringComparison.OrdinalIgnoreCase) ? "Require" : sslmode)}",
+                "Trust Server Certificate=true", // Neon SSL valid, keeps client permissive
+                "Pooling=true",
+                "Maximum Pool Size=20"
+            };
+
+            return string.Join(";", parts);
+        }
+        catch
+        {
+            return input; // fallback: let Npgsql try
+        }
     }
 }

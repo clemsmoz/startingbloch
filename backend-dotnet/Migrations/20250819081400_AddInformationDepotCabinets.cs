@@ -20,7 +20,7 @@ namespace StartingBloch.Backend.Migrations
                     information_depot_id = table.Column<int>(type: "INTEGER", nullable: false),
                     cabinet_id = table.Column<int>(type: "INTEGER", nullable: false),
                     category = table.Column<int>(type: "INTEGER", nullable: false),
-                    createdAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    createdAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -85,26 +85,6 @@ namespace StartingBloch.Backend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 1,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3268), new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3270) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 2,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3273), new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3273) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 3,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3274), new DateTime(2025, 8, 19, 8, 14, 0, 516, DateTimeKind.Utc).AddTicks(3274) });
 
             migrationBuilder.CreateIndex(
                 name: "IX_InfoDepotCabContact_Unique",
@@ -147,26 +127,6 @@ namespace StartingBloch.Backend.Migrations
             migrationBuilder.DropTable(
                 name: "InformationDepotCabinets");
 
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 1,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4015), new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4017) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 2,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4020), new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4020) });
-
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "Id",
-                keyValue: 3,
-                columns: new[] { "CreatedAt", "UpdatedAt" },
-                values: new object[] { new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4021), new DateTime(2025, 8, 4, 16, 25, 58, 465, DateTimeKind.Utc).AddTicks(4021) });
         }
     }
 }
