@@ -4,20 +4,13 @@
  * ================================================================================================
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Button, Space, Avatar, Statistic, Spin } from 'antd';
-import {
-  FileProtectOutlined,
-  TeamOutlined,
-  BankOutlined,
-  ArrowRightOutlined,
-  UserOutlined,
-  ContactsOutlined
-} from '@ant-design/icons';
+import React from 'react';
+import { Card, Row, Col, Typography, Button, Space, Avatar } from 'antd';
+import { FileProtectOutlined, TeamOutlined, BankOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { brevetService, clientService, cabinetService, contactService } from '../services';
+// Services non utilisés sur la page d'accueil, imports retirés
 
 const { Title, Paragraph } = Typography;
 

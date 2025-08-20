@@ -65,7 +65,7 @@ const EditBrevetModal: React.FC<EditBrevetModalProps> = ({
 
   return (
     <Modal
-      title={`Modifier le brevet - ${brevet?.numero || brevet?.referenceFamille}`}
+      title={`Modifier le brevet - ${brevet?.numeroBrevet || ''}`}
       open={visible}
       onCancel={handleCancel}
       onOk={handleSubmit}
@@ -84,7 +84,7 @@ const EditBrevetModal: React.FC<EditBrevetModalProps> = ({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="numero"
+              name="numeroBrevet"
               label="Numéro de brevet"
               rules={[{ required: true, message: 'Le numéro de brevet est requis' }]}
             >
@@ -95,21 +95,10 @@ const EditBrevetModal: React.FC<EditBrevetModalProps> = ({
               />
             </Form.Item>
           </Col>
-          <Col span={12}>
-            <Form.Item
-              name="referenceFamille"
-              label="Référence famille"
-            >
-              <Input
-                placeholder="Référence de la famille"
-                maxLength={50}
-              />
-            </Form.Item>
-          </Col>
         </Row>
 
         <Form.Item
-          name="titre"
+          name="titreBrevet"
           label="Titre du brevet"
           rules={[
             { required: true, message: 'Le titre est requis' },
@@ -123,7 +112,7 @@ const EditBrevetModal: React.FC<EditBrevetModalProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="description"
+          name="descriptionBrevet"
           label="Description"
           rules={[{ min: 20, message: 'La description doit contenir au moins 20 caractères' }]}
         >

@@ -10,7 +10,7 @@
 
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Select, Row, Col, Tabs } from 'antd';
-import { BankOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, TagOutlined } from '@ant-design/icons';
+import { BankOutlined, MailOutlined, PhoneOutlined, TagOutlined } from '@ant-design/icons';
 import type { UpdateCabinetDto, Cabinet } from '../../types';
 
 const { Option } = Select;
@@ -36,11 +36,10 @@ const EditCabinetModal: React.FC<EditCabinetModalProps> = ({
   // Initialiser le formulaire avec les données du cabinet
   useEffect(() => {
     if (cabinet && visible) {
-      form.setFieldsValue({
+  form.setFieldsValue({
         nomCabinet: cabinet.nomCabinet,
         emailCabinet: cabinet.emailCabinet,
         telephoneCabinet: cabinet.telephoneCabinet,
-        referenceCabinet: cabinet.referenceCabinet,
         type: cabinet.type,
       });
     }
@@ -50,13 +49,17 @@ const EditCabinetModal: React.FC<EditCabinetModalProps> = ({
     if (!cabinet) return;
 
     try {
+      let typeValue: number = values.type;
+      if (typeof values.type === 'string') {
+        typeValue = values.type === 'annuite' ? 1 : 2;
+      }
+
       const cabinetData: UpdateCabinetDto = {
         id: cabinet.id,
         nomCabinet: values.nomCabinet,
         emailCabinet: values.emailCabinet,
         telephoneCabinet: values.telephoneCabinet,
-        referenceCabinet: values.referenceCabinet,
-        type: values.type,
+        type: typeValue,
       };
 
       await onSubmit(cabinetData);
@@ -120,24 +123,9 @@ const EditCabinetModal: React.FC<EditCabinetModalProps> = ({
                     prefix={<TagOutlined />}
                     placeholder="Sélectionner le type"
                   >
-                    <Option value="annuite">Annuité</Option>
-                    <Option value="procedure">Procédure</Option>
+                    <Option value={1}>Annuité</Option>
+                    <Option value={2}>Procédure</Option>
                   </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="referenceCabinet"
-                  label="Référence cabinet"
-                  rules={[
-                    { max: 100, message: 'La référence ne peut pas dépasser 100 caractères' }
-                  ]}
-                >
-                  <Input
-                    prefix={<FileTextOutlined />}
-                    placeholder="Ex: CAB-001"
-                    maxLength={100}
-                  />
                 </Form.Item>
               </Col>
             </Row>

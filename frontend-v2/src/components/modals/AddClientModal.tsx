@@ -5,8 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Row, Col, Switch, Tabs, Button, Space, Card, Descriptions, Tag, Divider, Typography } from 'antd';
-import { UserOutlined, MailOutlined, PhoneOutlined, NumberOutlined, EyeOutlined, EditOutlined, LockOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Select, Row, Col, Switch, Tabs, Button, Card, Descriptions, Tag, Divider, Typography } from 'antd';
+import { UserOutlined, MailOutlined, PhoneOutlined, NumberOutlined, LockOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import type { CreateClientDto, Pays } from '../../types';
 
 const { Option } = Select;
@@ -20,16 +20,7 @@ interface AddClientModalProps {
   loading?: boolean;
 }
 
-interface UserAccountData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  canRead: boolean;
-  canWrite: boolean;
-  isBlocked: boolean;
-}
+// (interface UserAccountData supprimée car non utilisée)
 
 const AddClientModal: React.FC<AddClientModalProps> = ({
   visible,
