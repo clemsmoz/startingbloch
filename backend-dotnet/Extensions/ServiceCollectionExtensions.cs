@@ -294,8 +294,19 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("AllowReactApp", builder =>
             {
-                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-                    ?? new[] { "http://localhost:3000" };
+                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+                if (allowedOrigins == null || allowedOrigins.Length == 0)
+                {
+                    // Fallback: variable d'env unique séparée par des virgules (ex: https://app.pages.dev,https://www.domaine.com)
+                    var envCors = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+                    if (!string.IsNullOrWhiteSpace(envCors))
+                    {
+                        allowedOrigins = envCors
+                            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                            .ToArray();
+                    }
+                }
+                allowedOrigins ??= new[] { "http://localhost:3000" };
                 builder
                     .WithOrigins(allowedOrigins)
                     .AllowAnyMethod()

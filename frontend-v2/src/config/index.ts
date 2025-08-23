@@ -2,25 +2,23 @@
  * ================================================================================================
  * CONFIGURATION ENVIRONNEMENT - STARTINGBLOCH FRONTEND V2
  * ================================================================================================
- * 
- * Configuration centralisée des variables d'environnement et constantes applicatives
- * pour l'interface de gestion de propriété intellectuelle StartingBloch.
- * 
- * FONCTIONNALITÉS :
- * ================
- * 🌐 API_URL → URL base du backend .NET
- * 🔐 AUTH → Configuration authentification JWT
- * 📊 PAGINATION → Paramètres tableaux et listes
- * 🎨 THEME → Configuration thème Ant Design
- * 📝 VALIDATION → Règles validation formulaires
- * 
- * ================================================================================================
  */
+
+const trimSlash = (u: string) => u.replace(/\/+$/, '');
+
+const envUrlRaw = (import.meta.env?.VITE_API_URL ?? '').trim();
+const envUrl = envUrlRaw ? trimSlash(envUrlRaw) : '';
+const isProd = !!import.meta.env?.PROD;
+
+// Fallback SÛR : en production, si la var d'env manque on force l'API Azure.
+// En dev local uniquement, on tolère localhost.
+const computedBaseUrl = envUrl || (isProd ? 'https://sb-backend.azurewebsites.net'
+                                          : 'http://localhost:5000');
 
 export const config = {
   // Configuration API Backend .NET
   api: {
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+    baseUrl: computedBaseUrl,          // <-- utilisé partout (AuthService, etc.)
     timeout: 10000,
     endpoints: {
       auth: '/api/auth',
@@ -30,12 +28,12 @@ export const config = {
       contacts: '/api/contact',
       cabinets: '/api/cabinet',
       inventeurs: '/api/inventeur',
-  deposants: '/api/deposant',
+      deposants: '/api/deposant',
       titulaires: '/api/titulaire',
       logs: '/api/log',
       pays: '/api/pays',
       statuts: '/api/statuts',
-  roles: '/api/roles',
+      roles: '/api/roles',
     },
   },
 
@@ -110,6 +108,5 @@ export const config = {
   },
 } as const;
 
-// Types pour la configuration
 export type Config = typeof config;
 export type ApiEndpoints = keyof typeof config.api.endpoints;
