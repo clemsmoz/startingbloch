@@ -208,6 +208,39 @@ public class StartingBlochDbContext : DbContext
                         modelBuilder.Entity(entity.ClrType).ToTable(lower, schema);
                 }
             }
+
+            // Extension: appliquer aussi lowercase sur colonnes / contraintes / index pour cohérence Postgres
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                // Colonnes
+                foreach (var prop in entity.GetProperties())
+                {
+                    var baseName = prop.GetColumnBaseName();
+                    if (!string.IsNullOrEmpty(baseName))
+                        prop.SetColumnName(baseName.ToLowerInvariant());
+                }
+                // Primary / Alternate keys
+                foreach (var key in entity.GetKeys())
+                {
+                    var name = key.GetName();
+                    if (!string.IsNullOrEmpty(name))
+                        key.SetName(name.ToLowerInvariant());
+                }
+                // Foreign keys
+                foreach (var fk in entity.GetForeignKeys())
+                {
+                    var name = fk.GetConstraintName();
+                    if (!string.IsNullOrEmpty(name))
+                        fk.SetConstraintName(name.ToLowerInvariant());
+                }
+                // Index
+                foreach (var idx in entity.GetIndexes())
+                {
+                    var name = idx.GetDatabaseName();
+                    if (!string.IsNullOrEmpty(name))
+                        idx.SetDatabaseName(name.ToLowerInvariant());
+                }
+            }
         }
 
         // Compat Postgres: convertir int(0/1) <-> bool pour colonnes importées en integer

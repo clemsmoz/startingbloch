@@ -58,10 +58,29 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { error = "Email ou mot de passe incorrect" });
             }
 
-            var token = _jwtService.GenerateTokenWithClaims(user);
-            
-            // Mise à jour de la dernière connexion
-            await _userService.UpdateLastLoginAsync(user.Id);
+            _logger.LogDebug("[AUTH] Credentials validated for {Email}, generating JWT...", request.Email);
+
+            string token;
+            try
+            {
+                token = _jwtService.GenerateTokenWithClaims(user);
+            }
+            catch (Exception genEx)
+            {
+                _logger.LogError(genEx, "[AUTH] Token generation failed for {Email}. Vérifie Jwt__Secret / configuration JWT.", request.Email);
+                return StatusCode(500, new { error = "Erreur interne du serveur" });
+            }
+
+            _logger.LogDebug("[AUTH] Token generated for {Email}, updating last login...", request.Email);
+            try
+            {
+                await _userService.UpdateLastLoginAsync(user.Id);
+            }
+            catch (Exception updEx)
+            {
+                _logger.LogError(updEx, "[AUTH] UpdateLastLogin failed for {Email} (UserId={UserId}).", request.Email, user.Id);
+                // On continue quand même – ne pas bloquer l’auth sur ce champ non critique
+            }
 
             _logger.LogInformation("Successful login for user: {Email} from IP: {IP}", request.Email, GetClientIP());
 
