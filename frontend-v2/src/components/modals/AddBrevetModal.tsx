@@ -17,7 +17,6 @@ import CreateInventeurModal from './CreateInventeurModal';
 import CreateTitulaireModal from './CreateTitulaireModal';
 import CreateDeposantModal from './CreateDeposantModal';
 import { useTranslation } from 'react-i18next';
-import { SearchInput } from '../common';
 import dayjs from 'dayjs';
 import AddClientModal from './AddClientModal';
 import AddCabinetModal from './AddCabinetModal';
@@ -211,10 +210,7 @@ const AddBrevetModal: React.FC<AddBrevetModalProps & { editing?: boolean; initia
   const [suggestedTitulaires, setSuggestedTitulaires] = useState<Titulaire[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedClientIds, setSelectedClientIds] = useState<number[]>(preselectedClientIds ?? []);
-  // Recherches locales (barres de recherche)
-  const [searchInventeur, setSearchInventeur] = useState('');
-  const [searchDeposant, setSearchDeposant] = useState('');
-  const [searchTitulaire, setSearchTitulaire] = useState('');
+
   // Pays par entité (sélection dédiée par inventeur / déposant / titulaire)
   const [inventeurPaysById, setInventeurPaysById] = useState<{ [id: number]: number[] }>({});
   const [titulairePaysById, setTitulairePaysById] = useState<{ [id: number]: number[] }>({});
@@ -1340,7 +1336,7 @@ const AddBrevetModal: React.FC<AddBrevetModalProps & { editing?: boolean; initia
                 >
                   {uniqueBy(dedupeById(inventeurs), (inv) => normalize(`${(inv as any)?.prenomInventeur ?? ''} ${(inv as any)?.nomInventeur ?? ''}`.trim()))
                     .filter(inv => {
-                      const q = normalize(searchInventeur);
+                      const q = normalize('');
                       const label = normalize(`${inv?.prenomInventeur ?? ''} ${inv?.nomInventeur ?? ''}`.trim());
                       return q ? label.includes(q) : true;
                     })
@@ -1418,7 +1414,7 @@ const AddBrevetModal: React.FC<AddBrevetModalProps & { editing?: boolean; initia
                 >
                   {uniqueBy(dedupeById(titulaires), (t) => normalize((t as any)?.nomTitulaire ?? ''))
                     .filter(t => {
-                      const q = normalize(searchTitulaire);
+                      const q = normalize('');
                       const label = normalize(`${t?.nomTitulaire ?? ''}`.trim());
                       return q ? label.includes(q) : true;
                     })
@@ -1495,7 +1491,7 @@ const AddBrevetModal: React.FC<AddBrevetModalProps & { editing?: boolean; initia
                 >
                   {uniqueBy(dedupeById(deposants), (d) => normalize(`${(d as any)?.prenomDeposant ?? ''} ${(d as any)?.nomDeposant ?? ''}`.trim()))
                     .filter(d => {
-                      const q = normalize(searchDeposant);
+                      const q = normalize('');
                       const label = normalize(`${d?.prenomDeposant ?? ''} ${d?.nomDeposant ?? ''}`.trim());
                       return q ? label.includes(q) : true;
                     })

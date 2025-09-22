@@ -146,3 +146,88 @@ Notes et conseils
 Si vous voulez, je peux :
 - ajouter un script PowerShell `deploy.ps1` qui demande les variables et exécute ces étapes séquentiellement (une à la fois),
 - ou commiter directement ce `deploy.md` (fait) et créer `deploy.ps1` ensuite.
+
+---
+
+Frontend (Cloudflare Pages - Git-based)
+
+Si votre site front est dans `frontend-v2` et que Cloudflare Pages est configuré pour récupérer automatiquement les pushes sur une branche (par ex. `main` ou `master`), voici les commandes PowerShell utiles pour construire localement, prévisualiser rapidement et pousser sur la branche surveillée.
+
+Remarques :
+- Ces commandes sont écrites pour PowerShell (Windows). Elles n'utilisent pas d'opérateur `&&` mais la séquence `; if ($?) { ... }` pour enchaîner proprement.
+- Assurez-vous d'avoir Node.js + npm installés et la bonne version mentionnée dans `frontend-v2/package.json`.
+
+1) Aller dans le dossier frontend
+
+```powershell
+Set-Location -Path .\frontend-v2
+```
+
+2) Installer les dépendances de manière reproductible
+
+```powershell
+npm ci
+```
+
+3) Build PowerShell-safe
+
+```powershell
+npm ci; if ($?) { npm run build } ; if (-not $?) { Write-Error 'Build failed' ; exit 1 }
+```
+
+4) Vérifier le contenu de `dist`
+
+```powershell
+if (Test-Path .\dist) { Get-ChildItem -Path .\dist -Recurse | Select-Object FullName,Length } else { Write-Host 'dist not found' }
+```
+
+5) Prévisualiser localement (vite preview) — utile pour un contrôle rapide
+
+Option A: utiliser vite (installé par devDependencies)
+
+```powershell
+npm ci; if ($?) { npx vite preview --port 5173 --strictPort }
+```
+
+Option B: servir `dist` statiquement avec un utilitaire simple (si vous préférez)
+
+```powershell
+npx serve dist -s
+```
+
+6) Pousser sur la branche surveillée par Cloudflare Pages
+
+Remarque: Cloudflare Pages déclenchera automatiquement un build & déploiement lorsqu'un push est reçu sur la branche configurée.
+
+```powershell
+# depuis le répertoire racine du repo
+Set-Location -Path ..\
+git add -A
+git commit -m "chore(frontend): build/dist ready for deploy" || Write-Host 'Nothing to commit'
+git push origin HEAD
+```
+
+7) Points d'attention / variables
+
+- Branche surveillée : vérifiez dans l'interface Cloudflare Pages quelle branche est configurée (ex: `main`).
+- Build command côté Pages : gardez `npm ci && npm run build` et le répertoire de sortie `dist`.
+- Si vous avez des variables d'environnement (API_URL, etc.), configurez-les dans les Environment variables de Cloudflare Pages (UI) ou en variables de déploiement Git provider.
+
+8) Option : automatiser localement (script PowerShell)
+
+Vous pouvez créer un petit script `frontend-v2/deploy-frontend.ps1` pour exécuter séquentiellement les étapes ci‑dessous :
+
+```powershell
+Set-Location -Path $PSScriptRoot
+npm ci; if ($?) { npm run build } else { Write-Error 'npm ci failed'; exit 1 }
+Set-Location -Path ..\
+git add -A
+git commit -m "chore(frontend): build dist" || Write-Host 'No changes to commit'
+git push origin HEAD
+```
+
+---
+
+Si vous voulez, je peux créer ce script `frontend-v2/deploy-frontend.ps1` et committer les changements (ou juste ajouter la section ci-dessus si vous préférez garder le repo inchangé). Indiquez si je dois :
+- créer et committer `deploy-frontend.ps1`,
+- ou seulement ajouter ces instructions dans `deploy.md` (déjà fait ici).
