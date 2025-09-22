@@ -45,6 +45,7 @@ Test-Path .\backend-dotnet\publish.zip
 Get-Item .\backend-dotnet\publish.zip | Select-Object Name, Length
 ```
 
+
 5) (Connexion Azure) - si nécessaire
 
 ```powershell
@@ -53,12 +54,29 @@ az login
 az account set --subscription "<Ma Subscription>"
 ```
 
-6) Déployer le zip sur App Service (commande recommandée)
-
-Remplacez `<RESOURCE_GROUP>` et `<APP_NAME>` par vos valeurs.
+Variables utilisées dans ce dépôt
 
 ```powershell
-az webapp deploy --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>" --src-path "${PWD}\backend-dotnet\publish.zip"
+$RESOURCE_GROUP = "rg-startingbloch"
+$APP_NAME = "sb-backend"
+```
+
+Si vous ne connaissez pas encore les valeurs ou voulez les retrouver automatiquement :
+
+```powershell
+# Lister toutes les WebApps (pour repérer rapidement les noms)
+az webapp list --query "[].{name:name,resourceGroup:resourceGroup,location:location}" -o table
+
+# Détecter automatiquement le resourceGroup pour l'app connue et l'assigner en variable
+$APP_NAME = "sb-backend"
+$RESOURCE_GROUP = (az webapp list --query "[?name=='$($APP_NAME)'].resourceGroup | [0]" -o tsv)
+Write-Output "Using resource group: $RESOURCE_GROUP and app name: $APP_NAME"
+```
+
+6) Déployer le zip sur App Service (commande recommandée)
+
+```powershell
+az webapp deploy --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --src-path "${PWD}\backend-dotnet\publish.zip"
 ```
 
 Remarque : la commande `az webapp deployment source config-zip` est dépréciée, `az webapp deploy` la remplace.
@@ -66,19 +84,19 @@ Remarque : la commande `az webapp deployment source config-zip` est dépréciée
 7) Démarrer l'app (si elle est arrêtée)
 
 ```powershell
-az webapp start --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>"
+az webapp start --resource-group "$RESOURCE_GROUP" --name "$APP_NAME"
 ```
 
 8) Vérifier l'endpoint santé (public)
 
 ```powershell
-Invoke-RestMethod -Uri "https://<APP_NAME>.azurewebsites.net/api/health" -UseBasicParsing | ConvertTo-Json -Depth 4
+Invoke-RestMethod -Uri "https://$APP_NAME.azurewebsites.net/api/health" -UseBasicParsing | ConvertTo-Json -Depth 4
 ```
 
 9) Suivre les logs en temps réel (tail)
 
 ```powershell
-az webapp log tail --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>"
+az webapp log tail --resource-group "$RESOURCE_GROUP" --name "$APP_NAME"
 ```
 
 10) Lister les WebApps (utile pour retrouver noms exacts)
@@ -90,25 +108,25 @@ az webapp list --query "[].{name:name,resourceGroup:resourceGroup,location:locat
 11) Lister / Inspecter les déploiements (historique Kudu)
 
 ```powershell
-az webapp deployment list --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>" --query "[].{id:id,status:status,received:receivedTime,message:message}" -o table
+az webapp deployment list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[].{id:id,status:status,received:receivedTime,message:message}" -o table
 ```
 
 12) Voir les app settings (connection strings, JWT, CORS, ...)
 
 ```powershell
-az webapp config appsettings list --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>" -o table
+az webapp config appsettings list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" -o table
 ```
 
 13) Activer la collecte de logs côté App Service (si non activée)
 
 ```powershell
-az webapp log config --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>" --application-logging true --web-server-logging filesystem
+az webapp log config --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --application-logging true --web-server-logging filesystem
 ```
 
 14) Redémarrer l'application
 
 ```powershell
-az webapp restart --resource-group "<RESOURCE_GROUP>" --name "<APP_NAME>"
+az webapp restart --resource-group "$RESOURCE_GROUP" --name "$APP_NAME"
 ```
 
 15) Dépannage Kudu (accès direct - peut demander credentials SCM)
