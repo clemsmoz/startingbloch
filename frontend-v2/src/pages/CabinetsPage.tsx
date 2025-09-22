@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 /*
  * ================================================================================================
  * PAGE CABINETS - STARTINGBLOCH
@@ -44,6 +45,7 @@ import type { Cabinet, CreateCabinetDto, UpdateCabinetDto } from '../types';
 import { useNotificationStore } from '../store/notificationStore';
 
 const CabinetsPage: React.FC = () => {
+  const { t } = useTranslation();
   console.log('🏢 CabinetsPage - Rendu du composant...');
   
   const navigate = useNavigate();
@@ -51,16 +53,16 @@ const CabinetsPage: React.FC = () => {
 
   // Fonction pour transformer le type numérique en texte
   const getTypeLabel = (type: any): string => {
-    if (type === 1 || type === '1') return 'Annuité';
-    if (type === 2 || type === '2') return 'Procédure';
-    return 'N/A';
+  if (type === 1 || type === '1') return t('cabinets.type.annuite');
+  if (type === 2 || type === '2') return t('cabinets.type.procedure');
+  return t('common.na');
   };
 
   // Fonction pour obtenir la couleur du type
   const getTypeColor = (type: any): string => {
-    if (type === 1 || type === '1') return 'blue';
-    if (type === 2 || type === '2') return 'green';
-    return 'default';
+     if (type === 1 || type === '1') return 'blue';
+     if (type === 2 || type === '2') return 'green';
+     return 'default';
   };
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -80,7 +82,7 @@ const CabinetsPage: React.FC = () => {
   // Colonnes du tableau
   const columns: ColumnsType<Cabinet> = [
     {
-      title: 'Nom du Cabinet',
+      title: t('cabinets.columns.name'),
       dataIndex: 'nomCabinet',
       key: 'nomCabinet',
       sorter: (a, b) => a.nomCabinet.localeCompare(b.nomCabinet),
@@ -89,7 +91,7 @@ const CabinetsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Type',
+      title: t('cabinets.columns.type'),
       dataIndex: 'type',
       key: 'type',
       sorter: (a, b) => (a.type || '').toString().localeCompare((b.type || '').toString()),
@@ -104,25 +106,25 @@ const CabinetsPage: React.FC = () => {
       },
     },
     {
-      title: 'Email',
+      title: t('cabinets.columns.email'),
       dataIndex: 'emailCabinet',
       key: 'emailCabinet',
-      render: (email?: string) => email || '-',
+      render: (email?: string) => email || t('common.notProvided'),
     },
     {
-      title: 'Téléphone',
+      title: t('cabinets.columns.phone'),
       dataIndex: 'telephoneCabinet',
       key: 'telephoneCabinet',
-      render: (phone?: string) => phone || '-',
+      render: (phone?: string) => phone || t('common.notProvided'),
     },
     {
-      title: 'Référence',
+      title: t('cabinets.columns.reference'),
       dataIndex: 'referenceCabinet',
       key: 'referenceCabinet',
-      render: (ref?: string) => ref || '-',
+      render: (ref?: string) => ref || t('common.notProvided'),
     },
     {
-      title: 'Actions',
+      title: t('actions.title'),
       key: 'actions',
       width: 120,
       render: (_, record) => {
@@ -132,28 +134,28 @@ const CabinetsPage: React.FC = () => {
           {
             key: 'view',
             icon: <EyeOutlined />,
-            label: 'Voir détails',
+            label: t('actions.viewDetails'),
             onClick: () => handleViewCabinet(record),
           },
           {
             key: 'contacts',
             icon: <ContactsOutlined />,
-            label: 'Voir contacts',
+            label: t('cabinets.actions.viewContacts'),
             onClick: () => handleViewContacts(record),
           },
           // Pour les clients, pas de modification/suppression
           ...(!isClient ? [
             {
               key: 'edit',
-              icon: <EditOutlined />,
-              label: 'Modifier',
+                icon: <EditOutlined />,
+                label: t('actions.edit'),
               onClick: () => handleEditCabinet(record),
             },
             { type: 'divider' as const },
             {
               key: 'delete',
               icon: <DeleteOutlined />,
-              label: 'Supprimer',
+              label: t('actions.delete'),
               danger: true,
               onClick: () => handleDeleteCabinet(record),
             },
@@ -240,9 +242,9 @@ const CabinetsPage: React.FC = () => {
         }
         
         console.log('✅ CabinetsPage - Cabinets chargés:', Array.isArray(data) ? data.length : 'Format non-tableau');
-      } else {
-        console.error('❌ CabinetsPage - Réponse sans succès:', response.message);
-        message.error(response.message || 'Erreur lors du chargement des cabinets');
+  } else {
+    console.error('❌ CabinetsPage - Réponse sans succès:', response.message);
+    message.error(response.message || t('cabinets.loadError'));
       }
     } catch (error) {
       console.error('❌ CabinetsPage - Erreur lors du chargement des cabinets:', error);
@@ -253,7 +255,7 @@ const CabinetsPage: React.FC = () => {
         console.error('Status:', (error as any).response?.status);
         console.error('Data:', (error as any).response?.data);
       }
-      message.error('Erreur lors du chargement des cabinets');
+      message.error(t('cabinets.loadError'));
     } finally {
       setLoading(false);
     }
@@ -269,9 +271,10 @@ const CabinetsPage: React.FC = () => {
 
   // Recherche côté client en attendant l'implémentation côté serveur
   const handleSearch = async (value: string) => {
-    setSearchValue(value);
-    // Pour l'instant, on recharge tous les cabinets et on laisse le filtrage côté client
-    if (!value.trim()) {
+    const query = value?.trim() || '';
+    setSearchValue(query);
+    // Normaliser côté client pour la sensibilité à la casse
+    if (!query) {
       setCurrentPage(1);
       loadCabinets(1, pageSize);
     }
@@ -279,13 +282,14 @@ const CabinetsPage: React.FC = () => {
 
   // Supprimé le filtrage côté client - la recherche est gérée côté serveur
   // Filtrage temporaire côté client
+  const normalize = (s?: string) => (s || '').toLowerCase();
   const filteredCabinets = Array.isArray(cabinets) ? cabinets.filter(cabinet =>
     searchValue === '' ||
-    cabinet.nomCabinet.toLowerCase().includes(searchValue.toLowerCase()) ||
-    getTypeLabel(cabinet.type).toLowerCase().includes(searchValue.toLowerCase()) ||
-    cabinet.emailCabinet?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    cabinet.adresseCabinet?.toLowerCase().includes(searchValue.toLowerCase()) ||
-    cabinet.paysCabinet?.toLowerCase().includes(searchValue.toLowerCase())
+    normalize(cabinet.nomCabinet).includes(normalize(searchValue)) ||
+    normalize(getTypeLabel(cabinet.type)).includes(normalize(searchValue)) ||
+    normalize(cabinet.emailCabinet).includes(normalize(searchValue)) ||
+    normalize(cabinet.adresseCabinet).includes(normalize(searchValue)) ||
+    normalize(cabinet.paysCabinet).includes(normalize(searchValue))
   ) : [];
 
   // Actions
@@ -320,45 +324,45 @@ const CabinetsPage: React.FC = () => {
       const response = role === 'client'
         ? await cabinetService.createForMe(values)
         : await cabinetService.create(values);
-      if (response.success) {
-        message.success('Cabinet créé avec succès');
+    if (response.success) {
+  message.success(t('cabinets.createSuccess'));
         setIsAddModalVisible(false);
         await loadCabinets();
         
         addNotification({
           type: 'success',
-          message: 'Cabinet créé',
-          description: `Le cabinet "${values.nomCabinet}" a été créé avec succès.`
+          message: t('cabinets.createSuccessTitle'),
+          description: t('cabinets.createSuccessDesc', { name: values.nomCabinet })
         });
       } else {
-        message.error(response.message || 'Erreur lors de la création du cabinet');
+  message.error(response.message || t('cabinets.createError'));
       }
     } catch (error) {
       console.error('Erreur lors de la création du cabinet:', error);
-      message.error('Erreur lors de la création du cabinet');
+  message.error(t('cabinets.createError'));
     }
   };
 
   const handleUpdateCabinet = async (values: UpdateCabinetDto) => {
     try {
       const response = await cabinetService.update(values);
-      if (response.success) {
-        message.success('Cabinet modifié avec succès');
+    if (response.success) {
+  message.success(t('cabinets.updateSuccess'));
         setIsEditModalVisible(false);
         setSelectedCabinet(null);
         await loadCabinets();
         
         addNotification({
           type: 'success',
-          message: 'Cabinet modifié',
-          description: `Le cabinet a été modifié avec succès.`
+          message: t('cabinets.updateSuccessTitle'),
+          description: t('cabinets.updateSuccessDesc')
         });
       } else {
-        message.error(response.message || 'Erreur lors de la modification du cabinet');
+    message.error(response.message || t('cabinets.updateError'));
       }
     } catch (error) {
       console.error('Erreur lors de la modification du cabinet:', error);
-      message.error('Erreur lors de la modification du cabinet');
+  message.error(t('cabinets.updateError'));
     }
   };
 
@@ -367,40 +371,40 @@ const CabinetsPage: React.FC = () => {
 
     try {
       const response = await cabinetService.delete(selectedCabinet.id);
-      if (response.success) {
-        message.success('Cabinet supprimé avec succès');
+    if (response.success) {
+  message.success(t('cabinets.deleteSuccess'));
         setIsDeleteModalVisible(false);
         setSelectedCabinet(null);
         await loadCabinets();
         
         addNotification({
           type: 'success',
-          message: 'Cabinet supprimé',
-          description: `Le cabinet "${selectedCabinet.nomCabinet}" a été supprimé avec succès.`
+          message: t('cabinets.deleteSuccessTitle'),
+          description: t('cabinets.deleteSuccessDesc', { name: selectedCabinet.nomCabinet })
         });
       } else {
-        message.error(response.message || 'Erreur lors de la suppression du cabinet');
+  message.error(response.message || t('cabinets.deleteError'));
       }
     } catch (error) {
       console.error('Erreur lors de la suppression du cabinet:', error);
-      message.error('Erreur lors de la suppression du cabinet');
+  message.error(t('cabinets.deleteError'));
     }
   };
 
   // Actions du header
   const headerActions = [
     <SearchInput
-      key="search"
-      placeholder="Rechercher un cabinet..."
+  key="search"
+  placeholder={t('cabinets.searchPlaceholder')}
       onSearch={handleSearch}
       style={{ width: '320px' }}
     />,
     <Button
       key="export"
       icon={<ExportOutlined />}
-      onClick={() => message.info('Fonctionnalité d\'export en cours de développement')}
+      onClick={() => message.info(t('common.exportInProgress'))}
     >
-      Exporter
+      {t('actions.export')}
     </Button>,
     // Bouton ajout désactivé pour clients si aucune création côté client ? Ici on autorise via endpoint /my
     <Button
@@ -409,7 +413,7 @@ const CabinetsPage: React.FC = () => {
       icon={<PlusOutlined />}
       onClick={handleAddCabinet}
     >
-      Nouveau Cabinet
+      {t('cabinets.actions.new')}
     </Button>,
   ];
 
@@ -421,8 +425,8 @@ const CabinetsPage: React.FC = () => {
       className="space-y-6"
     >
       <PageHeader
-        title="Gestion des Cabinets"
-        description="Gérez les cabinets de votre organisation"
+        title={t('menu.cabinets')}
+    description={t('cabinets.pageDescription')}
         actions={headerActions}
       />
 
@@ -439,7 +443,7 @@ const CabinetsPage: React.FC = () => {
           showSizeChanger: true,
           showQuickJumper: true,
           showTotal: (total, range) => 
-            `${range[0]}-${range[1]} sur ${total} cabinets`,
+            t('cabinets.pagination.showTotal', { from: range[0], to: range[1], total }),
           pageSizeOptions: ['10', '20', '50', '100'],
           onChange: handleTableChange,
           onShowSizeChange: handleTableChange,
@@ -466,33 +470,32 @@ const CabinetsPage: React.FC = () => {
 
       {/* Modal de suppression */}
       <Modal
-        title="Confirmer la suppression"
+  title={t('cabinets.confirmDelete.title')}
         open={isDeleteModalVisible}
         onOk={confirmDeleteCabinet}
         onCancel={() => {
           setIsDeleteModalVisible(false);
           setSelectedCabinet(null);
         }}
-        okText="Supprimer"
-        cancelText="Annuler"
+  okText={t('actions.delete')}
+  cancelText={t('actions.cancel')}
         okButtonProps={{ danger: true }}
       >
-        <p>
-          Êtes-vous sûr de vouloir supprimer le cabinet{' '}
-          <strong>{selectedCabinet?.nomCabinet}</strong> ?
+            <p>
+          {t('cabinets.confirmDelete.content', { name: selectedCabinet?.nomCabinet })}
         </p>
         <p className="text-red-600 text-sm mt-2">
-          Cette action est irréversible.
+          {t('cabinets.confirmDelete.warning')}
         </p>
       </Modal>
 
       {/* Modal de détails */}
       <Modal
-        title="Détails du Cabinet"
+  title={t('cabinets.detailTitle')}
         open={isDetailModalVisible}
         footer={[
           <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
-            Fermer
+            {t('actions.close')}
           </Button>,
           <Button
             key="edit"
@@ -502,7 +505,7 @@ const CabinetsPage: React.FC = () => {
               handleEditCabinet(selectedCabinet!);
             }}
           >
-            Modifier
+            {t('actions.edit')}
           </Button>,
         ]}
         onCancel={() => setIsDetailModalVisible(false)}
@@ -511,36 +514,36 @@ const CabinetsPage: React.FC = () => {
         {selectedCabinet && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nom du Cabinet</label>
-              <p className="mt-1 text-sm text-gray-900">{selectedCabinet.nomCabinet}</p>
+              <label className="block text-sm font-medium text-gray-700">{t('cabinets.labels.name')}</label>
+                <p className="mt-1 text-sm text-gray-900">{selectedCabinet.nomCabinet}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Type</label>
+                <label className="block text-sm font-medium text-gray-700">{t('cabinets.labels.type')}</label>
               <Tag color={getTypeColor(selectedCabinet.type)}>
                 {getTypeLabel(selectedCabinet.type)}
               </Tag>
             </div>
             {selectedCabinet.adresseCabinet && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">Adresse</label>
+                <label className="block text-sm font-medium text-gray-700">{t('cabinets.labels.address')}</label>
                 <p className="mt-1 text-sm text-gray-900">{selectedCabinet.adresseCabinet}</p>
               </div>
             )}
             {selectedCabinet.paysCabinet && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">Pays</label>
+                <label className="block text-sm font-medium text-gray-700">{t('cabinets.labels.country')}</label>
                 <p className="mt-1 text-sm text-gray-900">{selectedCabinet.paysCabinet}</p>
               </div>
             )}
             {selectedCabinet.emailCabinet && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700">{t('cabinets.labels.email')}</label>
                 <p className="mt-1 text-sm text-gray-900">{selectedCabinet.emailCabinet}</p>
               </div>
             )}
             {selectedCabinet.telephoneCabinet && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">Téléphone</label>
+                <label className="block text-sm font-medium text-gray-700">{t('cabinets.labels.phone')}</label>
                 <p className="mt-1 text-sm text-gray-900">{selectedCabinet.telephoneCabinet}</p>
               </div>
             )}

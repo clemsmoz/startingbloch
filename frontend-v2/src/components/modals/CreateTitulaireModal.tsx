@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Row, Col, message } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
 import { titulaireService } from '../../services';
@@ -27,12 +28,13 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
       // Détection doublon: par email si fourni, sinon par nom
-      const norm = (s?: string) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const norm = (s?: string) => (s ?? '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
       const email = norm(values.emailTitulaire);
       const nom = norm(values.nomTitulaire);
       const duplicate = existing.find(t => {
@@ -43,7 +45,7 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
       });
 
       if (duplicate) {
-        message.info("Ce titulaire existe déjà, il a été sélectionné.");
+        message.info(t('titulaires.messages.duplicate'));
         onDuplicate?.(duplicate);
         form.resetFields();
         onCancel();
@@ -78,7 +80,7 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
 
   return (
     <Modal
-      title="Créer un nouveau titulaire"
+      title={t('titulaires.modals.create.title')}
       open={visible}
       onCancel={handleCancel}
       onOk={() => form.submit()}
@@ -95,15 +97,14 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
           <Col span={24}>
             <Form.Item
               name="nomTitulaire"
-              label="Nom"
+              label={t('titulaires.fields.lastName')}
               rules={[
-                { required: true, message: 'Le nom est obligatoire' },
-                { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                { max: 100, message: t('titulaires.validation.nameMax') }
               ]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="Nom du titulaire"
+                placeholder={t('titulaires.placeholders.lastName')}
                 maxLength={100}
               />
             </Form.Item>
@@ -114,14 +115,14 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
           <Col span={24}>
             <Form.Item
               name="adresseTitulaire"
-              label="Adresse"
+              label={t('titulaires.fields.address')}
               rules={[
-                { max: 500, message: 'L\'adresse ne peut pas dépasser 500 caractères' }
+                { max: 500, message: t('titulaires.validation.addressMax') }
               ]}
             >
               <Input
                 prefix={<HomeOutlined />}
-                placeholder="Adresse complète"
+                placeholder={t('titulaires.placeholders.address')}
                 maxLength={500}
               />
             </Form.Item>
@@ -132,15 +133,15 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="emailTitulaire"
-              label="Email"
+              label={t('titulaires.fields.email')}
               rules={[
-                { type: 'email', message: 'Format d\'email invalide' },
-                { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                { type: 'email', message: t('titulaires.validation.emailInvalid') },
+                { max: 255, message: t('titulaires.validation.emailMax') }
               ]}
             >
               <Input
                 prefix={<MailOutlined />}
-                placeholder="email@exemple.com"
+                placeholder={t('titulaires.placeholders.email')}
                 maxLength={255}
               />
             </Form.Item>
@@ -148,14 +149,14 @@ const CreateTitulaireModal: React.FC<CreateTitulaireModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="telephoneTitulaire"
-              label="Téléphone"
+              label={t('titulaires.fields.phone')}
               rules={[
-                { max: 20, message: 'Le téléphone ne peut pas dépasser 20 caractères' }
+                { max: 20, message: t('titulaires.validation.phoneMax') }
               ]}
             >
               <Input
                 prefix={<PhoneOutlined />}
-                placeholder="+33 1 23 45 67 89"
+                placeholder={t('titulaires.placeholders.phone')}
                 maxLength={20}
               />
             </Form.Item>

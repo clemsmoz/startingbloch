@@ -257,8 +257,20 @@ public static class ServiceCollectionExtensions
                 OnMessageReceived = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    // Standard: look in Authorization header
                     var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-                    logger.LogInformation("🔐 JWT Token received - Length: {Length}", token?.Length ?? 0);
+                    // SignalR (WebSockets) may send the token as access_token in the query string during negotiate
+                    if (string.IsNullOrEmpty(token) && context.Request.Query.ContainsKey("access_token") && context.Request.Path.StartsWithSegments("/hubs"))
+                    {
+                        token = context.Request.Query["access_token"].FirstOrDefault();
+                        // set the token for the JwtBearer handler
+                        context.Token = token;
+                        logger.LogInformation("🔐 JWT Token received from query string for SignalR (length={Length})", token?.Length ?? 0);
+                    }
+                    else
+                    {
+                        logger.LogInformation("🔐 JWT Token received - Length: {Length}", token?.Length ?? 0);
+                    }
                     return Task.CompletedTask;
                 }
             };
@@ -315,6 +327,11 @@ public static class ServiceCollectionExtensions
                     .SetPreflightMaxAge(TimeSpan.FromMinutes(5));
             });
         });
+
+    // Register SignalR IUserIdProvider to map JWT claims to SignalR UserIdentifier
+    services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SignalRUserIdProvider>();
+    // Register connection registry for tracking active SignalR connections by user
+    services.AddSingleton<StartingBloch.Backend.Services.ConnectionRegistry>();
 
         // ============================================================================================
         // AUTORISATION ET VALIDATION

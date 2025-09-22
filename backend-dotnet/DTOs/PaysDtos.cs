@@ -64,7 +64,6 @@ public class PaysDto
 public class CreatePaysDto
 {
     /// <summary>Nom français OBLIGATOIRE pour interface utilisateur.</summary>
-    [Required(ErrorMessage = "Le nom du pays est requis")]
     [StringLength(100, ErrorMessage = "Le nom du pays ne peut pas dépasser 100 caractères")]
     public string NomFrFr { get; set; } = string.Empty;
 
@@ -79,7 +78,6 @@ public class CreatePaysDto
 public class UpdatePaysDto
 {
     /// <summary>Nom français OBLIGATOIRE maintenu pour cohérence interface.</summary>
-    [Required(ErrorMessage = "Le nom du pays est requis")]
     [StringLength(100, ErrorMessage = "Le nom du pays ne peut pas dépasser 100 caractères")]
     public string NomFrFr { get; set; } = string.Empty;
 

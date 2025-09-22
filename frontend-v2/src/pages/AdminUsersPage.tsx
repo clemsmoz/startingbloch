@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Table,
@@ -89,6 +90,7 @@ interface UpdateUserDto {
  * Page d'administration des utilisateurs
  */
 const AdminUsersPage: React.FC = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -115,9 +117,9 @@ const AdminUsersPage: React.FC = () => {
 
   // Helpers pour lisibilité (évite les ternaires imbriqués)
   const roleMeta: Record<UserRole, { color: string; label: string }> = {
-    Admin: { color: 'red', label: 'Administrateur' },
-    User: { color: 'blue', label: 'Utilisateur' },
-    Client: { color: 'purple', label: 'Client' },
+    Admin: { color: 'red', label: t('users.role.admin') },
+    User: { color: 'blue', label: t('users.role.user') },
+    Client: { color: 'purple', label: t('users.role.client') },
   };
 
   const normalizeRoleFromDb = (name: string): UserRole => {
@@ -147,12 +149,12 @@ const AdminUsersPage: React.FC = () => {
 
       if (success) {
         setUsers(items);
-        setTotalCount(response.totalCount || (data?.totalCount ?? items.length) || 0);
-        setCurrentPage(response.page || data?.page || page);
+  setTotalCount(response.totalCount ?? (data?.totalCount ?? items.length) ?? 0);
+  setCurrentPage(response.page ?? data?.page ?? page);
       }
     } catch (error) {
-      console.error('❌ AdminUsersPage - Erreur lors du chargement des utilisateurs:', error);
-      addNotification({ type: 'error', message: 'Impossible de charger les utilisateurs' });
+  console.error('❌ AdminUsersPage - Erreur lors du chargement des utilisateurs:', error);
+  addNotification({ type: 'error', message: t('users.loadError') });
     } finally {
       setLoading(false);
     }
@@ -176,7 +178,7 @@ const AdminUsersPage: React.FC = () => {
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
-    const newPageSize = size || pageSize;
+  const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
     loadUsers(page, newPageSize);
@@ -185,7 +187,7 @@ const AdminUsersPage: React.FC = () => {
   // Colonnes du tableau
   const columns: ColumnsType<User> = [
     {
-      title: 'Utilisateur',
+      title: t('users.column.user'),
       key: 'user',
       render: (_, record) => (
         <Space>
@@ -206,12 +208,12 @@ const AdminUsersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Email',
+      title: t('users.column.email'),
       dataIndex: 'email',
       key: 'email',
     },
     {
-      title: 'Rôle',
+      title: t('users.column.role'),
       dataIndex: 'role',
       key: 'role',
       render: (role: UserRole) => (
@@ -219,17 +221,17 @@ const AdminUsersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Statut',
+      title: t('users.column.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? 'Actif' : 'Inactif'}
+          {isActive ? t('users.status.active') : t('users.status.inactive')}
         </Tag>
       ),
     },
     {
-      title: "Écriture",
+      title: t('users.column.write'),
       key: 'canWrite',
       render: (_, record) => (
         <Switch
@@ -239,19 +241,19 @@ const AdminUsersPage: React.FC = () => {
             await loadUsers();
           }}
           disabled={record.role === 'Admin'}
-          checkedChildren="Oui"
-          unCheckedChildren="Non"
+          checkedChildren={t('actions.yes')}
+          unCheckedChildren={t('actions.no')}
         />
       )
     },
     {
-      title: 'Créé le',
+      title: t('users.column.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString('fr-FR'),
+      render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
-      title: 'Actions',
+      title: t('actions.actions') || 'Actions',
       key: 'actions',
       render: (_, record) => (
         <Space>
@@ -259,25 +261,25 @@ const AdminUsersPage: React.FC = () => {
             type="text"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-            title="Modifier"
+            title={t('actions.edit')}
           />
           <Button
             type="text"
             icon={record.isActive ? <LockOutlined /> : <UnlockOutlined />}
             onClick={() => handleToggleActive(record)}
-            title={record.isActive ? 'Désactiver' : 'Activer'}
+            title={record.isActive ? t('actions.disable') : t('actions.enable')}
           />
           <Popconfirm
-            title="Êtes-vous sûr de vouloir supprimer cet utilisateur ?"
+            title={t('users.confirmDelete')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Oui"
-            cancelText="Non"
+            okText={t('actions.yes')}
+            cancelText={t('actions.no')}
           >
             <Button
               type="text"
               danger
               icon={<DeleteOutlined />}
-              title="Supprimer"
+              title={t('actions.delete')}
             />
           </Popconfirm>
         </Space>
@@ -313,7 +315,7 @@ const AdminUsersPage: React.FC = () => {
         };
         await userAdminService.update(editingUser.id, payload);
         await loadUsers();
-        message.success('Utilisateur modifié avec succès');
+  message.success(t('users.updateSuccess'));
       } else {
         // Création via API
         const role = (values as any).role as UserRole;
@@ -338,13 +340,13 @@ const AdminUsersPage: React.FC = () => {
           });
         }
         await loadUsers();
-        message.success('Utilisateur créé avec succès');
+  message.success(t('users.createSuccess'));
       }
       setIsModalVisible(false);
       form.resetFields();
     } catch (error) {
       console.error(error);
-      message.error('Erreur lors de la sauvegarde');
+  message.error(t('users.saveError'));
     }
   };
 
@@ -356,10 +358,10 @@ const AdminUsersPage: React.FC = () => {
         await userAdminService.activate(user.id);
       }
       await loadUsers();
-      message.success(`Utilisateur ${!user.isActive ? 'activé' : 'désactivé'}`);
+  message.success(!user.isActive ? t('users.activated') : t('users.deactivated'));
     } catch (error) {
       console.error(error);
-      message.error('Erreur lors de la modification du statut');
+  message.error(t('users.statusChangeError'));
     }
   };
 
@@ -367,10 +369,10 @@ const AdminUsersPage: React.FC = () => {
     try {
   await userAdminService.delete(id);
   setUsers(prev => prev.filter(u => u.id !== id));
-  message.success('Utilisateur supprimé avec succès');
+  message.success(t('users.deleteSuccess') || 'Utilisateur supprimé avec succès');
     } catch (error) {
       console.error(error);
-      message.error('Erreur lors de la suppression');
+  message.error(t('users.deleteError') || 'Erreur lors de la suppression');
     }
   };
 
@@ -382,8 +384,8 @@ const AdminUsersPage: React.FC = () => {
         transition={{ duration: 0.6 }}
       >
         <PageHeader
-          title="Gestion des Utilisateurs"
-          description="Administrez les comptes utilisateurs et leurs permissions"
+          title={t('users.pageTitle')}
+          description={t('users.pageDescription')}
           actions={[
             <Button
               key="create"
@@ -391,7 +393,7 @@ const AdminUsersPage: React.FC = () => {
               icon={<PlusOutlined />}
               onClick={handleCreate}
             >
-              Nouvel Utilisateur
+              {t('users.newUser')}
             </Button>
           ]}
         />
@@ -401,28 +403,28 @@ const AdminUsersPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={6}>
               <Statistic
-                title="Total Utilisateurs"
+                title={t('users.stats.total')}
                 value={stats.total}
                 valueStyle={{ color: '#1890ff' }}
               />
             </Col>
             <Col span={6}>
               <Statistic
-                title="Utilisateurs Actifs"
+                title={t('users.stats.active')}
                 value={stats.active}
                 valueStyle={{ color: '#52c41a' }}
               />
             </Col>
             <Col span={6}>
               <Statistic
-                title="Administrateurs"
+                title={t('users.stats.admins')}
                 value={stats.admins}
                 valueStyle={{ color: '#f5222d' }}
               />
             </Col>
             <Col span={6}>
               <Statistic
-                title="Clients"
+                title={t('users.stats.clients')}
                 value={stats.clients}
                 valueStyle={{ color: '#722ed1' }}
               />
@@ -443,8 +445,8 @@ const AdminUsersPage: React.FC = () => {
               total: totalCount,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => 
-                `${range[0]}-${range[1]} sur ${total} utilisateurs`,
+                showTotal: (total, range) => 
+                `${range[0]}-${range[1]} ${t('users.ofTotal')} ${total} ${t('users.labelUsers')}`,
               pageSizeOptions: ['10', '20', '50', '100'],
               onChange: handleTableChange,
               onShowSizeChange: handleTableChange,
@@ -455,7 +457,7 @@ const AdminUsersPage: React.FC = () => {
 
       {/* Modal de création/édition */}
       <Modal
-        title={editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
+        title={editingUser ? t('users.editUser') : t('users.newUser')}
         open={isModalVisible}
         onCancel={() => {
           setIsModalVisible(false);
@@ -474,53 +476,53 @@ const AdminUsersPage: React.FC = () => {
             <Col span={12}>
               <Form.Item
                 name="prenom"
-                label="Prénom"
-                rules={[{ required: true, message: 'Le prénom est requis' }]}
+                label={t('users.form.firstName')}
+                rules={[{ required: true, message: t('users.form.firstNameRequired') }]}
               >
-                <Input placeholder="Prénom" />
+                <Input placeholder={t('users.form.firstNamePlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="nom"
-                label="Nom"
-                rules={[{ required: true, message: 'Le nom est requis' }]}
+                label={t('users.form.lastName')}
+                rules={[{ required: true, message: t('users.form.lastNameRequired') }]}
               >
-                <Input placeholder="Nom" />
+                <Input placeholder={t('users.form.lastNamePlaceholder')} />
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item
             name="email"
-            label="Email"
+            label={t('users.form.email')}
             rules={[
-              { required: true, message: 'L\'email est requis' },
-              { type: 'email', message: 'Format d\'email invalide' }
+              { required: true, message: t('users.form.emailRequired') },
+              { type: 'email', message: t('users.form.emailInvalid') }
             ]}
           >
-            <Input placeholder="exemple@email.com" />
+            <Input placeholder={t('users.form.emailPlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="username"
-            label="Nom d'utilisateur"
-            rules={[{ required: true, message: 'Le nom d\'utilisateur est requis' }]}
+            label={t('users.form.username')}
+            rules={[{ required: true, message: t('users.form.usernameRequired') }]}
           >
-            <Input placeholder="nom.utilisateur" />
+            <Input placeholder={t('users.form.usernamePlaceholder')} />
           </Form.Item>
 
           {!editingUser && (
             <Form.Item
               name="password"
-              label="Mot de passe"
+              label={t('users.form.password')}
               rules={[
-                { required: true, message: 'Le mot de passe est requis' },
-                { min: 6, message: 'Le mot de passe doit contenir au moins 6 caractères' }
+                { required: true, message: t('users.form.passwordRequired') },
+                { min: 6, message: t('users.form.passwordMin') }
               ]}
             >
               <Input.Password
-                placeholder="Mot de passe"
+                placeholder={t('users.form.passwordPlaceholder')}
                 iconRender={passwordIconRender}
               />
             </Form.Item>
@@ -529,11 +531,11 @@ const AdminUsersPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="role"
-                label="Rôle"
-                rules={[{ required: true, message: 'Le rôle est requis' }]}
-              >
-                <Select placeholder="Sélectionner un rôle" onChange={() => form.validateFields(['clientId'])}>
+                  name="role"
+                  label={t('users.form.role')}
+                  rules={[{ required: true, message: t('users.form.roleRequired') }]}
+                >
+                  <Select placeholder={t('users.form.selectRole')} onChange={() => form.validateFields(['clientId'])}>
                   {roles.map(r => {
                     const uiRole = normalizeRoleFromDb(r.name);
                     return (
@@ -545,15 +547,15 @@ const AdminUsersPage: React.FC = () => {
             </Col>
             <Col span={12}>
               <Form.Item
-                name="isActive"
-                label="Statut"
+                  name="isActive"
+                  label={t('users.form.status')}
                 valuePropName="checked"
                 initialValue={true}
               >
-                <Switch
-                  checkedChildren="Actif"
-                  unCheckedChildren="Inactif"
-                />
+                  <Switch
+                    checkedChildren={t('users.status.active')}
+                    unCheckedChildren={t('users.status.inactive')}
+                  />
               </Form.Item>
             </Col>
           </Row>
@@ -564,8 +566,8 @@ const AdminUsersPage: React.FC = () => {
               const role = form.getFieldValue('role') as UserRole;
               if (role === 'User' || role === 'Client') {
                 return (
-                  <Form.Item name="canWrite" label="Droit d'écriture" valuePropName="checked" initialValue={false}>
-                    <Switch checkedChildren="Oui" unCheckedChildren="Non" />
+                  <Form.Item name="canWrite" label={t('users.form.canWrite')} valuePropName="checked" initialValue={false}>
+                    <Switch checkedChildren={t('actions.yes')} unCheckedChildren={t('actions.no')} />
                   </Form.Item>
                 );
               }
@@ -581,10 +583,10 @@ const AdminUsersPage: React.FC = () => {
                 return (
                   <Form.Item
                     name="clientId"
-                    label="Client lié"
-                    rules={[{ required: true, message: 'Le client est requis pour un compte client' }]}
+                    label={t('users.form.client')}
+                    rules={[{ required: true, message: t('users.form.clientRequired') }]}
                   >
-                    <Select placeholder="Sélectionner un client">
+                    <Select placeholder={t('users.form.selectClient')}>
                       {clients.map(c => (
                         <Option key={c.id} value={c.id}>{c.nomClient}</Option>
                       ))}
@@ -599,10 +601,10 @@ const AdminUsersPage: React.FC = () => {
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Button onClick={() => setIsModalVisible(false)}>
-                Annuler
+                {t('actions.cancel')}
               </Button>
               <Button type="primary" htmlType="submit">
-                {editingUser ? 'Modifier' : 'Créer'}
+                {editingUser ? t('actions.edit') : t('actions.create')}
               </Button>
             </Space>
           </Form.Item>

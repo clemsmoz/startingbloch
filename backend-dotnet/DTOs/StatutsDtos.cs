@@ -55,7 +55,6 @@ public class StatutDto
 public class CreateStatutDto
 {
     /// <summary>Nom statut OBLIGATOIRE selon standards offices brevets.</summary>
-    [Required(ErrorMessage = "Le nom du statut est requis")]
     [StringLength(100, ErrorMessage = "Le nom du statut ne peut pas dépasser 100 caractères")]
     public string NomStatut { get; set; } = string.Empty;
 }
@@ -66,7 +65,6 @@ public class CreateStatutDto
 public class UpdateStatutDto
 {
     /// <summary>Nom statut OBLIGATOIRE maintenu pour cohérence référentiel.</summary>
-    [Required(ErrorMessage = "Le nom du statut est requis")]
     [StringLength(100, ErrorMessage = "Le nom du statut ne peut pas dépasser 100 caractères")]
     public string NomStatut { get; set; } = string.Empty;
 }

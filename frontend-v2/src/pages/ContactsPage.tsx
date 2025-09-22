@@ -46,6 +46,7 @@ import type { Contact, ContactEmail, ContactPhone, ContactRole } from '../types'
 
 // Hooks
 import { useNotificationStore } from '../store/notificationStore';
+import { useTranslation } from 'react-i18next';
 
 const ContactsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -65,6 +66,7 @@ const ContactsPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   
   const { addNotification } = useNotificationStore();
+  const { t, i18n } = useTranslation();
 
   // Récupérer les paramètres d'URL
   const clientId = searchParams.get('clientId');
@@ -75,43 +77,43 @@ const ContactsPage: React.FC = () => {
   // Déterminer le titre et le contexte
   const getPageTitle = () => {
     if (clientId && clientName) {
-      return `Contacts - ${decodeURIComponent(clientName)}`;
+      return `${t('menu.contacts')} - ${decodeURIComponent(clientName)}`;
     }
     if (cabinetId && cabinetName) {
-      return `Contacts - ${decodeURIComponent(cabinetName)}`;
+      return `${t('menu.contacts')} - ${decodeURIComponent(cabinetName)}`;
     }
-    return 'Contacts';
+    return t('menu.contacts') ?? '';
   };
 
   const getPageDescription = () => {
     if (clientId) {
-      return `Gérez les contacts associés au client ${decodeURIComponent(clientName || 'sélectionné')}`;
+      return t('contacts.description.forClient', { name: decodeURIComponent(clientName ?? 'sélectionné') });
     }
     if (cabinetId) {
-      return `Gérez les contacts associés au cabinet ${decodeURIComponent(cabinetName || 'sélectionné')}`;
+      return t('contacts.description.forCabinet', { name: decodeURIComponent(cabinetName ?? 'sélectionné') });
     }
-    return 'Gérez tous les contacts de votre organisation';
+    return t('contacts.description.all');
   };
 
   // Helper functions for handling union types
   const getEmailValue = (email: string | ContactEmail): string => {
-    return typeof email === 'string' ? email : email.email || '';
+    return typeof email === 'string' ? email : (email.email ?? '');
   };
 
   const getEmailType = (email: string | ContactEmail): string => {
-    return typeof email === 'string' ? 'email' : email.type || 'email';
+    return typeof email === 'string' ? 'email' : (email.type ?? 'email');
   };
 
   const getPhoneValue = (phone: string | ContactPhone): string => {
-    return typeof phone === 'string' ? phone : phone.numero || '';
+    return typeof phone === 'string' ? phone : (phone.numero ?? '');
   };
 
   const getPhoneType = (phone: string | ContactPhone): string => {
-    return typeof phone === 'string' ? 'telephone' : phone.type || 'telephone';
+    return typeof phone === 'string' ? 'telephone' : (phone.type ?? 'telephone');
   };
 
   const getRoleValue = (role: string | ContactRole): string => {
-    return typeof role === 'string' ? role : role.role || '';
+    return typeof role === 'string' ? role : (role.role ?? '');
   };
 
   // Charger les contacts avec pagination et filtrage
@@ -155,8 +157,8 @@ const ContactsPage: React.FC = () => {
       console.error('Erreur lors du chargement des contacts:', error);
       addNotification({
         type: 'error',
-        message: 'Erreur',
-        description: 'Impossible de charger la liste des contacts'
+        message: t('notifications.error'),
+        description: t('contacts.loadError')
       });
       setContacts([]);
       setTotalCount(0);
@@ -171,7 +173,7 @@ const ContactsPage: React.FC = () => {
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
-    const newPageSize = size || pageSize;
+  const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
     loadContacts(page, newPageSize);
@@ -179,10 +181,12 @@ const ContactsPage: React.FC = () => {
 
   // Recherche
   const handleSearch = async (value: string) => {
-    if (value.trim()) {
+  const query = value?.trim() ?? '';
+    if (query) {
+      const normalized = query.toLowerCase();
       setLoading(true);
       try {
-        const response = await contactService.search(value);
+        const response = await contactService.search(normalized);
         if (response.success && response.data) {
           setContacts(response.data);
           // Réinitialiser la pagination pour la recherche
@@ -193,8 +197,8 @@ const ContactsPage: React.FC = () => {
         console.error('Erreur de recherche:', error);
         addNotification({
           type: 'error',
-          message: 'Erreur de recherche',
-          description: 'Impossible d\'effectuer la recherche'
+          message: t('notifications.error'),
+          description: t('contacts.searchError')
         });
       } finally {
         setLoading(false);
@@ -230,14 +234,14 @@ const ContactsPage: React.FC = () => {
       await loadContacts();
       addNotification({
         type: 'success',
-        message: 'Succès',
-        description: 'Contact créé avec succès'
+        message: t('notifications.success'),
+        description: t('contacts.createSuccess')
       });
     } catch (error) {
       addNotification({
         type: 'error',
-        message: 'Erreur',
-        description: 'Impossible de créer le contact'
+        message: t('notifications.error'),
+        description: t('contacts.createError')
       });
     }
   };
@@ -251,41 +255,41 @@ const ContactsPage: React.FC = () => {
         await loadContacts();
         addNotification({
           type: 'success',
-          message: 'Succès',
-          description: 'Contact modifié avec succès'
+          message: t('notifications.success'),
+          description: t('contacts.updateSuccess')
         });
       }
     } catch (error) {
       addNotification({
         type: 'error',
-        message: 'Erreur',
-        description: 'Impossible de modifier le contact'
+        message: t('notifications.error'),
+        description: t('contacts.updateError')
       });
     }
   };
 
   // Supprimer un contact
   const handleDelete = async (contact: Contact) => {
-    Modal.confirm({
-      title: 'Confirmer la suppression',
-      content: `Êtes-vous sûr de vouloir supprimer le contact "${contact.prenom} ${contact.nom}" ?`,
-      okText: 'Supprimer',
-      okType: 'danger',
-      cancelText: 'Annuler',
-      onOk: async () => {
+      Modal.confirm({
+        title: t('contacts.confirmDelete.title'),
+        content: t('contacts.confirmDelete.content', { name: `${contact.prenom} ${contact.nom}` }),
+        okText: t('actions.delete'),
+        okType: 'danger',
+        cancelText: t('actions.cancel'),
+        onOk: async () => {
         try {
           await contactService.delete(contact.id);
           addNotification({
             type: 'success',
-            message: 'Contact supprimé',
-            description: `Le contact ${contact.prenom} ${contact.nom} a été supprimé avec succès`
+              message: t('contacts.deleteSuccessTitle'),
+              description: t('contacts.deleteSuccessDesc', { name: `${contact.prenom} ${contact.nom}` })
           });
           loadContacts();
         } catch (error) {
           addNotification({
             type: 'error',
-            message: 'Erreur',
-            description: 'Impossible de supprimer le contact'
+              message: t('notifications.error'),
+              description: t('contacts.deleteError')
           });
         }
       }
@@ -296,7 +300,7 @@ const ContactsPage: React.FC = () => {
   const getRowActions = (record: Contact): MenuProps['items'] => [
     {
       key: 'view',
-      label: 'Voir les détails',
+      label: t('actions.viewDetails'),
       icon: <EyeOutlined />,
       onClick: () => {
         setSelectedContact(record);
@@ -305,7 +309,7 @@ const ContactsPage: React.FC = () => {
     },
     {
       key: 'edit',
-      label: 'Modifier',
+      label: t('actions.edit'),
       icon: <EditOutlined />,
       onClick: () => handleEditContact(record)
     },
@@ -314,7 +318,7 @@ const ContactsPage: React.FC = () => {
     },
     {
       key: 'delete',
-      label: 'Supprimer',
+      label: t('actions.delete'),
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => handleDelete(record)
@@ -324,7 +328,7 @@ const ContactsPage: React.FC = () => {
   // Colonnes de la table
   const columns: ColumnsType<Contact> = [
     {
-      title: 'Contact',
+  title: t('contacts.columns.contact'),
       key: 'contact',
       render: (_, record) => (
         <Space>
@@ -344,13 +348,13 @@ const ContactsPage: React.FC = () => {
       sorter: (a, b) => `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`),
     },
     {
-      title: 'Société',
+  title: t('contacts.columns.company'),
       dataIndex: 'societe',
       key: 'societe',
-      render: (societe: string) => societe || '-',
+      render: (societe: string) => societe || t('common.notProvided'),
     },
     {
-      title: 'Email principal',
+  title: t('contacts.columns.primaryEmail'),
       key: 'email',
       render: (_, record) => {
         const primaryEmail = record.emails?.find(e => 
@@ -361,11 +365,11 @@ const ContactsPage: React.FC = () => {
             <MailOutlined style={{ color: '#1890ff' }} />
             <a href={`mailto:${getEmailValue(primaryEmail)}`}>{getEmailValue(primaryEmail)}</a>
           </Space>
-        ) : '-';
+        ) : t('common.notProvided');
       },
     },
     {
-      title: 'Téléphone principal',
+  title: t('contacts.columns.primaryPhone'),
       key: 'phone',
       render: (_, record) => {
         const primaryPhone = record.phones?.find(p => 
@@ -376,22 +380,22 @@ const ContactsPage: React.FC = () => {
             <PhoneOutlined style={{ color: '#52c41a' }} />
             <span>{getPhoneValue(primaryPhone)}</span>
           </Space>
-        ) : '-';
+        ) : t('common.notProvided');
       },
     },
     {
-      title: 'Rôles',
+  title: t('contacts.columns.roles'),
       key: 'roles',
       render: (_, record) => (
         <Space wrap>
           {record.roles?.map((role, index) => (
             <Tag key={index} color="blue">{getRoleValue(role)}</Tag>
-          )) || '-'}
+          )) || t('common.notProvided')}
         </Space>
       ),
     },
     {
-      title: 'Actions',
+  title: t('actions.title'),
       key: 'actions',
       width: 120,
       render: (_, record) => (
@@ -415,10 +419,10 @@ const ContactsPage: React.FC = () => {
       key="export"
       icon={<ExportOutlined />}
       onClick={() => {
-        message.info('Fonctionnalité d\'export en cours de développement');
+        message.info(t('common.exportInProgress'));
       }}
     >
-      Exporter
+      {t('actions.export')}
     </Button>,
     <Button
       key="add"
@@ -426,7 +430,7 @@ const ContactsPage: React.FC = () => {
       icon={<PlusOutlined />}
       onClick={handleAddContact}
     >
-      Nouveau contact
+  {t('contacts.actions.new')}
     </Button>
   ];
 
@@ -441,23 +445,23 @@ const ContactsPage: React.FC = () => {
         description={getPageDescription()}
         breadcrumbs={
           clientId && clientName ? [
-            { title: 'Clients', href: '/clients' },
+            { title: t('menu.clients'), href: '/clients' },
             { title: decodeURIComponent(clientName) },
-            { title: 'Contacts' }
+            { title: t('menu.contacts') }
           ] : cabinetId && cabinetName ? [
-            { title: 'Cabinets', href: '/cabinets' },
+            { title: t('menu.cabinets'), href: '/cabinets' },
             { title: decodeURIComponent(cabinetName) },
-            { title: 'Contacts' }
+            { title: t('menu.contacts') }
           ] : [
-            { title: 'Contacts' }
+            { title: t('menu.contacts') }
           ]
         }
         actions={headerActions}
       />
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <SearchInput
-          placeholder="Rechercher un contact..."
+      <SearchInput
+  placeholder={t('contacts.searchPlaceholder')}
           onSearch={handleSearch}
           style={{ maxWidth: 400 }}
         />
@@ -475,8 +479,8 @@ const ContactsPage: React.FC = () => {
               total: totalCount,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => 
-                `${range[0]}-${range[1]} sur ${total} contacts`,
+                showTotal: (total, range) => 
+                t('contacts.pagination.showTotal', { from: range[0], to: range[1], total }),
               pageSizeOptions: ['10', '20', '50', '100'],
               onChange: handleTableChange,
               onShowSizeChange: handleTableChange,
@@ -500,7 +504,7 @@ const ContactsPage: React.FC = () => {
         }}
         footer={[
           <Button key="close" onClick={() => setIsModalVisible(false)}>
-            Fermer
+            {t('actions.close')}
           </Button>
         ]}
         width={700}
@@ -508,19 +512,19 @@ const ContactsPage: React.FC = () => {
         {selectedContact && (
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <div>
-              <h4>Informations générales</h4>
+                  <h4>{t('contacts.sections.generalInfo')}</h4>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <div><strong>Prénom:</strong> {selectedContact.prenom}</div>
-                <div><strong>Nom:</strong> {selectedContact.nom}</div>
-                <div><strong>Fonction:</strong> {selectedContact.fonction || 'Non renseignée'}</div>
-                <div><strong>Société:</strong> {selectedContact.societe || 'Non renseignée'}</div>
-                <div><strong>Date de création:</strong> {new Date(selectedContact.createdAt).toLocaleDateString('fr-FR')}</div>
+                    <div><strong>{t('contacts.labels.firstName')}:</strong> {selectedContact.prenom}</div>
+                    <div><strong>{t('contacts.labels.lastName')}:</strong> {selectedContact.nom}</div>
+                    <div><strong>{t('contacts.labels.position')}:</strong> {selectedContact.fonction || t('common.notProvided')}</div>
+                    <div><strong>{t('contacts.labels.company')}:</strong> {selectedContact.societe || t('common.notProvided')}</div>
+                    <div><strong>{t('contacts.labels.createdAt')}:</strong> {new Date(selectedContact.createdAt).toLocaleDateString(i18n?.language || 'fr-FR')}</div>
               </Space>
             </div>
 
             {selectedContact.emails && selectedContact.emails.length > 0 && (
               <div>
-                <h4>Emails</h4>
+                <h4>{t('contacts.sections.emails')}</h4>
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   {selectedContact.emails.map((email, index) => (
                     <div key={index}>
@@ -534,7 +538,7 @@ const ContactsPage: React.FC = () => {
 
             {selectedContact.phones && selectedContact.phones.length > 0 && (
               <div>
-                <h4>Téléphones</h4>
+                <h4>{t('contacts.sections.phones')}</h4>
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   {selectedContact.phones.map((phone, index) => (
                     <div key={index}>
@@ -548,7 +552,7 @@ const ContactsPage: React.FC = () => {
 
             {selectedContact.roles && selectedContact.roles.length > 0 && (
               <div>
-                <h4>Rôles</h4>
+                <h4>{t('contacts.sections.roles')}</h4>
                 <Space wrap>
                   {selectedContact.roles.map((role, index) => (
                     <Tag key={index} color="purple">{getRoleValue(role)}</Tag>

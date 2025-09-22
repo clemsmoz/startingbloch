@@ -7,6 +7,7 @@
 import React from 'react';
 import { Card, Row, Col, Typography, Button, Space, Avatar } from 'antd';
 import { FileProtectOutlined, TeamOutlined, BankOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
@@ -81,26 +82,27 @@ const ActionButton = styled(Button)`
  * Page d'accueil avec navigation vers les principales sections
  */
 const HomePage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const cardData = [
     {
-      title: "Portefeuille cabinets",
-      description: "Accédez à votre portefeuille de cabinets et gérez leurs informations.",
+      title: t('home.cards.offices.title'),
+      description: t('home.cards.offices.desc'),
       icon: <BankOutlined />,
       navigateTo: '/cabinets',
       color: '#1890ff'
     },
     {
-      title: "Portefeuille clients", 
-      description: "Accédez à votre portefeuille de clients et suivez vos relations.",
+      title: t('home.cards.clients.title'), 
+      description: t('home.cards.clients.desc'),
       icon: <TeamOutlined />,
       navigateTo: '/clients',
       color: '#52c41a'
     },
     {
-      title: "Portefeuille brevets",
-      description: "Accédez à votre portefeuille de brevets et gérez vos propriétés intellectuelles.",
+      title: t('home.cards.patents.title'),
+      description: t('home.cards.patents.desc'),
       icon: <FileProtectOutlined />,
       navigateTo: '/brevets',
       color: '#faad14'
@@ -129,10 +131,10 @@ const HomePage: React.FC = () => {
           {/* Titre de la page */}
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <Title level={1} style={{ color: '#1890ff', marginBottom: 8 }}>
-              Bienvenue sur StartingBloch
+              {t('home.welcome')}
             </Title>
             <Paragraph type="secondary" style={{ fontSize: '16px' }}>
-              Choisissez une section pour commencer à travailler
+              {t('home.subtitle')}
             </Paragraph>
           </div>
           
@@ -170,7 +172,7 @@ const HomePage: React.FC = () => {
                       icon={<ArrowRightOutlined />}
                       iconPosition="end"
                     >
-                      Accéder
+                      {t('home.access')}
                     </ActionButton>
                   </StyledCard>
                 </motion.div>

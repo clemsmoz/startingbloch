@@ -17,8 +17,8 @@ export const getAuthToken = (): string | null => {
       // Fallback: essayer depuis le store Zustand
       const authStore = localStorage.getItem('startingbloch-auth');
       if (authStore) {
-        const { state } = JSON.parse(authStore);
-        token = state?.token || null;
+  const { state } = JSON.parse(authStore);
+  token = state?.token ?? null;
         console.log('🔑 Auth Utils - Token depuis Zustand:', token ? 'présent' : 'absent');
       }
     }

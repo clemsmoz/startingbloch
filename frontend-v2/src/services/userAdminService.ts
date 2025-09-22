@@ -59,7 +59,7 @@ export const userAdminService = {
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const mapRole = (r: any) => {
-        const v = (String(r || '')).toLowerCase();
+  const v = (String(r ?? '')).toLowerCase();
         if (v === 'admin') return 'Admin';
         if (v === 'user') return 'User';
         if (v === 'client') return 'Client';
@@ -83,7 +83,7 @@ export const userAdminService = {
         clientId: user.ClientId,
         client: user.Client,
         userRoles: user.UserRoles
-      })) || [];
+  })) ?? [];
       
       console.log('🔄 UserAdmin Service - Données transformées:', transformedData);
       
@@ -104,7 +104,7 @@ export const userAdminService = {
       return {
         data: [],
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la récupération des utilisateurs',
+  message: error.response?.data?.message ?? 'Erreur lors de la récupération des utilisateurs',
         errors: error.response?.data?.errors,
         page: 1,
         pageSize: 10,

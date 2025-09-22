@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
   Button, 
@@ -45,6 +46,7 @@ import type { Client } from '../types';
 import { useNotificationStore } from '../store/notificationStore';
 
 const ClientsPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,15 +71,15 @@ const ClientsPage: React.FC = () => {
       const response = await clientService.getAll(page, size);
       if (response.success && response.data) {
         setClients(response.data);
-        setTotalCount(response.totalCount || 0);
-        setCurrentPage(response.page || page);
+  setTotalCount(response.totalCount ?? 0);
+  setCurrentPage(response.page ?? page);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des clients:', error);
-      addNotification({
-        type: 'error',
-        message: 'Erreur',
-        description: 'Impossible de charger la liste des clients'
+        addNotification({
+          type: 'error',
+          message: t('clients.loadErrorTitle'),
+          description: t('clients.loadErrorDesc')
       });
     } finally {
       setLoading(false);
@@ -114,14 +116,14 @@ const ClientsPage: React.FC = () => {
       await clientService.delete(id);
       addNotification({
         type: 'success',
-        message: 'Client supprimé avec succès'
+          message: t('clients.deleteSuccess')
       });
       loadClients();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       addNotification({
         type: 'error',
-        message: 'Erreur lors de la suppression du client'
+          message: t('clients.deleteError')
       });
     }
   };
@@ -131,7 +133,7 @@ const ClientsPage: React.FC = () => {
     loadClients();
     addNotification({
       type: 'success',
-      message: 'Client ajouté avec succès'
+      message: t('clients.addSuccess')
     });
   };
 
@@ -141,7 +143,7 @@ const ClientsPage: React.FC = () => {
     loadClients();
     addNotification({
       type: 'success',
-      message: 'Client modifié avec succès'
+      message: t('clients.editSuccess')
     });
   };
 
@@ -151,7 +153,7 @@ const ClientsPage: React.FC = () => {
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
-    const newPageSize = size || pageSize;
+  const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
     loadClients(page, newPageSize);
@@ -159,10 +161,13 @@ const ClientsPage: React.FC = () => {
 
   // Recherche
   const handleSearch = async (value: string) => {
-    if (value.trim()) {
+  const query = value?.trim() ?? '';
+    if (query) {
+      // Normaliser la requête pour la rendre insensible à la casse côté client
+      const normalized = query.toLowerCase();
       setLoading(true);
       try {
-        const response = await clientService.search(value);
+        const response = await clientService.search(normalized);
         if (response.success && response.data) {
           setClients(response.data);
           // Réinitialiser la pagination pour la recherche
@@ -172,9 +177,9 @@ const ClientsPage: React.FC = () => {
       } catch (error) {
         console.error('Erreur de recherche:', error);
         addNotification({
-          type: 'error',
-          message: 'Erreur de recherche',
-          description: 'Impossible d\'effectuer la recherche'
+        type: 'error',
+        message: t('clients.searchErrorTitle'),
+        description: t('clients.searchErrorDesc')
         });
       } finally {
         setLoading(false);
@@ -189,99 +194,100 @@ const ClientsPage: React.FC = () => {
   // Supprimer un client
   const confirmDelete = (client: Client) => {
     Modal.confirm({
-      title: 'Confirmer la suppression',
-      content: `Êtes-vous sûr de vouloir supprimer le client "${client.nomClient}" ?`,
-      okText: 'Supprimer',
+      title: t('clients.confirmDeleteTitle'),
+      content: t('clients.confirmDeleteContent', { name: client.nomClient }),
+      okText: t('clients.actions.delete'),
       okType: 'danger',
-      cancelText: 'Annuler',
+      cancelText: t('clients.cancel'),
       onOk: () => handleDelete(client.id)
     });
   };
 
   // Actions par ligne
-  const getRowActions = (record: Client): MenuProps['items'] => [
-    {
-      key: 'view',
-      label: 'Voir les détails',
-      icon: <EyeOutlined />,
-      onClick: () => handleView(record)
-    },
-    {
-      key: 'contacts',
-      label: 'Voir contacts',
-      icon: <ContactsOutlined />,
-      onClick: () => handleViewContacts(record)
-    },
-    {
-      key: 'brevets',
-      label: 'Voir brevets',
-      icon: <EyeOutlined />,
-      onClick: () => handleViewBrevets(record)
-    },
-    {
-      key: 'edit',
-      label: 'Modifier',
-      icon: <EditOutlined />,
-      onClick: () => handleEdit(record)
-    },
-    {
-      type: 'divider'
-    },
-    {
-      key: 'delete',
-      label: 'Supprimer',
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => confirmDelete(record)
-    }
-  ];
+  const getRowActions = (record: Client): MenuProps['items'] => {
+    return [
+      {
+        key: 'view',
+        label: t('clients.actions.view'),
+        icon: <EyeOutlined />,
+        onClick: () => handleView(record)
+      },
+      {
+        key: 'contacts',
+        label: t('clients.actions.contacts'),
+        icon: <ContactsOutlined />,
+        onClick: () => handleViewContacts(record)
+      },
+      {
+        key: 'brevets',
+        label: t('clients.actions.brevets'),
+        icon: <EyeOutlined />,
+        onClick: () => handleViewBrevets(record)
+      },
+      {
+        key: 'edit',
+        label: t('clients.actions.edit'),
+        icon: <EditOutlined />,
+        onClick: () => handleEdit(record)
+      },
+      {
+        type: 'divider'
+      },
+      {
+        key: 'delete',
+        label: t('clients.actions.delete'),
+        icon: <DeleteOutlined />,
+        danger: true,
+        onClick: () => confirmDelete(record)
+      }
+    ];
+  };
 
-  // Colonnes de la table
   const columns: ColumnsType<Client> = [
     {
-      title: 'ID',
+      title: t('clients.columns.id'),
       dataIndex: 'id',
       key: 'id',
       width: 80,
       sorter: (a, b) => a.id - b.id,
     },
     {
-      title: 'Nom',
+      title: t('clients.columns.name'),
       dataIndex: 'nomClient',
       key: 'nomClient',
       sorter: (a, b) => a.nomClient.localeCompare(b.nomClient),
       filterSearch: true,
     },
     {
-      title: 'Email',
+      title: t('clients.columns.email'),
       dataIndex: 'emailClient',
       key: 'emailClient',
       render: (email: string) => (
-        email ? <a href={`mailto:${email}`}>{email}</a> : '-'
+        email ? <a href={`mailto:${email}`}>{email}</a> : t('common.notProvided')
       ),
     },
     {
-      title: 'Téléphone',
+      title: t('clients.columns.phone'),
       dataIndex: 'telephoneClient',
       key: 'telephoneClient',
-      render: (phone: string) => phone || '-',
+  render: (phone: string) => phone ?? t('common.notProvided'),
     },
     {
-      title: 'Statut',
+      title: t('clients.columns.status'),
       dataIndex: 'statut',
       key: 'statut',
       render: (statut: string) => {
         const color = statut === 'Actif' ? 'green' : 'orange';
-        return <Tag color={color}>{statut || 'Non défini'}</Tag>;
+  return <Tag color={color}>{statut ?? t('clients.detailModal.notDefined')}</Tag>;
       },
       filters: [
-        { text: 'Actif', value: 'Actif' },
-        { text: 'Inactif', value: 'Inactif' },
+        { text: t('clients.status.active'), value: 'Actif' },
+        { text: t('clients.status.inactive'), value: 'Inactif' },
       ],
-      onFilter: (value, record) => record.statut === value,
+      onFilter: (value: any, record: any) => record.statut === value,
     },
     {
-      title: 'Actions',
+      title: t('clients.columns.actions'),
       key: 'actions',
       width: 120,
       render: (_, record) => (
@@ -305,10 +311,10 @@ const ClientsPage: React.FC = () => {
       key="export"
       icon={<ExportOutlined />}
       onClick={() => {
-        message.info('Fonctionnalité d\'export en cours de développement');
+    message.info(t('clients.buttons.exportComing'));
       }}
     >
-      Exporter
+  {t('clients.buttons.export')}
     </Button>,
     <Button
       key="add"
@@ -316,7 +322,7 @@ const ClientsPage: React.FC = () => {
       icon={<PlusOutlined />}
       onClick={handleAdd}
     >
-      Nouveau client
+  {t('clients.buttons.new')}
     </Button>
   ];
 
@@ -329,17 +335,17 @@ const ClientsPage: React.FC = () => {
       transition={{ duration: 0.3 }}
     >
       <PageHeader
-        title="Clients"
-        description="Gestion des clients et de leurs informations"
+  title={t('clients.title')}
+  description={t('clients.description')}
         breadcrumbs={[
-          { title: 'Clients' }
+          { title: t('clients.title') }
         ]}
         actions={headerActions}
       />
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <SearchInput
-          placeholder="Rechercher un client..."
+          <SearchInput
+          placeholder={t('clients.searchPlaceholder')}
           onSearch={handleSearch}
           style={{ maxWidth: 400 }}
         />
@@ -356,7 +362,7 @@ const ClientsPage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
-              `${range[0]}-${range[1]} sur ${total} clients`,
+              t('clients.pagination.showTotal', { from: range[0], to: range[1], total }),
             pageSizeOptions: ['10', '20', '50', '100'],
             onChange: handleTableChange,
             onShowSizeChange: handleTableChange,
@@ -366,28 +372,28 @@ const ClientsPage: React.FC = () => {
 
       {/* Modal de détails */}
       <Modal
-        title={`Détails du client - ${selectedClient?.nomClient}`}
+  title={t('clients.detailModal.title', { name: selectedClient?.nomClient })}
         open={isDetailModalVisible}
         onCancel={() => {
           setIsDetailModalVisible(false);
           setSelectedClient(null);
         }}
         footer={[
-          <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
-            Fermer
+            <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
+            {t('clients.detailModal.close') ?? 'Fermer'}
           </Button>
         ]}
         width={600}
       >
         {selectedClient && (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-            <div><strong>ID:</strong> {selectedClient.id}</div>
-            <div><strong>Nom:</strong> {selectedClient.nomClient}</div>
-            <div><strong>Email:</strong> {selectedClient.emailClient || 'Non renseigné'}</div>
-            <div><strong>Téléphone:</strong> {selectedClient.telephoneClient || 'Non renseigné'}</div>
-            <div><strong>Adresse:</strong> {selectedClient.adresseClient || 'Non renseignée'}</div>
-            <div><strong>Statut:</strong> <Tag color={selectedClient.statut === 'Actif' ? 'green' : 'orange'}>{selectedClient.statut || 'Non défini'}</Tag></div>
-            <div><strong>Date de création:</strong> {new Date(selectedClient.createdAt).toLocaleDateString('fr-FR')}</div>
+            <div><strong>{t('clients.columns.id')}:</strong> {selectedClient.id}</div>
+            <div><strong>{t('clients.columns.name')}:</strong> {selectedClient.nomClient}</div>
+            <div><strong>{t('clients.columns.email')}:</strong> {selectedClient.emailClient ?? t('clients.detailModal.notProvided')}</div>
+            <div><strong>{t('clients.columns.phone')}:</strong> {selectedClient.telephoneClient ?? t('clients.detailModal.notProvided')}</div>
+            <div><strong>{t('clients.address')}:</strong> {selectedClient.adresseClient ?? t('clients.detailModal.notProvided')}</div>
+            <div><strong>{t('clients.columns.status')}:</strong> <Tag color={selectedClient.statut === 'Actif' ? 'green' : 'orange'}>{selectedClient.statut ?? t('clients.detailModal.notDefined')}</Tag></div>
+            <div><strong>{t('clients.createdAt')}:</strong> {new Date(selectedClient.createdAt).toLocaleDateString(i18n?.language ?? 'fr-FR')}</div>
           </Space>
         )}
       </Modal>
@@ -448,7 +454,7 @@ const ClientsPage: React.FC = () => {
             console.error('❌ Erreur création client:', error);
             addNotification({
               type: 'error',
-              message: 'Erreur lors de la création du client'
+              message: t('clients.createError')
             });
           }
         }}
@@ -472,7 +478,7 @@ const ClientsPage: React.FC = () => {
             console.error('Erreur lors de la modification:', error);
             addNotification({
               type: 'error',
-              message: 'Erreur lors de la modification du client'
+            message: t('clients.updateError')
             });
           }
         }}

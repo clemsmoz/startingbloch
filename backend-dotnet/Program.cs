@@ -1,4 +1,4 @@
-/* Point d'entrée API */
+    /* Point d'entrée API */
 
 using Microsoft.EntityFrameworkCore;
 using StartingBloch.Backend.Data;
@@ -58,6 +58,11 @@ builder.Services.AddControllers()
 // Voir ServiceCollectionExtensions.cs pour le détail de la configuration
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// Register notification service
+// Register NotificationService and SignalR
+builder.Services.AddSignalR();
+builder.Services.AddScoped<StartingBloch.Backend.Services.INotificationService, StartingBloch.Backend.Services.NotificationService>();
+
 // ================================================================================================
 // PIPELINE DE TRAITEMENT DES REQUÊTES (MIDDLEWARE)
 // ================================================================================================
@@ -110,6 +115,9 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 // Mappage des contrôleurs
 app.MapControllers();
 
+// Map SignalR hubs
+app.MapHub<StartingBloch.Backend.Hubs.NotificationsHub>("/hubs/notifications");
+
 // Endpoint de santé (provider basé sur la chaîne de connexion)
 app.MapGet("/api/health", (IConfiguration cfg) =>
 {
@@ -119,7 +127,7 @@ app.MapGet("/api/health", (IConfiguration cfg) =>
     return Results.Json(new {
         status = "healthy",
         timestamp = DateTime.UtcNow,
-        version = "1.0.0",
+        version = "2.0.1",
         database = isPg ? "PostgreSQL" : "SQLite",
         framework = ".NET 8"
     });
@@ -152,6 +160,60 @@ app.MapGet("/api/health/db", async (StartingBlochDbContext db) =>
         appliedMigrations = applied,
         pendingMigrations = pending
     });
+}).AllowAnonymous();
+
+// Debug endpoint: run a few queries with the app's DB connection to inspect session/search_path and table resolution
+app.MapGet("/debug/dbinfo", async (StartingBlochDbContext db) =>
+{
+    var conn = db.Database.GetDbConnection();
+    try
+    {
+        await conn.OpenAsync();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"SELECT current_database() AS current_database, current_user AS current_user, session_user AS session_user;";
+        using var reader = await cmd.ExecuteReaderAsync();
+        string currentDatabase = null; string currentUser = null; string sessionUser = null;
+        if (await reader.ReadAsync())
+        {
+            currentDatabase = reader.GetString(0);
+            currentUser = reader.GetString(1);
+            sessionUser = reader.GetString(2);
+        }
+        await reader.CloseAsync();
+
+        using var cmd2 = conn.CreateCommand();
+        cmd2.CommandText = "SHOW search_path;";
+        var searchPath = (await cmd2.ExecuteScalarAsync())?.ToString();
+
+        using var cmd3 = conn.CreateCommand();
+        cmd3.CommandText = "SELECT to_regclass('public.\"Users\"') IS NOT NULL AS quoted_users_exists, to_regclass('public.users') IS NOT NULL AS lower_users_exists, to_regclass('\"Users\"') IS NOT NULL AS unqualified_exists;";
+        using var reader3 = await cmd3.ExecuteReaderAsync();
+        bool quotedExists = false, lowerExists = false, unqualifiedExists = false;
+        if (await reader3.ReadAsync())
+        {
+            quotedExists = !reader3.IsDBNull(0) && reader3.GetBoolean(0);
+            lowerExists = !reader3.IsDBNull(1) && reader3.GetBoolean(1);
+            unqualifiedExists = !reader3.IsDBNull(2) && reader3.GetBoolean(2);
+        }
+
+        return Results.Json(new {
+            currentDatabase,
+            currentUser,
+            sessionUser,
+            searchPath,
+            quotedUsersExists = quotedExists,
+            lowerUsersExists = lowerExists,
+            unqualifiedUsersExists = unqualifiedExists
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(detail: ex.ToString(), title: "dbinfo failed");
+    }
+    finally
+    {
+        try { await conn.CloseAsync(); } catch { }
+    }
 }).AllowAnonymous();
 
 // Migration + seeding runtime (sécurisé)
@@ -188,7 +250,8 @@ using (var scope = app.Services.CreateScope())
             {
                 // S'assure que la table d'historique existe
                 const string ensureSql = """
-                CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+                CREATE SCHEMA IF NOT EXISTS public;
+                CREATE TABLE IF NOT EXISTS public."__EFMigrationsHistory" (
                     "MigrationId" character varying(150) NOT NULL,
                     "ProductVersion" character varying(32) NOT NULL,
                     CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
@@ -199,7 +262,7 @@ using (var scope = app.Services.CreateScope())
                 foreach (var id in pending)
                 {
                     await context.Database.ExecuteSqlRawAsync(
-                        "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT (\"MigrationId\") DO NOTHING;",
+                        "INSERT INTO public.\"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT (\"MigrationId\") DO NOTHING;",
                         id, "8.0.0");
                 }
                 app.Logger.LogInformation("EF baseline completed: {Count} migrations marked as applied.", pending.Length);
@@ -217,12 +280,18 @@ using (var scope = app.Services.CreateScope())
         await SeedData.InitializeAsync(context);
     }
 
-        // Réparations de schéma spécifiques PostgreSQL (si base importée sans identités auto)
-        if (isNpgsql)
+    // Réparations de schéma spécifiques PostgreSQL (si base importée sans identités auto)
+    // Désactivées par défaut car sensibles à la casse des tables déjà créées (EF crée des noms "PascalCase" quotés)
+    // Activer explicitement avec EF_PG_IDENTITY_FIXUPS=true après vérification des noms réels
+    var enablePgIdentityFixups = isNpgsql && (Environment.GetEnvironmentVariable("EF_PG_IDENTITY_FIXUPS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true);
+    if (enablePgIdentityFixups)
+    {
+        try
         {
-                try
-                {
-                        // Ajoute IDENTITY si absent pour public.logs(id) et public.brevets(id_brevet)
+            // NOTE: Ce bloc suppose des tables en minuscules non quotées (logs, brevets, ...).
+            // Si vos tables actuelles sont en "PascalCase" (ex: "Logs", "Brevets"), laissez EF_PG_IDENTITY_FIXUPS désactivé
+            // ou adaptez le SQL dynamiquement avant activation.
+            // Ajoute IDENTITY si absent pour public.logs(id) et public.brevets(id_brevet)
                                     const string fixIdentitySql = @"DO $$
 BEGIN
     -- logs.id
@@ -436,12 +505,16 @@ $$;";
 
                         await context.Database.ExecuteSqlRawAsync(reseedMoreSql);
 
-                        app.Logger.LogInformation("PostgreSQL identity fixups applied.");
+                        app.Logger.LogInformation("PostgreSQL identity fixups applied (EF_PG_IDENTITY_FIXUPS=true).");
                 }
                 catch (Exception ex)
                 {
                         app.Logger.LogWarning(ex, "PostgreSQL identity fixups skipped/failed. Tables may already be configured.");
                 }
+        }
+        else if (isNpgsql)
+        {
+            app.Logger.LogInformation("PostgreSQL identity fixups désactivés (définissez EF_PG_IDENTITY_FIXUPS=true pour activer après validation des noms de tables).");
         }
 }
 

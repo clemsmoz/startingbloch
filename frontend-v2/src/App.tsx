@@ -16,7 +16,6 @@ import {
   Navigate 
 } from 'react-router-dom';
 import { ConfigProvider, Spin } from 'antd';
-import frFR from 'antd/locale/fr_FR';
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
@@ -32,6 +31,8 @@ import ContactsPage from './pages/ContactsPage';
 import CabinetsPage from './pages/CabinetsPage';
 import LogsPage from './pages/LogsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import SettingsPage from './pages/SettingsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Stores
 import { useAuthStore } from './store/authStore';
@@ -64,7 +65,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 // Garde supplémentaire: bloque l'accès aux clients pour le rôle 'client'
 const ClientsRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
-  const role = (user?.role || '').toLowerCase();
+  const role = (user?.role ?? '').toLowerCase();
   if (role === 'client') {
     return <Navigate to="/dashboard" replace />;
   }
@@ -102,9 +103,9 @@ const App: React.FC = () => {
 
   return (
     <ConfigProvider 
-      theme={config.theme} 
-      locale={frFR}
+      theme={config.theme}
     >
+      {/* LanguageSwitcher moved into Settings > Compte tab to keep account settings together */}
       <Routes>
         {/* Routes publiques */}
         <Route path="/login" element={<LoginPage />} />
@@ -131,6 +132,9 @@ const App: React.FC = () => {
           <Route path="cabinets" element={<CabinetsPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          {/* SettingsNotifications inlined into /settings page */}
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* Route par défaut */}

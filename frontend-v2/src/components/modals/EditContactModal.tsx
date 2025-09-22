@@ -13,6 +13,7 @@ import { Modal, Form, Input, Select, Row, Col, Tabs, Button, Space } from 'antd'
 import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { UpdateContactDto, Contact, Client, Cabinet } from '../../types';
 import { clientService, cabinetService } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -33,6 +34,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
   loading = false
 }) => {
   const [form] = Form.useForm();
+  const { t } = useTranslation();
   const [clients, setClients] = useState<Client[]>([]);
   const [cabinets, setCabinets] = useState<Cabinet[]>([]);
   const [emails, setEmails] = useState<{ id: string; value: string }[]>([]);
@@ -64,7 +66,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
         contact.emails?.length > 0 
           ? contact.emails.map(email => ({ 
               id: crypto.randomUUID(), 
-              value: typeof email === 'string' ? email : email.email || '' 
+              value: typeof email === 'string' ? email : (email.email ?? '') 
             }))
           : [{ id: crypto.randomUUID(), value: '' }]
       );
@@ -72,7 +74,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
         contact.phones?.length > 0 
           ? contact.phones.map(phone => ({ 
               id: crypto.randomUUID(), 
-              value: typeof phone === 'string' ? phone : phone.numero || '' 
+              value: typeof phone === 'string' ? phone : (phone.numero ?? '') 
             }))
           : [{ id: crypto.randomUUID(), value: '' }]
       );
@@ -80,7 +82,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
         contact.roles?.length > 0 
           ? contact.roles.map(role => ({ 
               id: crypto.randomUUID(), 
-              value: typeof role === 'string' ? role : role.role || '' 
+              value: typeof role === 'string' ? role : (role.role ?? '') 
             }))
           : [{ id: crypto.randomUUID(), value: '' }]
       );
@@ -90,15 +92,15 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
   const loadReferenceData = async () => {
     try {
       const clientsResponse = await clientService.getAll();
-      if (clientsResponse.success) setClients(clientsResponse.data || []);
+  if (clientsResponse.success) setClients(clientsResponse.data ?? []);
       
-      const storedUser = sessionStorage.getItem('startingbloch_user');
-      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+  const storedUser = sessionStorage.getItem('startingbloch_user');
+  const role = storedUser ? ((JSON.parse(storedUser).role ?? '') as string).toLowerCase() : '';
       const cabinetsResponse = role === 'client' ? await (async () => {
         const r = await cabinetService.getMine();
         return { success: r.success, data: r.data } as any;
       })() : await cabinetService.getAll();
-  if (cabinetsResponse.success) setCabinets(cabinetsResponse.data || []);
+  if (cabinetsResponse.success) setCabinets(cabinetsResponse.data ?? []);
     } catch (error) {
       console.error('Erreur lors du chargement des données de référence:', error);
     }
@@ -181,7 +183,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
 
   return (
     <Modal
-      title={`Modifier le contact ${contact?.prenom} ${contact?.nom}`}
+  title={t('contacts.modals.edit.title', { name: `${contact?.prenom ?? ''} ${contact?.nom ?? ''}` })}
       open={visible}
       onCancel={handleCancel}
       onOk={() => form.submit()}
@@ -195,19 +197,19 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
         autoComplete="off"
       >
         <Tabs defaultActiveKey="1">
-          <TabPane tab="Informations générales" key="1">
+          <TabPane tab={t('contacts.modals.edit.tabs.general')} key="1">
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
+                  <Form.Item
                   name="prenom"
-                  label="Prénom"
+                  label={t('contacts.fields.firstName')}
                   rules={[
-                    { max: 100, message: 'Le prénom ne peut pas dépasser 100 caractères' }
+                    { max: 100, message: t('contacts.validation.firstNameMax') }
                   ]}
                 >
                   <Input
                     prefix={<UserOutlined />}
-                    placeholder="Prénom du contact"
+                    placeholder={t('contacts.placeholders.firstName')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -215,14 +217,14 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="nom"
-                  label="Nom"
+                  label={t('contacts.fields.lastName')}
                   rules={[
-                    { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                    { max: 100, message: t('contacts.validation.lastNameMax') }
                   ]}
                 >
                   <Input
                     prefix={<UserOutlined />}
-                    placeholder="Nom de famille du contact"
+                    placeholder={t('contacts.placeholders.lastName')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -233,15 +235,15 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="email"
-                  label="Email principal"
+                  label={t('contacts.fields.email')}
                   rules={[
-                    { type: 'email', message: 'Format d\'email invalide' },
-                    { max: 100, message: 'L\'email ne peut pas dépasser 100 caractères' }
+                    { type: 'email', message: t('contacts.validation.emailInvalid') },
+                    { max: 100, message: t('contacts.validation.emailMax') }
                   ]}
                 >
                   <Input
                     prefix={<MailOutlined />}
-                    placeholder="contact@example.com"
+                    placeholder={t('contacts.placeholders.email')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -249,14 +251,14 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="telephone"
-                  label="Téléphone principal"
+                  label={t('contacts.fields.phone')}
                   rules={[
-                    { max: 50, message: 'Le téléphone ne peut pas dépasser 50 caractères' }
+                    { max: 50, message: t('contacts.validation.phoneMax') }
                   ]}
                 >
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder="+33 1 23 45 67 89"
+                    placeholder={t('contacts.placeholders.phone')}
                     maxLength={50}
                   />
                 </Form.Item>
@@ -267,14 +269,14 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
               <Col span={24}>
                 <Form.Item
                   name="role"
-                  label="Rôle principal"
+                  label={t('contacts.fields.role')}
                   rules={[
-                    { max: 100, message: 'Le rôle ne peut pas dépasser 100 caractères' }
+                    { max: 100, message: t('contacts.validation.roleMax') }
                   ]}
                 >
                   <Input
                     prefix={<TeamOutlined />}
-                    placeholder="Ex: Directeur PI, Assistant juridique"
+                    placeholder={t('contacts.placeholders.roleExample')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -282,16 +284,16 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
             </Row>
           </TabPane>
 
-          <TabPane tab="Organisation" key="2">
+          <TabPane tab={t('contacts.modals.edit.tabs.organization')} key="2">
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="idClient"
-                  label="Client associé"
-                  tooltip="Lier le contact à une organisation cliente"
+                  label={t('contacts.fields.client')}
+                  tooltip={t('contacts.tooltips.client')}
                 >
                   <Select
-                    placeholder="Sélectionner un client"
+                    placeholder={t('contacts.placeholders.selectClient')}
                     showSearch
                     optionFilterProp="children"
                     allowClear
@@ -307,11 +309,11 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="idCabinet"
-                  label="Cabinet associé"
-                  tooltip="Lier le contact à un cabinet d'avocats"
+                  label={t('contacts.fields.cabinet')}
+                  tooltip={t('contacts.tooltips.cabinet')}
                 >
                   <Select
-                    placeholder="Sélectionner un cabinet"
+                    placeholder={t('contacts.placeholders.selectCabinet')}
                     showSearch
                     optionFilterProp="children"
                     allowClear
@@ -327,7 +329,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
             </Row>
           </TabPane>
 
-          <TabPane tab="Emails" key="3">
+          <TabPane tab={t('contacts.modals.edit.tabs.emails')} key="3">
             <div style={{ marginBottom: 16 }}>
               <Button 
                 type="dashed" 
@@ -335,16 +337,16 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                 icon={<PlusOutlined />}
                 style={{ width: '100%' }}
               >
-                Ajouter un email
+                {t('contacts.actions.addEmail')}
               </Button>
             </div>
 
             {emails.map((email) => (
               <div key={email.id} style={{ marginBottom: 8 }}>
                 <Space.Compact style={{ display: 'flex' }}>
-                  <Input
+                    <Input
                     prefix={<MailOutlined />}
-                    placeholder="email@example.com"
+                    placeholder={t('contacts.placeholders.email')}
                     value={email.value}
                     onChange={(e) => updateEmail(email.id, e.target.value)}
                     style={{ flex: 1 }}
@@ -362,7 +364,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
             ))}
           </TabPane>
 
-          <TabPane tab="Téléphones" key="4">
+          <TabPane tab={t('contacts.modals.edit.tabs.phones')} key="4">
             <div style={{ marginBottom: 16 }}>
               <Button 
                 type="dashed" 
@@ -370,7 +372,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                 icon={<PlusOutlined />}
                 style={{ width: '100%' }}
               >
-                Ajouter un téléphone
+                {t('contacts.actions.addPhone')}
               </Button>
             </div>
 
@@ -379,7 +381,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder="+33 1 23 45 67 89"
+                    placeholder={t('contacts.placeholders.phone')}
                     value={phone.value}
                     onChange={(e) => updatePhone(phone.id, e.target.value)}
                     style={{ flex: 1 }}
@@ -397,7 +399,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
             ))}
           </TabPane>
 
-          <TabPane tab="Rôles" key="5">
+          <TabPane tab={t('contacts.modals.edit.tabs.roles')} key="5">
             <div style={{ marginBottom: 16 }}>
               <Button 
                 type="dashed" 
@@ -405,7 +407,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                 icon={<PlusOutlined />}
                 style={{ width: '100%' }}
               >
-                Ajouter un rôle
+                {t('contacts.actions.addRole')}
               </Button>
             </div>
 
@@ -414,7 +416,7 @@ const EditContactModal: React.FC<EditContactModalProps> = ({
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input
                     prefix={<TeamOutlined />}
-                    placeholder="Ex: Inventeur, Titulaire, Déposant"
+                    placeholder={t('contacts.placeholders.roleExample')}
                     value={role.value}
                     onChange={(e) => updateRole(role.id, e.target.value)}
                     style={{ flex: 1 }}

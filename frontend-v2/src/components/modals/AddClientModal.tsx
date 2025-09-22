@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Row, Col, Switch, Tabs, Button, Card, Descriptions, Tag, Divider, Typography } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, NumberOutlined, LockOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import type { CreateClientDto, Pays } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -29,6 +30,7 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
   loading = false
 }) => {
   const [form] = Form.useForm();
+  const { t } = useTranslation();
   const [pays, setPays] = useState<Pays[]>([]);
   const [hasUserAccount, setHasUserAccount] = useState(false);
   const [currentStep, setCurrentStep] = useState<'form' | 'recap'>('form');
@@ -44,19 +46,15 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
 
   const loadReferenceData = async () => {
     try {
-      // Données mockées temporaires pour pays
-      setPays([
-        { id: 1, nom: 'France', code: 'FR' },
-        { id: 2, nom: 'États-Unis', code: 'US' },
-        { id: 3, nom: 'Allemagne', code: 'DE' },
-        { id: 4, nom: 'Royaume-Uni', code: 'GB' },
-        { id: 5, nom: 'Espagne', code: 'ES' },
-        { id: 6, nom: 'Italie', code: 'IT' },
-        { id: 7, nom: 'Canada', code: 'CA' },
-        { id: 8, nom: 'Belgique', code: 'BE' },
-        { id: 9, nom: 'Suisse', code: 'CH' },
-        { id: 10, nom: 'Pays-Bas', code: 'NL' },
-      ]);
+      // Construire la liste des pays à partir des traductions (fr.json est la source)
+      const countriesObj = t('countries', { returnObjects: true }) as Record<string, string> | undefined;
+      const codes = [
+        { id: 1, code: 'FR' }, { id: 2, code: 'US' }, { id: 3, code: 'DE' }, { id: 4, code: 'GB' },
+        { id: 5, code: 'ES' }, { id: 6, code: 'IT' }, { id: 7, code: 'CA' }, { id: 8, code: 'BE' },
+        { id: 9, code: 'CH' }, { id: 10, code: 'NL' }
+      ];
+
+  setPays(codes.map(c => ({ id: c.id, nom: (countriesObj && (countriesObj as any)[c.code]) ?? c.code, code: c.code })));
     } catch (error) {
       console.error('Erreur lors du chargement des données de référence:', error);
     }
@@ -110,15 +108,15 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
 
   const validatePasswords = (_: any, value: string) => {
     if (!hasUserAccount) return Promise.resolve();
-    
+
     if (!value) {
-      return Promise.reject(new Error('La confirmation du mot de passe est obligatoire'));
+      return Promise.reject(new Error(t('clients.modals.add.errors.confirmPasswordRequired')));
     }
-    
+
     if (value !== form.getFieldValue('password')) {
-      return Promise.reject(new Error('Les mots de passe ne correspondent pas'));
+      return Promise.reject(new Error(t('clients.account.validation.passwordsMismatch')));
     }
-    
+
     return Promise.resolve();
   };
 
@@ -135,22 +133,21 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
         ...formData
       }}
     >
-      <Tabs defaultActiveKey="1">
-        <Tabs.TabPane tab="Informations générales" key="1">
+    <Tabs defaultActiveKey="1">
+      <Tabs.TabPane tab={t('clients.modals.add.tabs.general')} key="1">
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item
                 name="nomClient"
-                label="Nom du client"
+                label={t('clients.fields.name')}
                 rules={[
-                  { required: true, message: 'Le nom du client est obligatoire' },
-                  { min: 2, message: 'Le nom doit contenir au moins 2 caractères' },
-                  { max: 255, message: 'Le nom ne peut pas dépasser 255 caractères' }
+                  { min: 2, message: t('clients.validation.nameMin') },
+                  { max: 255, message: t('clients.validation.nameMax') }
                 ]}
               >
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder="Nom officiel de l'organisation cliente"
+                  placeholder={t('clients.placeholders.name')}
                   maxLength={255}
                 />
               </Form.Item>
@@ -161,15 +158,15 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
             <Col span={24}>
               <Form.Item
                 name="referenceClient"
-                label="Référence client"
-                tooltip="Code métier pour identification rapide"
+                label={t('clients.fields.reference')}
+                tooltip={t('clients.tooltips.reference')}
                 rules={[
-                  { max: 255, message: 'La référence ne peut pas dépasser 255 caractères' }
+                  { max: 255, message: t('clients.validation.referenceMax') }
                 ]}
               >
                 <Input
                   prefix={<NumberOutlined />}
-                  placeholder="Référence interne du client (optionnel)"
+                  placeholder={t('clients.placeholders.reference')}
                   maxLength={255}
                 />
               </Form.Item>
@@ -177,20 +174,20 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
           </Row>
         </Tabs.TabPane>
 
-        <Tabs.TabPane tab="Contact" key="2">
+  <Tabs.TabPane tab={t('clients.modals.add.tabs.contact')} key="2">
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="emailClient"
-                label="Email principal"
+                label={t('clients.fields.email')}
                 rules={[
-                  { type: 'email', message: 'Format d\'email invalide' },
-                  { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                  { type: 'email', message: t('clients.validation.emailInvalid') },
+                  { max: 255, message: t('clients.validation.emailMax') }
                 ]}
               >
                 <Input
                   prefix={<MailOutlined />}
-                  placeholder="contact@client.com"
+                  placeholder={t('clients.placeholders.contactEmail')}
                   maxLength={255}
                 />
               </Form.Item>
@@ -198,14 +195,14 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
             <Col span={12}>
               <Form.Item
                 name="telephoneClient"
-                label="Téléphone principal"
+                label={t('clients.fields.phone')}
                 rules={[
-                  { pattern: /^[\d\s\-+().]{8,20}$/, message: 'Format de téléphone invalide' }
+                  { pattern: /^[\d\s\-+().]{8,20}$/, message: t('clients.validation.phoneInvalid') }
                 ]}
               >
                 <Input
                   prefix={<PhoneOutlined />}
-                  placeholder="+33 1 23 45 67 89"
+                  placeholder={t('clients.placeholders.phone')}
                   maxLength={50}
                 />
               </Form.Item>
@@ -213,18 +210,18 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
           </Row>
         </Tabs.TabPane>
 
-        <Tabs.TabPane tab="Adresse" key="3">
+  <Tabs.TabPane tab={t('clients.modals.add.tabs.address')} key="3">
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item
                 name="adresseClient"
-                label="Adresse postale"
+                label={t('clients.fields.address')}
                 rules={[
-                  { max: 500, message: 'L\'adresse ne peut pas dépasser 500 caractères' }
+                  { max: 500, message: t('clients.validation.addressMax') }
                 ]}
               >
                 <TextArea
-                  placeholder="Adresse postale complète de l'organisation"
+                  placeholder={t('clients.placeholders.address')}
                   maxLength={500}
                   rows={3}
                   showCount
@@ -237,13 +234,13 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
             <Col span={12}>
               <Form.Item
                 name="codePostal"
-                label="Code postal"
+                label={t('clients.fields.postalCode')}
                 rules={[
-                  { max: 20, message: 'Le code postal ne peut pas dépasser 20 caractères' }
+                  { max: 20, message: t('clients.validation.postalCodeMax') }
                 ]}
               >
                 <Input
-                  placeholder="Code postal"
+                  placeholder={t('clients.placeholders.postal')}
                   maxLength={20}
                 />
               </Form.Item>
@@ -251,11 +248,11 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
             <Col span={12}>
               <Form.Item
                 name="paysClient"
-                label="Pays"
-                tooltip="Pays de domiciliation du client"
+                label={t('clients.fields.country')}
+                tooltip={t('clients.tooltips.country')}
               >
                 <Select
-                  placeholder="Sélectionner un pays"
+                  placeholder={t('clients.placeholders.selectCountry')}
                   showSearch
                   optionFilterProp="children"
                 >
@@ -270,18 +267,18 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
           </Row>
         </Tabs.TabPane>
 
-        <Tabs.TabPane tab="Compte" key="4">
+  <Tabs.TabPane tab={t('clients.modals.add.tabs.account')} key="4">
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item
                 name="hasUserAccount"
-                label="Ce client aura-t-il un compte utilisateur ?"
-                tooltip="Détermine si ce client pourra se connecter à l'application"
+                label={t('clients.modals.add.labels.hasAccount')}
+                tooltip={t('clients.modals.add.tooltips.hasAccount')}
                 valuePropName="checked"
               >
                 <Switch
-                  checkedChildren="Oui"
-                  unCheckedChildren="Non"
+                  checkedChildren={t('common.yes')}
+                  unCheckedChildren={t('common.no')}
                   onChange={setHasUserAccount}
                 />
               </Form.Item>
@@ -290,22 +287,22 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
 
           {hasUserAccount && (
             <>
-              <Divider orientation="left">Informations du compte</Divider>
+              <Divider orientation="left">{t('clients.modals.add.accountSection')}</Divider>
               
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="firstName"
-                    label="Prénom"
+                    label={t('clients.account.fields.firstName')}
                     rules={[
-                      { required: true, message: 'Le prénom est obligatoire' },
-                      { min: 2, message: 'Le prénom doit contenir au moins 2 caractères' },
-                      { max: 100, message: 'Le prénom ne peut pas dépasser 100 caractères' }
+                      { required: true, message: t('clients.account.validation.firstNameRequired') },
+                      { min: 2, message: t('clients.account.validation.firstNameMin') },
+                      { max: 100, message: t('clients.account.validation.firstNameMax') }
                     ]}
                   >
                     <Input
                       prefix={<UserOutlined />}
-                      placeholder="Prénom de l'utilisateur"
+                      placeholder={t('clients.account.placeholders.firstName')}
                       maxLength={100}
                     />
                   </Form.Item>
@@ -313,16 +310,16 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                 <Col span={12}>
                   <Form.Item
                     name="lastName"
-                    label="Nom"
+                    label={t('clients.account.fields.lastName')}
                     rules={[
-                      { required: true, message: 'Le nom est obligatoire' },
-                      { min: 2, message: 'Le nom doit contenir au moins 2 caractères' },
-                      { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                      { required: true, message: t('clients.account.validation.lastNameRequired') },
+                      { min: 2, message: t('clients.account.validation.firstNameMin') },
+                      { max: 100, message: t('clients.account.validation.firstNameMax') }
                     ]}
                   >
                     <Input
                       prefix={<UserOutlined />}
-                      placeholder="Nom de famille de l'utilisateur"
+                      placeholder={t('clients.account.placeholders.lastName')}
                       maxLength={100}
                     />
                   </Form.Item>
@@ -333,16 +330,16 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                 <Col span={24}>
                   <Form.Item
                     name="userEmail"
-                    label="Email de connexion"
+                    label={t('clients.account.fields.email')}
                     rules={[
-                      { required: true, message: 'L\'email de connexion est obligatoire' },
-                      { type: 'email', message: 'Format d\'email invalide' },
-                      { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                      { required: true, message: t('clients.modals.add.errors.userEmailRequired') },
+                      { type: 'email', message: t('clients.validation.emailInvalid') },
+                      { max: 255, message: t('clients.validation.emailMax') }
                     ]}
                   >
                     <Input
                       prefix={<MailOutlined />}
-                      placeholder="email@utilisateur.com"
+                      placeholder={t('clients.account.placeholders.email')}
                       maxLength={255}
                     />
                   </Form.Item>
@@ -353,75 +350,75 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                 <Col span={12}>
                   <Form.Item
                     name="password"
-                    label="Mot de passe"
+                    label={t('clients.account.fields.password')}
                     rules={[
-                      { required: true, message: 'Le mot de passe est obligatoire' },
-                      { min: 8, message: 'Le mot de passe doit contenir au moins 8 caractères' },
-                      { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre' }
+                      { required: true, message: t('clients.account.validation.passwordRequired') },
+                      { min: 8, message: t('clients.account.validation.passwordMin') },
+                      { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: t('clients.modals.add.errors.passwordPattern') }
                     ]}
                   >
                     <Input.Password
                       prefix={<LockOutlined />}
-                      placeholder="Mot de passe sécurisé"
+                      placeholder={t('clients.account.placeholders.password')}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item
-                    name="confirmPassword"
-                    label="Confirmer le mot de passe"
-                    dependencies={['password']}
-                    rules={[
-                      { validator: validatePasswords }
-                    ]}
-                  >
-                    <Input.Password
-                      prefix={<LockOutlined />}
-                      placeholder="Confirmez le mot de passe"
-                    />
-                  </Form.Item>
+                    <Form.Item
+                      name="confirmPassword"
+                      label={t('clients.account.fields.confirmPassword')}
+                      dependencies={['password']}
+                      rules={[
+                        { validator: validatePasswords }
+                      ]}
+                    >
+                      <Input.Password
+                        prefix={<LockOutlined />}
+                        placeholder={t('clients.account.placeholders.confirmPassword')}
+                      />
+                    </Form.Item>
                 </Col>
               </Row>
 
-              <Divider orientation="left">Permissions</Divider>
+              <Divider orientation="left">{t('clients.modals.add.permissions')}</Divider>
 
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item
                     name="canRead"
-                    label="Permission de lecture"
-                    tooltip="Autoriser l'accès en consultation aux données"
+                    label={t('clients.modals.add.labels.canRead')}
+                    tooltip={t('clients.modals.add.tooltips.canRead')}
                     valuePropName="checked"
                   >
                     <Switch
-                      checkedChildren="Activé"
-                      unCheckedChildren="Désactivé"
+                      checkedChildren={t('common.enabled')}
+                      unCheckedChildren={t('common.disabled')}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
                   <Form.Item
                     name="canWrite"
-                    label="Permission d'écriture"
-                    tooltip="Autoriser la création/modification des données"
+                    label={t('clients.modals.add.labels.canWrite')}
+                    tooltip={t('clients.modals.add.tooltips.canWrite')}
                     valuePropName="checked"
                   >
                     <Switch
-                      checkedChildren="Activé"
-                      unCheckedChildren="Désactivé"
+                      checkedChildren={t('common.enabled')}
+                      unCheckedChildren={t('common.disabled')}
                     />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
                   <Form.Item
                     name="isBlocked"
-                    label="Compte bloqué"
-                    tooltip="Suspendre l'accès (impayés, violations, etc.)"
+                    label={t('clients.modals.add.labels.isBlocked')}
+                    tooltip={t('clients.modals.add.tooltips.isBlocked')}
                     valuePropName="checked"
                   >
                     <Switch
-                      checkedChildren="Bloqué"
-                      unCheckedChildren="Actif"
+                      checkedChildren={t('clients.modals.add.labels.blocked')}
+                      unCheckedChildren={t('clients.modals.add.labels.active')}
                     />
                   </Form.Item>
                 </Col>
@@ -437,72 +434,72 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
     <div>
       <Title level={4} style={{ textAlign: 'center', marginBottom: 24 }}>
         <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-        Récapitulatif de création du client
+        {t('clients.modals.add.recapTitle')}
       </Title>
       
-      <Card title="Informations du client" style={{ marginBottom: 16 }}>
+          <Card title={t('clients.modals.add.clientInfo')} style={{ marginBottom: 16 }}>
         <Descriptions bordered size="small">
-          <Descriptions.Item label="Nom du client" span={3}>
+          <Descriptions.Item label={t('clients.fields.name')} span={3}>
             {formData.nomClient}
           </Descriptions.Item>
           {formData.referenceClient && (
-            <Descriptions.Item label="Référence client" span={3}>
+            <Descriptions.Item label={t('clients.fields.reference')} span={3}>
               {formData.referenceClient}
             </Descriptions.Item>
           )}
           {formData.emailClient && (
-            <Descriptions.Item label="Email principal" span={3}>
+            <Descriptions.Item label={t('clients.fields.email')} span={3}>
               {formData.emailClient}
             </Descriptions.Item>
           )}
           {formData.telephoneClient && (
-            <Descriptions.Item label="Téléphone" span={3}>
+            <Descriptions.Item label={t('clients.fields.phone')} span={3}>
               {formData.telephoneClient}
             </Descriptions.Item>
           )}
           {formData.adresseClient && (
-            <Descriptions.Item label="Adresse" span={3}>
+            <Descriptions.Item label={t('clients.fields.address')} span={3}>
               {formData.adresseClient}
             </Descriptions.Item>
           )}
           {formData.codePostal && (
-            <Descriptions.Item label="Code postal" span={1}>
+            <Descriptions.Item label={t('clients.fields.postalCode')} span={1}>
               {formData.codePostal}
             </Descriptions.Item>
           )}
           {formData.paysClient && (
-            <Descriptions.Item label="Pays" span={2}>
+            <Descriptions.Item label={t('clients.fields.country')} span={2}>
               {formData.paysClient}
             </Descriptions.Item>
           )}
         </Descriptions>
       </Card>
 
-      {hasUserAccount && (
-        <Card title="Compte utilisateur" style={{ marginBottom: 16 }}>
+          {hasUserAccount && (
+        <Card title={t('clients.modals.add.userAccount')} style={{ marginBottom: 16 }}>
           <Descriptions bordered size="small">
-            <Descriptions.Item label="Nom complet" span={3}>
+            <Descriptions.Item label={t('clients.modals.add.fullName')} span={3}>
               {formData.firstName} {formData.lastName}
             </Descriptions.Item>
-            <Descriptions.Item label="Email de connexion" span={3}>
+            <Descriptions.Item label={t('clients.account.fields.email')} span={3}>
               {formData.userEmail}
             </Descriptions.Item>
-            <Descriptions.Item label="Rôle" span={3}>
-              <Tag color="blue">Client</Tag>
+            <Descriptions.Item label={t('clients.modals.add.roleLabel')} span={3}>
+              <Tag color="blue">{t('clients.role.client')}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Permission de lecture" span={1}>
+            <Descriptions.Item label={t('clients.modals.add.readPermission')} span={1}>
               <Tag color={formData.canRead ? "green" : "red"}>
-                {formData.canRead ? "Activée" : "Désactivée"}
+                {formData.canRead ? t('common.yes') : t('common.no')}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Permission d'écriture" span={1}>
+            <Descriptions.Item label={t('clients.modals.add.writePermission')} span={1}>
               <Tag color={formData.canWrite ? "green" : "red"}>
-                {formData.canWrite ? "Activée" : "Désactivée"}
+                {formData.canWrite ? t('common.yes') : t('common.no')}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Statut" span={1}>
+            <Descriptions.Item label={t('clients.modals.add.status')} span={1}>
               <Tag color={formData.isBlocked ? "red" : "green"}>
-                {formData.isBlocked ? "Bloqué" : "Actif"}
+                {formData.isBlocked ? t('clients.modals.add.blocked') : t('clients.modals.add.active')}
               </Tag>
             </Descriptions.Item>
           </Descriptions>
@@ -511,8 +508,8 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
 
       <div style={{ textAlign: 'center', color: '#666' }}>
         <Text>
-          Vérifiez attentivement ces informations avant de confirmer la création du client.
-          {hasUserAccount && " Un compte utilisateur sera automatiquement créé avec ces paramètres."}
+          {t('clients.modals.add.recapNote')}
+          {hasUserAccount && ` ${t('clients.modals.add.recapAccountNote')}`}
         </Text>
       </div>
     </div>
@@ -520,24 +517,24 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
 
   return (
     <Modal
-      title={currentStep === 'form' ? "Ajouter un nouveau client" : "Confirmer la création"}
+      title={currentStep === 'form' ? t('clients.modals.add.title') : t('clients.modals.add.confirmTitle')}
       open={visible}
       onCancel={handleCancel}
       width={800}
       footer={
         currentStep === 'form' ? [
           <Button key="cancel" onClick={handleCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>,
           <Button key="next" type="primary" onClick={() => form.submit()}>
-            Suivant - Récapitulatif
+            {t('clients.modals.add.next')}
           </Button>
         ] : [
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={handleBackToForm}>
-            Retour au formulaire
+            {t('clients.modals.add.back')}
           </Button>,
           <Button key="cancel" onClick={handleCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>,
           <Button 
             key="submit" 
@@ -546,7 +543,7 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
             onClick={handleFinalSubmit}
             icon={<CheckCircleOutlined />}
           >
-            Créer le client
+            {t('clients.modals.add.create')}
           </Button>
         ]
       }

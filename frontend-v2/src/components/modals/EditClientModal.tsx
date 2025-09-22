@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Row, Col, Tabs, Switch } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, LockOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
 import type { UpdateClientDto, Client, Pays } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -32,7 +33,8 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
   loading = false
 }) => {
   const [form] = Form.useForm();
-  const [pays] = useState<Pays[]>([]); // TODO: Charger depuis un service si nécessaire
+    const [pays] = useState<Pays[]>([]);
+  const { t } = useTranslation();
 
   // Initialiser le formulaire avec les données du client
   useEffect(() => {
@@ -84,7 +86,7 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
 
   return (
     <Modal
-      title={`Modifier le client ${client?.nomClient}`}
+      title={t('clients.modals.edit.title', { name: client?.nomClient })}
       open={visible}
       onCancel={handleCancel}
       onOk={() => form.submit()}
@@ -97,21 +99,20 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
         onFinish={handleFinish}
         autoComplete="off"
       >
-        <Tabs defaultActiveKey="1">
-          <TabPane tab="Informations générales" key="1">
+      <Tabs defaultActiveKey="1">
+  <TabPane tab={t('clients.modals.edit.tabs.general')} key="1">
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="nomClient"
-                  label="Nom du client"
+                    label={t('clients.fields.name')}
                   rules={[
-                    { required: true, message: 'Le nom du client est obligatoire' },
-                    { max: 255, message: 'Le nom ne peut pas dépasser 255 caractères' }
+                      { max: 255, message: t('clients.validation.nameMax') }
                   ]}
                 >
                   <Input
                     prefix={<UserOutlined />}
-                    placeholder="Nom de l'organisation"
+                      placeholder={t('clients.modals.edit.placeholders.name')}
                     maxLength={255}
                   />
                 </Form.Item>
@@ -119,14 +120,14 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="referenceClient"
-                  label="Référence client"
-                  rules={[
-                    { max: 100, message: 'La référence ne peut pas dépasser 100 caractères' }
-                  ]}
+                    label={t('clients.fields.reference')}
+                    rules={[
+                      { max: 100, message: t('clients.validation.referenceMax') }
+                    ]}
                 >
                   <Input
                     prefix={<FileTextOutlined />}
-                    placeholder="Ex: CLI-001"
+                      placeholder={t('clients.modals.edit.placeholders.reference')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -134,20 +135,20 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
             </Row>
           </TabPane>
 
-          <TabPane tab="Coordonnées" key="2">
+          <TabPane tab={t('clients.modals.edit.tabs.contact')} key="2">
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="emailClient"
-                  label="Email"
+                  label={t('clients.fields.email')}
                   rules={[
-                    { type: 'email', message: 'Format d\'email invalide' },
-                    { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                    { type: 'email', message: t('clients.validation.emailInvalid') },
+                    { max: 255, message: t('clients.validation.emailMax') }
                   ]}
                 >
                   <Input
                     prefix={<MailOutlined />}
-                    placeholder="client@example.com"
+                    placeholder={t('clients.modals.edit.placeholders.email')}
                     maxLength={255}
                   />
                 </Form.Item>
@@ -155,14 +156,14 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="telephoneClient"
-                  label="Téléphone"
+                  label={t('clients.fields.phone')}
                   rules={[
-                    { max: 50, message: 'Le téléphone ne peut pas dépasser 50 caractères' }
+                    { max: 50, message: t('clients.validation.phoneMax') }
                   ]}
                 >
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder="+33 1 23 45 67 89"
+                    placeholder={t('clients.modals.edit.placeholders.phone')}
                     maxLength={50}
                   />
                 </Form.Item>
@@ -170,18 +171,18 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
             </Row>
           </TabPane>
 
-          <TabPane tab="Adresse" key="3">
+          <TabPane tab={t('clients.modals.edit.tabs.address')} key="3">
             <Row gutter={16}>
               <Col span={24}>
                 <Form.Item
                   name="adresseClient"
-                  label="Adresse complète"
+                  label={t('clients.fields.address')}
                   rules={[
-                    { max: 500, message: 'L\'adresse ne peut pas dépasser 500 caractères' }
+                    { max: 500, message: t('clients.validation.addressMax') }
                   ]}
                 >
                   <Input.TextArea
-                    placeholder="Adresse complète du client"
+                    placeholder={t('clients.modals.edit.placeholders.address')}
                     maxLength={500}
                     rows={3}
                   />
@@ -193,13 +194,13 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="codePostal"
-                  label="Code postal"
+                  label={t('clients.fields.postalCode')}
                   rules={[
-                    { max: 20, message: 'Le code postal ne peut pas dépasser 20 caractères' }
+                    { max: 20, message: t('clients.validation.postalCodeMax') }
                   ]}
                 >
                   <Input
-                    placeholder="75001"
+                    placeholder={t('clients.modals.edit.placeholders.postal')}
                     maxLength={20}
                   />
                 </Form.Item>
@@ -207,10 +208,10 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="paysClient"
-                  label="Pays"
+                  label={t('clients.fields.country')}
                 >
                   <Select
-                    placeholder="Sélectionner un pays"
+                    placeholder={t('clients.modals.edit.placeholders.country')}
                     showSearch
                     optionFilterProp="children"
                     allowClear
@@ -226,16 +227,15 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
             </Row>
           </TabPane>
 
-          {/* Onglet Permissions : uniquement pour les clients avec compte utilisateur */}
           {client?.canRead !== undefined && (
-            <TabPane tab="Permissions" key="4">
+            <TabPane tab={t('clients.modals.edit.permissions')} key="4">
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item
                     name="canWrite"
-                    label="Autorisation d'écriture"
+                    label={t('clients.modals.edit.labels.canWrite')}
                     valuePropName="checked"
-                    tooltip="Permet au client de créer et modifier des brevets"
+                    tooltip={t('clients.modals.edit.tooltips.canWrite')}
                   >
                     <Switch
                       checkedChildren={<LockOutlined />}
@@ -246,9 +246,9 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                 <Col span={8}>
                   <Form.Item
                     name="canRead"
-                    label="Autorisation de lecture"
+                    label={t('clients.modals.edit.labels.canRead')}
                     valuePropName="checked"
-                    tooltip="Permet au client de consulter les brevets"
+                    tooltip={t('clients.modals.edit.tooltips.canRead')}
                   >
                     <Switch
                       checkedChildren={<EyeOutlined />}
@@ -259,9 +259,9 @@ const EditClientModal: React.FC<EditClientModalProps> = ({
                 <Col span={8}>
                   <Form.Item
                     name="isBlocked"
-                    label="Compte bloqué"
+                    label={t('clients.modals.edit.labels.isBlocked')}
                     valuePropName="checked"
-                    tooltip="Bloque complètement l'accès du client"
+          tooltip={t('clients.modals.edit.tooltips.isBlocked')}
                   >
                     <Switch
                       checkedChildren={<StopOutlined />}

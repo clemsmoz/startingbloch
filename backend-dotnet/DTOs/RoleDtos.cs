@@ -54,7 +54,6 @@ public class RoleDto
 public class CreateRoleDto
 {
     /// <summary>Nom rôle OBLIGATOIRE unique dans système permissions.</summary>
-    [Required(ErrorMessage = "Le nom du rôle est obligatoire")]
     [StringLength(100, ErrorMessage = "Le nom du rôle ne peut pas dépasser 100 caractères")]
     public string Name { get; set; } = string.Empty;
 
@@ -118,11 +117,9 @@ public class UserRoleDto
 public class AssignRoleDto
 {
     /// <summary>Utilisateur destinataire OBLIGATOIRE pour assignation.</summary>
-    [Required(ErrorMessage = "L'ID de l'utilisateur est obligatoire")]
     public int UserId { get; set; }
 
     /// <summary>Rôle accordé OBLIGATOIRE (admin/user/client).</summary>
-    [Required(ErrorMessage = "L'ID du rôle est obligatoire")]
     public int RoleId { get; set; }
 
     /// <summary>Client périmètre OBLIGATOIRE pour rôles "client", null pour admin/user.</summary>

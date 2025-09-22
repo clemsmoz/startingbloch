@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using StartingBloch.Backend.DTOs;
+using Microsoft.Extensions.Logging;
 using StartingBloch.Backend.Middleware;
 using StartingBloch.Backend.Services;
 
@@ -43,15 +44,17 @@ public class CabinetController : ControllerBase
 {
     // Service métier pour la gestion des cabinets et leurs relations
     private readonly ICabinetService _cabinetService;
+    private readonly ILogger<CabinetController> _logger;
 
     /// <summary>
     /// Constructeur du contrôleur de gestion des cabinets
     /// Injection du service métier pour l'accès aux données et la logique
     /// </summary>
     /// <param name="cabinetService">Service métier pour les opérations sur les cabinets</param>
-    public CabinetController(ICabinetService cabinetService)
+    public CabinetController(ICabinetService cabinetService, ILogger<CabinetController> logger)
     {
         _cabinetService = cabinetService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -183,12 +186,16 @@ public class CabinetController : ControllerBase
             return BadRequest(ModelState);
 
         // Délégation de la création au service métier
-        var result = await _cabinetService.CreateCabinetAsync(createCabinetDto);
-        
+    var result = await _cabinetService.CreateCabinetAsync(createCabinetDto);
+
         // Gestion des erreurs de création
         if (!result.Success)
+        {
+            // Log détaillé pour faciliter le debug en dev
+            try { _logger?.LogWarning("CreateCabinet failed: {Result}", result); } catch { }
             return BadRequest(result);
-            
+        }
+
         // Retour HTTP 201 Created avec localisation de la ressource
         return CreatedAtAction(nameof(GetCabinet), new { id = result.Data!.Id }, result);
     }
@@ -278,7 +285,22 @@ public class CabinetController : ControllerBase
     {
         // Validation préalable du modèle de données
         if (!ModelState.IsValid)
+        {
+            // Log détaillé des erreurs de validation pour faciliter le debugging (affiché en dev)
+            try
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? (e.Exception?.Message ?? "(exception)") : e.ErrorMessage)
+                    .ToList();
+                _logger?.LogWarning("UpdateCabinet - ModelState invalide pour id={Id}. Erreurs: {Errors}", id, string.Join(" | ", errors));
+            }
+            catch {
+                // swallow logging errors
+            }
+
             return BadRequest(ModelState);
+        }
 
         // Délégation de la mise à jour au service métier
         var result = await _cabinetService.UpdateCabinetAsync(id, updateCabinetDto);

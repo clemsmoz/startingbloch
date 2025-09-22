@@ -58,7 +58,6 @@ public class InventeurDto
 public class CreateInventeurDto
 {
     /// <summary>Nom inventeur OBLIGATOIRE - créateur technique innovation.</summary>
-    [Required(ErrorMessage = "Le nom est requis")]
     [StringLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
     public string Nom { get; set; } = string.Empty;
 
@@ -79,7 +78,6 @@ public class CreateInventeurDto
 public class UpdateInventeurDto
 {
     /// <summary>Nom inventeur OBLIGATOIRE maintenu pour reconnaissance continue.</summary>
-    [Required(ErrorMessage = "Le nom est requis")]
     [StringLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
     public string Nom { get; set; } = string.Empty;
 

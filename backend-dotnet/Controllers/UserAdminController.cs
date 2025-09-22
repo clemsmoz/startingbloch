@@ -624,20 +624,16 @@ public class UserAdminController : ControllerBase
 /// </summary>
 public class CreateEmployeeDto
 {
-    [Required(ErrorMessage = "Le nom d'utilisateur est obligatoire")]
     [StringLength(100, ErrorMessage = "Le nom d'utilisateur ne peut pas dépasser 100 caractères")]
     public string Username { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "L'email est obligatoire")]
     [EmailAddress(ErrorMessage = "L'email n'est pas valide")]
     [StringLength(100, ErrorMessage = "L'email ne peut pas dépasser 100 caractères")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Le mot de passe est obligatoire")]
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Le mot de passe doit contenir entre 6 et 100 caractères")]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Le rôle est obligatoire")]
     [RegularExpression("^(admin|user)$", ErrorMessage = "Le rôle doit être 'admin' ou 'user'")]
     public string Role { get; set; } = "user";
 

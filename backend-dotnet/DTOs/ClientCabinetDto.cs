@@ -102,14 +102,12 @@ public class CreateClientCabinetDto
     /// Identifiant client OBLIGATOIRE pour mandat.
     /// Validation existence côté contrôleur avant persistance.
     /// </summary>
-    [Required(ErrorMessage = "L'ID du client est obligatoire")]
     public int ClientId { get; set; }
 
     /// <summary>
     /// Identifiant cabinet OBLIGATOIRE pour mandat.
     /// Validation existence côté contrôleur avant persistance.
     /// </summary>
-    [Required(ErrorMessage = "L'ID du cabinet est obligatoire")]
     public int CabinetId { get; set; }
 
     /// <summary>

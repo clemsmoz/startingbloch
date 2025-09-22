@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Row, Col, message } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
 import { inventeurService } from '../../services';
@@ -27,12 +28,13 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
       // Détection doublon: par email si fourni, sinon (nom + prénom)
-      const norm = (s?: string) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const norm = (s?: string) => (s ?? '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
       const email = norm(values.emailInventeur);
       const nom = norm(values.nomInventeur);
       const prenom = norm(values.prenomInventeur);
@@ -48,7 +50,7 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
       });
 
       if (duplicate) {
-        message.info("Cet inventeur existe déjà, il a été sélectionné.");
+        message.info(t('inventeurs.messages.duplicate'));
         onDuplicate?.(duplicate);
         form.resetFields();
         onCancel();
@@ -84,7 +86,7 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
 
   return (
     <Modal
-      title="Créer un nouvel inventeur"
+      title={t('inventeurs.modals.create.title')}
       open={visible}
       onCancel={handleCancel}
       onOk={() => form.submit()}
@@ -99,17 +101,16 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
       >
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item
+              <Form.Item
               name="nomInventeur"
-              label="Nom"
+              label={t('inventeurs.fields.lastName')}
               rules={[
-                { required: true, message: 'Le nom est obligatoire' },
-                { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                { max: 100, message: t('inventeurs.validation.nameMax') }
               ]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="Nom de l'inventeur"
+                placeholder={t('inventeurs.placeholders.lastName')}
                 maxLength={100}
               />
             </Form.Item>
@@ -117,14 +118,13 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="prenomInventeur"
-              label="Prénom"
+              label={t('inventeurs.fields.firstName')}
               rules={[
-                { required: true, message: 'Le prénom est obligatoire' },
-                { max: 100, message: 'Le prénom ne peut pas dépasser 100 caractères' }
+                { max: 100, message: t('inventeurs.validation.firstNameMax') }
               ]}
             >
               <Input
-                placeholder="Prénom de l'inventeur"
+                placeholder={t('inventeurs.placeholders.firstName')}
                 maxLength={100}
               />
             </Form.Item>
@@ -135,14 +135,14 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
           <Col span={24}>
             <Form.Item
               name="adresseInventeur"
-              label="Adresse"
+              label={t('inventeurs.fields.address')}
               rules={[
-                { max: 500, message: 'L\'adresse ne peut pas dépasser 500 caractères' }
+                { max: 500, message: t('inventeurs.validation.addressMax') }
               ]}
             >
               <Input
                 prefix={<HomeOutlined />}
-                placeholder="Adresse complète"
+                placeholder={t('inventeurs.placeholders.address')}
                 maxLength={500}
               />
             </Form.Item>
@@ -153,15 +153,15 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="emailInventeur"
-              label="Email"
+              label={t('inventeurs.fields.email')}
               rules={[
-                { type: 'email', message: 'Format d\'email invalide' },
-                { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                { type: 'email', message: t('inventeurs.validation.emailInvalid') },
+                { max: 255, message: t('inventeurs.validation.emailMax') }
               ]}
             >
               <Input
                 prefix={<MailOutlined />}
-                placeholder="email@exemple.com"
+                placeholder={t('inventeurs.placeholders.email')}
                 maxLength={255}
               />
             </Form.Item>
@@ -169,14 +169,14 @@ const CreateInventeurModal: React.FC<CreateInventeurModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="telephoneInventeur"
-              label="Téléphone"
+              label={t('inventeurs.fields.phone')}
               rules={[
-                { max: 20, message: 'Le téléphone ne peut pas dépasser 20 caractères' }
+                { max: 20, message: t('inventeurs.validation.phoneMax') }
               ]}
             >
               <Input
                 prefix={<PhoneOutlined />}
-                placeholder="+33 1 23 45 67 89"
+                placeholder={t('inventeurs.placeholders.phone')}
                 maxLength={20}
               />
             </Form.Item>

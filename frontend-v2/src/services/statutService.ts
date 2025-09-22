@@ -41,7 +41,7 @@ export const statutService = {
         nomStatut: statut.NomStatut,
         description: statut.Description,
         createdAt: statut.CreatedAt
-      })) || [];
+  })) ?? [];
       
       return {
         success: response.data.Success,

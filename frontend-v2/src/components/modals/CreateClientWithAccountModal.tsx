@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Modal, 
   Form, 
@@ -76,6 +77,7 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
   const [currentStep, setCurrentStep] = useState(0);
   const [pays, setPays] = useState<Pays[]>([]);
   const [clientData, setClientData] = useState<ClientFormData | null>(null);
+  const { t } = useTranslation();
 
   // Charger les données de référence
   useEffect(() => {
@@ -90,16 +92,16 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
     try {
       // Données mockées temporaires pour pays
       setPays([
-        { id: 1, nom: 'France', code: 'FR' },
-        { id: 2, nom: 'États-Unis', code: 'US' },
-        { id: 3, nom: 'Allemagne', code: 'DE' },
-        { id: 4, nom: 'Royaume-Uni', code: 'GB' },
-        { id: 5, nom: 'Espagne', code: 'ES' },
-        { id: 6, nom: 'Italie', code: 'IT' },
-        { id: 7, nom: 'Canada', code: 'CA' },
-        { id: 8, nom: 'Belgique', code: 'BE' },
-        { id: 9, nom: 'Suisse', code: 'CH' },
-        { id: 10, nom: 'Pays-Bas', code: 'NL' },
+        { id: 1, nom: t('countries.FR'), code: 'FR' },
+        { id: 2, nom: t('countries.US'), code: 'US' },
+        { id: 3, nom: t('countries.DE'), code: 'DE' },
+        { id: 4, nom: t('countries.GB'), code: 'GB' },
+        { id: 5, nom: t('countries.ES'), code: 'ES' },
+        { id: 6, nom: t('countries.IT'), code: 'IT' },
+        { id: 7, nom: t('countries.CA'), code: 'CA' },
+        { id: 8, nom: t('countries.BE'), code: 'BE' },
+        { id: 9, nom: t('countries.CH'), code: 'CH' },
+        { id: 10, nom: t('countries.NL'), code: 'NL' },
       ]);
     } catch (error) {
       console.error('Erreur lors du chargement des données de référence:', error);
@@ -148,13 +150,13 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
 
   const validatePassword = (_: any, value: string) => {
     if (!value) {
-      return Promise.reject(new Error('Le mot de passe est obligatoire'));
+      return Promise.reject(new Error(t('clients.account.validation.passwordRequired')));
     }
     if (value.length < 8) {
-      return Promise.reject(new Error('Le mot de passe doit contenir au moins 8 caractères'));
+      return Promise.reject(new Error(t('clients.account.validation.passwordMin')));
     }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
-      return Promise.reject(new Error('Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre'));
+      return Promise.reject(new Error(t('clients.account.validation.passwordPattern')));
     }
     return Promise.resolve();
   };
@@ -171,58 +173,58 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
           >
             <Row gutter={16}>
               <Col span={24}>
-                <Form.Item
-                  name="nomClient"
-                  label="Nom du client"
-                  rules={[
-                    { required: true, message: 'Le nom du client est obligatoire' },
-                    { min: 2, message: 'Le nom doit contenir au moins 2 caractères' },
-                    { max: 255, message: 'Le nom ne peut pas dépasser 255 caractères' }
-                  ]}
-                >
-                  <Input
-                    prefix={<UserOutlined />}
-                    placeholder="Nom officiel de l'organisation cliente"
-                    maxLength={255}
-                  />
-                </Form.Item>
+                  <Form.Item
+                    name="nomClient"
+                    label={t('clients.fields.name')}
+                    rules={[
+                      { required: true, message: t('clients.validation.nameRequired') },
+                      { min: 2, message: t('clients.validation.nameMin') },
+                      { max: 255, message: t('clients.validation.nameMax') }
+                    ]}
+                  >
+                    <Input
+                      prefix={<UserOutlined />}
+                      placeholder={t('clients.placeholders.officialName')}
+                      maxLength={255}
+                    />
+                  </Form.Item>
               </Col>
             </Row>
 
             <Row gutter={16}>
               <Col span={24}>
-                <Form.Item
+                  <Form.Item
                   name="referenceClient"
-                  label="Référence client"
-                  tooltip="Code métier pour identification rapide"
+                  label={t('clients.fields.reference')}
+                  tooltip={t('clients.tooltips.reference')}
                   rules={[
-                    { max: 255, message: 'La référence ne peut pas dépasser 255 caractères' }
+                    { max: 255, message: t('clients.validation.referenceMax') }
                   ]}
                 >
                   <Input
                     prefix={<NumberOutlined />}
-                    placeholder="Référence interne du client (optionnel)"
+                    placeholder={t('clients.placeholders.reference')}
                     maxLength={255}
                   />
                 </Form.Item>
               </Col>
             </Row>
 
-            <Divider>Contact</Divider>
+            <Divider>{t('clients.sections.contact')}</Divider>
 
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="emailClient"
-                  label="Email principal"
-                  rules={[
-                    { type: 'email', message: 'Format d\'email invalide' },
-                    { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
-                  ]}
+                  <Form.Item
+                    name="emailClient"
+                    label={t('clients.fields.email')}
+                    rules={[
+                      { type: 'email', message: t('clients.validation.emailInvalid') },
+                      { max: 255, message: t('clients.validation.emailMax') }
+                    ]}
                 >
-                  <Input
+                    <Input
                     prefix={<MailOutlined />}
-                    placeholder="contact@client.com"
+                    placeholder={t('clients.placeholders.contactEmail')}
                     maxLength={255}
                   />
                 </Form.Item>
@@ -230,33 +232,33 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
               <Col span={12}>
                 <Form.Item
                   name="telephoneClient"
-                  label="Téléphone principal"
+                  label={t('clients.fields.phone')}
                   rules={[
-                    { pattern: /^[\d\s\-+().]{8,20}$/, message: 'Format de téléphone invalide' }
+                    { pattern: /^[\d\s\-+().]{8,20}$/, message: t('clients.validation.phoneInvalid') }
                   ]}
                 >
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder="+33 1 23 45 67 89"
+                    placeholder={t('clients.placeholders.phone')}
                     maxLength={50}
                   />
                 </Form.Item>
               </Col>
             </Row>
 
-            <Divider>Adresse</Divider>
+                <Divider>{t('clients.sections.address')}</Divider>
 
             <Row gutter={16}>
               <Col span={24}>
-                <Form.Item
+                  <Form.Item
                   name="adresseClient"
-                  label="Adresse postale"
+                  label={t('clients.fields.postalAddress')}
                   rules={[
-                    { max: 500, message: 'L\'adresse ne peut pas dépasser 500 caractères' }
+                    { max: 500, message: t('clients.validation.addressMax') }
                   ]}
                 >
                   <TextArea
-                    placeholder="Adresse postale complète de l'organisation"
+                    placeholder={t('clients.placeholders.postalAddress')}
                     maxLength={500}
                     rows={3}
                     showCount
@@ -267,27 +269,27 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
 
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="codePostal"
-                  label="Code postal"
-                  rules={[
-                    { max: 20, message: 'Le code postal ne peut pas dépasser 20 caractères' }
-                  ]}
-                >
-                  <Input
-                    placeholder="Code postal"
-                    maxLength={20}
-                  />
-                </Form.Item>
+                  <Form.Item
+                    name="codePostal"
+                    label={t('clients.fields.postalCode')}
+                    rules={[
+                      { max: 20, message: t('clients.validation.postalCodeMax') }
+                    ]}
+                  >
+                    <Input
+                      placeholder={t('clients.placeholders.postalAddress')}
+                      maxLength={20}
+                    />
+                  </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
                   name="paysClient"
-                  label="Pays"
-                  tooltip="Pays de domiciliation du client"
+                  label={t('clients.fields.country')}
+                  tooltip={t('clients.tooltips.country')}
                 >
                   <Select
-                    placeholder="Sélectionner un pays"
+                    placeholder={t('clients.placeholders.selectCountry')}
                     showSearch
                     optionFilterProp="children"
                   >
@@ -307,16 +309,16 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
         return (
           <div>
             <Alert
-              message="Récapitulatif des informations client"
-              description="Vérifiez les informations avant de continuer vers la création du compte utilisateur"
+              message={t('clients.recap.title')}
+              description={t('clients.recap.description')}
               type="info"
               showIcon
               style={{ marginBottom: 20 }}
             />
 
-            <Card title={<><UserOutlined /> Informations du client</>} style={{ marginBottom: 20 }}>
-              <Descriptions bordered column={2}>
-                <Descriptions.Item label="Nom du client" span={2}>
+            <Card title={<><UserOutlined /> {t('clients.recap.clientInfo')}</>} style={{ marginBottom: 20 }}>
+                <Descriptions bordered column={2}>
+                <Descriptions.Item label={t('clients.fields.name')} span={2}>
                   <strong>{clientData?.nomClient}</strong>
                 </Descriptions.Item>
                 {clientData?.referenceClient && (
@@ -325,27 +327,27 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
                   </Descriptions.Item>
                 )}
                 {clientData?.emailClient && (
-                  <Descriptions.Item label="Email">
+                  <Descriptions.Item label={t('clients.fields.email')}>
                     {clientData.emailClient}
                   </Descriptions.Item>
                 )}
                 {clientData?.telephoneClient && (
-                  <Descriptions.Item label="Téléphone">
+                  <Descriptions.Item label={t('clients.fields.phone')}>
                     {clientData.telephoneClient}
                   </Descriptions.Item>
                 )}
                 {clientData?.adresseClient && (
-                  <Descriptions.Item label="Adresse" span={2}>
+                  <Descriptions.Item label={t('clients.fields.address')} span={2}>
                     {clientData.adresseClient}
                   </Descriptions.Item>
                 )}
                 {clientData?.codePostal && (
-                  <Descriptions.Item label="Code postal">
+                  <Descriptions.Item label={t('clients.fields.postalCode')}>
                     {clientData.codePostal}
                   </Descriptions.Item>
                 )}
                 {clientData?.paysClient && (
-                  <Descriptions.Item label="Pays">
+                  <Descriptions.Item label={t('clients.fields.country')}>
                     {clientData.paysClient}
                   </Descriptions.Item>
                 )}
@@ -362,10 +364,10 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
                 canWrite: false
               }}
             >
-              <Card title={<><LockOutlined /> Création du compte utilisateur</>}>
+              <Card title={<><LockOutlined /> {t('clients.account.title')}</>}> 
                 <Alert
-                  message="Compte client"
-                  description="Ce compte aura automatiquement le rôle 'Client' avec des permissions de lecture uniquement."
+                  message={t('clients.account.alertTitle')}
+                  description={t('clients.account.alertDescription')}
                   type="warning"
                   showIcon
                   style={{ marginBottom: 20 }}
@@ -375,15 +377,15 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
                   <Col span={12}>
                     <Form.Item
                       name="firstName"
-                      label="Prénom"
+                      label={t('clients.account.fields.firstName')}
                       rules={[
-                        { required: true, message: 'Le prénom est obligatoire' },
-                        { min: 2, message: 'Le prénom doit contenir au moins 2 caractères' },
-                        { max: 100, message: 'Le prénom ne peut pas dépasser 100 caractères' }
+                        { required: true, message: t('clients.account.validation.firstNameRequired') },
+                        { min: 2, message: t('clients.account.validation.firstNameMin') },
+                        { max: 100, message: t('clients.account.validation.firstNameMax') }
                       ]}
                     >
                       <Input
-                        placeholder="Prénom de l'utilisateur"
+                        placeholder={t('clients.account.placeholders.firstName')}
                         maxLength={100}
                       />
                     </Form.Item>
@@ -391,15 +393,15 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
                   <Col span={12}>
                     <Form.Item
                       name="lastName"
-                      label="Nom"
+                      label={t('clients.account.fields.lastName')}
                       rules={[
-                        { required: true, message: 'Le nom est obligatoire' },
-                        { min: 2, message: 'Le nom doit contenir au moins 2 caractères' },
-                        { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                        { required: true, message: t('clients.account.validation.lastNameRequired') },
+                        { min: 2, message: t('clients.account.validation.lastNameMin') },
+                        { max: 100, message: t('clients.account.validation.lastNameMax') }
                       ]}
                     >
                       <Input
-                        placeholder="Nom de famille de l'utilisateur"
+                        placeholder={t('clients.account.placeholders.lastName')}
                         maxLength={100}
                       />
                     </Form.Item>
@@ -410,16 +412,16 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
                   <Col span={24}>
                     <Form.Item
                       name="email"
-                      label="Email de connexion"
+                      label={t('clients.account.fields.email')}
                       rules={[
-                        { required: true, message: 'L\'email est obligatoire' },
-                        { type: 'email', message: 'Format d\'email invalide' },
-                        { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                        { required: true, message: t('clients.account.validation.emailRequired') },
+                        { type: 'email', message: t('clients.account.validation.emailInvalid') },
+                        { max: 255, message: t('clients.account.validation.emailMax') }
                       ]}
                     >
                       <Input
                         prefix={<MailOutlined />}
-                        placeholder="utilisateur@client.com"
+                        placeholder={t('clients.account.placeholders.email')}
                         maxLength={255}
                       />
                     </Form.Item>
@@ -428,16 +430,16 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
 
                 <Row gutter={16}>
                   <Col span={24}>
-                    <Form.Item
+                      <Form.Item
                       name="password"
-                      label="Mot de passe"
+                      label={t('clients.account.fields.password')}
                       rules={[
                         { validator: validatePassword }
                       ]}
                     >
                       <Password
                         prefix={<LockOutlined />}
-                        placeholder="Mot de passe sécurisé"
+                        placeholder={t('clients.account.placeholders.password')}
                         maxLength={255}
                       />
                     </Form.Item>
@@ -446,25 +448,25 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
 
                 <Row gutter={16}>
                   <Col span={24}>
-                    <Form.Item
+                      <Form.Item
                       name="confirmPassword"
-                      label="Confirmer le mot de passe"
+                      label={t('clients.account.fields.confirmPassword')}
                       dependencies={['password']}
                       rules={[
-                        { required: true, message: 'Veuillez confirmer le mot de passe' },
+                        { required: true, message: t('clients.account.validation.confirmPasswordRequired') },
                         ({ getFieldValue }) => ({
                           validator(_, value) {
                             if (!value || getFieldValue('password') === value) {
                               return Promise.resolve();
                             }
-                            return Promise.reject(new Error('Les mots de passe ne correspondent pas'));
+                            return Promise.reject(new Error(t('clients.account.validation.passwordsMismatch')));
                           },
                         }),
                       ]}
                     >
                       <Password
                         prefix={<LockOutlined />}
-                        placeholder="Confirmer le mot de passe"
+                        placeholder={t('clients.account.placeholders.confirmPassword')}
                         maxLength={255}
                       />
                     </Form.Item>
@@ -472,13 +474,13 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
                 </Row>
 
                 <Alert
-                  message="Permissions par défaut"
+                  message={t('clients.account.permissionsTitle')}
                   description={
                     <ul style={{ margin: 0, paddingLeft: 20 }}>
-                      <li>Rôle : Client</li>
-                      <li>Lecture : Autorisée (ses propres données uniquement)</li>
-                      <li>Écriture : Désactivée par défaut</li>
-                      <li>Statut : Actif</li>
+                      <li>{t('clients.account.permissions.role')}</li>
+                      <li>{t('clients.account.permissions.read')}</li>
+                      <li>{t('clients.account.permissions.write')}</li>
+                      <li>{t('clients.account.permissions.status')}</li>
                     </ul>
                   }
                   type="info"
@@ -498,11 +500,11 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
   const getModalTitle = () => {
     switch (currentStep) {
       case 0:
-        return "Étape 1/2 - Informations du client";
+        return t('clients.steps.titleStep', { step: 1, total: 2 });
       case 1:
-        return "Étape 2/2 - Récapitulatif et création de compte";
+        return t('clients.steps.titleStep', { step: 2, total: 2 });
       default:
-        return "Créer un client avec compte";
+        return t('clients.modals.createWithAccount.title');
     }
   };
 
@@ -511,19 +513,19 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
       case 0:
         return [
           <Button key="cancel" onClick={handleCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>,
           <Button key="next" type="primary" onClick={() => clientForm.submit()}>
-            Suivant
+            {t('common.next')}
           </Button>
         ];
       case 1:
         return [
           <Button key="previous" onClick={handlePrevious}>
-            Précédent
+            {t('common.back')}
           </Button>,
           <Button key="cancel" onClick={handleCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>,
           <Button 
             key="finish" 
@@ -531,7 +533,7 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
             onClick={() => accountForm.submit()}
             loading={loading}
           >
-            Créer le client et le compte
+            {t('clients.modals.createWithAccount.finish')}
           </Button>
         ];
       default:
@@ -546,12 +548,11 @@ const CreateClientWithAccountModal: React.FC<CreateClientWithAccountModalProps> 
       onCancel={handleCancel}
       footer={getModalFooter()}
       width={900}
-      destroyOnClose
     >
-      <Steps current={currentStep} style={{ marginBottom: 24 }}>
-        <Step title="Informations client" icon={<InfoCircleOutlined />} />
-        <Step title="Récapitulatif et compte" icon={<CheckCircleOutlined />} />
-      </Steps>
+          <Steps current={currentStep} style={{ marginBottom: 24 }}>
+            <Step title={t('clients.steps.clientInfo')} icon={<InfoCircleOutlined />} />
+              <Step title={t('clients.steps.recapAndAccount')} icon={<CheckCircleOutlined />} />
+          </Steps>
 
       {renderStepContent()}
     </Modal>

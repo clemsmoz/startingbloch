@@ -42,7 +42,7 @@ export const statutsService = {
       const transformedData = response.data.Data?.map((statut: any) => ({
         id: statut.Id,
         description: statut.Description ?? statut.Nom ?? statut.DescriptionStatut ?? statut.NomStatut,
-      })) || [];
+  })) ?? [];
       
       console.log('🔄 Statuts Service - Données transformées:', transformedData);
       
@@ -63,7 +63,7 @@ export const statutsService = {
       return {
         data: [],
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la récupération des statuts',
+  message: error.response?.data?.message ?? 'Erreur lors de la récupération des statuts',
         errors: error.response?.data?.errors,
         page: 1,
         pageSize: 10,
@@ -80,7 +80,7 @@ export const statutsService = {
     try {
   const response = await api.get(`${config.api.endpoints.statuts}/${id}`);
       return {
-        data: response.data.data || response.data,
+  data: response.data.data ?? response.data,
         success: true,
         message: 'Statut récupéré avec succès'
       };
@@ -88,7 +88,7 @@ export const statutsService = {
       return {
         data: {} as Statuts,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la récupération du statut',
+  message: error.response?.data?.message ?? 'Erreur lors de la récupération du statut',
         errors: error.response?.data?.errors
       };
     }
@@ -109,7 +109,7 @@ export const statutsService = {
       return {
         data: {} as Statuts,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la création du statut',
+  message: error.response?.data?.message ?? 'Erreur lors de la création du statut',
         errors: error.response?.data?.errors
       };
     }
@@ -122,7 +122,7 @@ export const statutsService = {
         description: statutsData.description
       });
       return {
-        data: response.data.data || response.data,
+  data: response.data.data ?? response.data,
         success: true,
         message: 'Statut mis à jour avec succès'
       };
@@ -130,7 +130,7 @@ export const statutsService = {
       return {
         data: {} as Statuts,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la mise à jour du statut',
+  message: error.response?.data?.message ?? 'Erreur lors de la mise à jour du statut',
         errors: error.response?.data?.errors
       };
     }
@@ -149,7 +149,7 @@ export const statutsService = {
       return {
         data: undefined,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la suppression du statut',
+  message: error.response?.data?.message ?? 'Erreur lors de la suppression du statut',
         errors: error.response?.data?.errors
       };
     }

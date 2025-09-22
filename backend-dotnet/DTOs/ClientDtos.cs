@@ -134,7 +134,6 @@ public class CreateClientDto
     /// <summary>
     /// Nom client OBLIGATOIRE - identification principale système.
     /// </summary>
-    [Required(ErrorMessage = "Le nom du client est obligatoire")]
     [StringLength(255, ErrorMessage = "Le nom du client ne peut pas dépasser 255 caractères")]
     public string NomClient { get; set; } = string.Empty;
 
@@ -265,22 +264,18 @@ public class ClientWithUserStatusDto : ClientDto
 public class CreateUserForClientDto
 {
     /// <summary>ID client existant OBLIGATOIRE pour association compte.</summary>
-    [Required(ErrorMessage = "L'ID du client est obligatoire")]
     public int ClientId { get; set; }
 
     /// <summary>Nom utilisateur OBLIGATOIRE unique dans système authentification.</summary>
-    [Required(ErrorMessage = "Le nom d'utilisateur est obligatoire")]
     [StringLength(100, ErrorMessage = "Le nom d'utilisateur ne peut pas dépasser 100 caractères")]
     public string Username { get; set; } = string.Empty;
 
     /// <summary>Email utilisateur OBLIGATOIRE distinct email client possible.</summary>
-    [Required(ErrorMessage = "L'email est obligatoire")]
     [EmailAddress(ErrorMessage = "L'email n'est pas valide")]
     [StringLength(100, ErrorMessage = "L'email ne peut pas dépasser 100 caractères")]
     public string Email { get; set; } = string.Empty;
 
     /// <summary>Mot de passe OBLIGATOIRE minimum 6 caractères sécurité.</summary>
-    [Required(ErrorMessage = "Le mot de passe est obligatoire")]
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Le mot de passe doit contenir entre 6 et 100 caractères")]
     public string Password { get; set; } = string.Empty;
 
@@ -305,7 +300,6 @@ public class CreateClientWithUserDto
     // === INFORMATIONS CLIENT ===
     
     /// <summary>Nom client OBLIGATOIRE - dénomination entité propriétaire brevets.</summary>
-    [Required(ErrorMessage = "Le nom du client est obligatoire")]
     [StringLength(255, ErrorMessage = "Le nom du client ne peut pas dépasser 255 caractères")]
     public string NomClient { get; set; } = string.Empty;
 
@@ -337,18 +331,15 @@ public class CreateClientWithUserDto
     // === INFORMATIONS COMPTE UTILISATEUR ===
     
     /// <summary>Nom utilisateur OBLIGATOIRE unique authentification système.</summary>
-    [Required(ErrorMessage = "Le nom d'utilisateur est obligatoire")]
     [StringLength(100, ErrorMessage = "Le nom d'utilisateur ne peut pas dépasser 100 caractères")]
     public string Username { get; set; } = string.Empty;
 
     /// <summary>Email utilisateur OBLIGATOIRE connexion et récupération mot de passe.</summary>
-    [Required(ErrorMessage = "L'email utilisateur est obligatoire")]
     [EmailAddress(ErrorMessage = "L'email utilisateur n'est pas valide")]
     [StringLength(100, ErrorMessage = "L'email utilisateur ne peut pas dépasser 100 caractères")]
     public string UserEmail { get; set; } = string.Empty;
 
     /// <summary>Mot de passe OBLIGATOIRE sécurité minimale 6 caractères.</summary>
-    [Required(ErrorMessage = "Le mot de passe est obligatoire")]
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Le mot de passe doit contenir entre 6 et 100 caractères")]
     public string Password { get; set; } = string.Empty;
 

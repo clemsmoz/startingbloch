@@ -4,7 +4,7 @@
  * ================================================================================================
  */
 
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
@@ -31,6 +31,8 @@ interface SearchInputProps {
   allowClear?: boolean;
   size?: 'small' | 'middle' | 'large';
   style?: React.CSSProperties;
+  /** debounce en ms pour déclencher la recherche pendant la frappe */
+  debounceMs?: number;
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
@@ -40,7 +42,26 @@ const SearchInput: React.FC<SearchInputProps> = ({
   allowClear = true,
   size = 'middle',
   style
+  , debounceMs = 300
 }) => {
+  const [value, setValue] = useState('');
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setValue(v);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      onSearch(v);
+    }, debounceMs);
+  };
+
   return (
     <SearchContainer
       initial={{ opacity: 0, scale: 0.95 }}
@@ -51,6 +72,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
         placeholder={placeholder}
         allowClear={allowClear}
         onSearch={onSearch}
+        onChange={handleChange}
+        value={value}
         loading={loading}
         size={size}
         style={style}

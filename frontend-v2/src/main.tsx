@@ -14,32 +14,66 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import frFR from 'antd/locale/fr_FR';
+import enUS from 'antd/locale/en_US';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
+import 'dayjs/locale/en';
 
 import App from './App';
+import './i18n';
 
-// Configuration locale pour dayjs
-dayjs.locale('fr');
+// read saved language or default to fr
+const saved = window.localStorage?.getItem('sb_lang') ?? undefined;
+const initialLang = saved ?? (navigator.language?.startsWith('en') ? 'en' : 'fr');
 
-// Configuration du thème Ant Design
-const antdConfig = {
-  locale: frFR,
-  theme: {
-    token: {
-      colorPrimary: '#1890ff',
-      borderRadius: 8,
-    },
+const antdTheme = {
+  token: {
+    colorPrimary: '#1890ff',
+    borderRadius: 8,
   },
-  componentSize: 'middle' as const,
 };
+
+function RootApp() {
+  const [lang, setLang] = React.useState<string>(initialLang);
+
+  // apply dayjs locale when lang changes
+  React.useEffect(() => {
+    console.log('[RootApp] applying language', lang);
+    dayjs.locale(lang === 'en' ? 'en' : 'fr');
+    document.documentElement.lang = lang;
+    try {
+      window.localStorage.setItem('sb_lang', lang);
+    } catch (e) {
+      console.warn('[RootApp] failed to persist sb_lang to localStorage', e);
+    }
+  }, [lang]);
+
+  // listen for the event dispatched by LanguageSwitcher
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const newLang = (e as CustomEvent).detail as string;
+      console.log('[RootApp] sb-language-changed event received ->', newLang);
+      // show a visible notification so the user sees the event
+      console.log('[RootApp] would show visible notification for language change (removed)');
+      if (newLang && newLang !== lang) setLang(newLang);
+    };
+    window.addEventListener('sb-language-changed', handler as EventListener);
+    return () => window.removeEventListener('sb-language-changed', handler as EventListener);
+  }, [lang]);
+
+  const antdLocale = lang === 'en' ? enUS : frFR;
+
+  return (
+    <BrowserRouter>
+      <ConfigProvider locale={antdLocale} theme={antdTheme} componentSize={'middle'}>
+        <App key={lang} />
+      </ConfigProvider>
+    </BrowserRouter>
+  );
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ConfigProvider {...antdConfig}>
-        <App />
-      </ConfigProvider>
-    </BrowserRouter>
+    <RootApp />
   </React.StrictMode>
 );

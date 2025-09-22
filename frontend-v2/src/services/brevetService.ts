@@ -31,28 +31,28 @@ export const brevetService = {
       console.log('✅ Brevet Service - Réponse reçue:', response.data);
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
-      const transformedData = response.data.Data?.map((brevet: any) => {
+  const transformedData = response.data.Data?.map((brevet: any) => {
         console.log('🔍 Brevet brut depuis API:', brevet); // Debug log
         return {
           id: brevet.Id,
           numeroBrevet: brevet.ReferenceFamille, // Mapping corrigé
           titreBrevet: brevet.Titre, // Mapping corrigé
           descriptionBrevet: brevet.Commentaire, // Mapping corrigé
-          dateDepot: brevet.DateDepot || null,
-          dateDelivrance: brevet.DateDelivrance || null,
-          dateExpiration: brevet.DateExpiration || null,
-          statutBrevet: brevet.StatutBrevet || null,
-          paysBrevet: brevet.PaysBrevet || null,
-          classesBrevet: brevet.ClassesBrevet || null,
+          dateDepot: brevet.DateDepot ?? null,
+          dateDelivrance: brevet.DateDelivrance ?? null,
+          dateExpiration: brevet.DateExpiration ?? null,
+          statutBrevet: brevet.StatutBrevet ?? null,
+          paysBrevet: brevet.PaysBrevet ?? null,
+          classesBrevet: brevet.ClassesBrevet ?? null,
           createdAt: brevet.CreatedAt,
           updatedAt: brevet.UpdatedAt,
-          clientId: brevet.ClientId || null,
-          clients: brevet.Clients || [], // Pluriel selon la structure backend
-          inventeurs: brevet.Inventeurs || [],
-          deposants: brevet.Deposants || [],
-          titulaires: brevet.Titulaires || [],
-          cabinets: brevet.Cabinets || [],
-          informationsDepot: brevet.InformationsDepot || null
+          clientId: brevet.ClientId ?? null,
+          clients: brevet.Clients ?? [], // Pluriel selon la structure backend
+          inventeurs: brevet.Inventeurs ?? [],
+          deposants: brevet.Deposants ?? [],
+          titulaires: brevet.Titulaires ?? [],
+          cabinets: brevet.Cabinets ?? [],
+          informationsDepot: brevet.InformationsDepot ?? null
         };
       }) || [];
       
@@ -104,21 +104,21 @@ export const brevetService = {
           numeroBrevet: brevet.ReferenceFamille,
           titreBrevet: brevet.Titre,
           descriptionBrevet: brevet.Commentaire,
-          dateDepot: brevet.DateDepot || null,
-          dateDelivrance: brevet.DateDelivrance || null,
-          dateExpiration: brevet.DateExpiration || null,
-          statutBrevet: brevet.StatutBrevet || null,
-          paysBrevet: brevet.PaysBrevet || null,
-          classesBrevet: brevet.ClassesBrevet || null,
+          dateDepot: brevet.DateDepot ?? null,
+          dateDelivrance: brevet.DateDelivrance ?? null,
+          dateExpiration: brevet.DateExpiration ?? null,
+          statutBrevet: brevet.StatutBrevet ?? null,
+          paysBrevet: brevet.PaysBrevet ?? null,
+          classesBrevet: brevet.ClassesBrevet ?? null,
           createdAt: brevet.CreatedAt,
           updatedAt: brevet.UpdatedAt,
-          clientId: brevet.ClientId || null,
-          clients: brevet.Clients || [],
-          inventeurs: brevet.Inventeurs || [],
-          deposants: brevet.Deposants || [],
-          titulaires: brevet.Titulaires || [],
-          cabinets: brevet.Cabinets || [],
-          informationsDepot: brevet.InformationsDepot || []
+          clientId: brevet.ClientId ?? null,
+          clients: brevet.Clients ?? [],
+          inventeurs: brevet.Inventeurs ?? [],
+          deposants: brevet.Deposants ?? [],
+          titulaires: brevet.Titulaires ?? [],
+          cabinets: brevet.Cabinets ?? [],
+          informationsDepot: brevet.InformationsDepot ?? []
         };
         
         console.log('🔄 Brevet Service - Brevet transformé:', transformedBrevet);
@@ -145,8 +145,25 @@ export const brevetService = {
 
   // Mettre à jour un brevet
   update: async (id: number, brevet: UpdateBrevetDto): Promise<ApiResponse<Brevet>> => {
-    const response = await api.put(`${config.api.endpoints.brevets}/${id}`, brevet);
-    return response.data;
+    try {
+      console.log('🔁 Brevet Service - update payload:', { id, brevet });
+      const response = await api.put(`${config.api.endpoints.brevets}/${id}`, brevet);
+      console.log('✅ Brevet Service - update response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Brevet Service - update failed for id=', id, 'payload=', brevet, 'error=', error);
+      // Si axios a une réponse, afficher-la en détail pour debug
+      if (error?.response) {
+        console.error('❌ Brevet Service - axios response data:', error.response.data);
+        console.error('❌ Brevet Service - axios response status:', error.response.status);
+        console.error('❌ Brevet Service - axios response headers:', error.response.headers);
+      } else if (error?.request) {
+        console.error('❌ Brevet Service - no response received, request:', error.request);
+      } else {
+        console.error('❌ Brevet Service - error message:', error.message);
+      }
+      throw error;
+    }
   },
 
   // Supprimer un brevet
@@ -176,21 +193,21 @@ export const brevetService = {
         numeroBrevet: brevet.ReferenceFamille,
         titreBrevet: brevet.Titre,
         descriptionBrevet: brevet.Commentaire,
-        dateDepot: brevet.DateDepot || null,
-        dateDelivrance: brevet.DateDelivrance || null,
-        dateExpiration: brevet.DateExpiration || null,
-        statutBrevet: brevet.StatutBrevet || null,
-        paysBrevet: brevet.PaysBrevet || null,
-        classesBrevet: brevet.ClassesBrevet || null,
+        dateDepot: brevet.DateDepot ?? null,
+        dateDelivrance: brevet.DateDelivrance ?? null,
+        dateExpiration: brevet.DateExpiration ?? null,
+        statutBrevet: brevet.StatutBrevet ?? null,
+        paysBrevet: brevet.PaysBrevet ?? null,
+        classesBrevet: brevet.ClassesBrevet ?? null,
         createdAt: brevet.CreatedAt,
         updatedAt: brevet.UpdatedAt,
-        clientId: brevet.ClientId || null,
-        clients: brevet.Clients || [],
-        inventeurs: brevet.Inventeurs || [],
-        deposants: brevet.Deposants || [],
-        titulaires: brevet.Titulaires || [],
-        cabinets: brevet.Cabinets || [],
-        informationsDepot: brevet.InformationsDepot || []
+        clientId: brevet.ClientId ?? null,
+        clients: brevet.Clients ?? [],
+        inventeurs: brevet.Inventeurs ?? [],
+        deposants: brevet.Deposants ?? [],
+        titulaires: brevet.Titulaires ?? [],
+        cabinets: brevet.Cabinets ?? [],
+        informationsDepot: brevet.InformationsDepot ?? []
       }));
 
       return {

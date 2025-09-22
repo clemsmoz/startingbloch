@@ -49,7 +49,7 @@ export const titulaireService = {
         telephoneTitulaire: titulaire.TelephoneTitulaire,
         createdAt: titulaire.CreatedAt ?? '',
         updatedAt: titulaire.UpdatedAt ?? ''
-      })) || [];
+  })) ?? [];
       
       console.log('🔄 Titulaire Service - Données transformées:', transformedData);
       
@@ -70,7 +70,7 @@ export const titulaireService = {
       return {
         data: [],
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la récupération des titulaires',
+  message: error.response?.data?.message ?? 'Erreur lors de la récupération des titulaires',
         errors: error.response?.data?.errors,
         page: 1,
         pageSize: 10,
@@ -87,7 +87,7 @@ export const titulaireService = {
     try {
   const response = await api.get(`${config.api.endpoints.titulaires}/${id}`);
       return {
-        data: response.data.data || response.data,
+  data: response.data.data ?? response.data,
         success: true,
         message: 'Titulaire récupéré avec succès'
       };
@@ -95,7 +95,7 @@ export const titulaireService = {
       return {
         data: {} as Titulaire,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la récupération du titulaire',
+  message: error.response?.data?.message ?? 'Erreur lors de la récupération du titulaire',
         errors: error.response?.data?.errors
       };
     }
@@ -118,7 +118,7 @@ export const titulaireService = {
       return {
         data: {} as Titulaire,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la création du titulaire',
+  message: error.response?.data?.message ?? 'Erreur lors de la création du titulaire',
         errors: error.response?.data?.errors
       };
     }
@@ -132,7 +132,7 @@ export const titulaireService = {
         email: titulaireData.emailTitulaire,
       });
       return {
-        data: response.data.data || response.data,
+  data: response.data.data ?? response.data,
         success: true,
         message: 'Titulaire mis à jour avec succès'
       };
@@ -140,7 +140,7 @@ export const titulaireService = {
       return {
         data: {} as Titulaire,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la mise à jour du titulaire',
+  message: error.response?.data?.message ?? 'Erreur lors de la mise à jour du titulaire',
         errors: error.response?.data?.errors
       };
     }
@@ -159,7 +159,7 @@ export const titulaireService = {
       return {
         data: undefined,
         success: false,
-        message: error.response?.data?.message || 'Erreur lors de la suppression du titulaire',
+  message: error.response?.data?.message ?? 'Erreur lors de la suppression du titulaire',
         errors: error.response?.data?.errors
       };
     }

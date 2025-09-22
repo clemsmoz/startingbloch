@@ -170,7 +170,6 @@ public class CreateBrevetDto
     /// Titre du brevet OBLIGATOIRE - essence identification invention.
     /// Validation stricte longueur pour compatibilité systèmes juridiques.
     /// </summary>
-    [Required(ErrorMessage = "Le titre est obligatoire")]
     [StringLength(500, ErrorMessage = "Le titre ne peut pas dépasser 500 caractères")]
     public string Titre { get; set; } = string.Empty;
 
@@ -335,4 +334,20 @@ public class UpdateBrevetDto
     /// Mise à jour statuts juridictions ou nouveaux dépôts.
     /// </summary>
     public List<CreateInformationDepotDto>? InformationsDepot { get; set; }
+
+    /// <summary>
+    /// Liaisons pays par inventeur lors d'une mise à jour (optionnel).
+    /// Null = ne rien faire, Liste = remplacer les pays pour chaque inventeur fourni.
+    /// </summary>
+    public List<InventeurPaysLinkInputDto>? InventeursPays { get; set; }
+
+    /// <summary>
+    /// Liaisons pays par déposant lors d'une mise à jour (optionnel).
+    /// </summary>
+    public List<DeposantPaysLinkInputDto>? DeposantsPays { get; set; }
+
+    /// <summary>
+    /// Liaisons pays par titulaire lors d'une mise à jour (optionnel).
+    /// </summary>
+    public List<TitulairePaysLinkInputDto>? TitulairesPays { get; set; }
 }

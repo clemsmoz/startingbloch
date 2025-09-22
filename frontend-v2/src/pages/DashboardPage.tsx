@@ -9,7 +9,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Statistic, Typography, Space } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   UserOutlined,
   FileProtectOutlined,
@@ -45,7 +47,17 @@ const StatsCard = styled(Card)`
   }
 `;
 
+const ClickableCard = styled(StatsCard)`
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+`;
+
 const DashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     clients: 0,
@@ -53,6 +65,7 @@ const DashboardPage: React.FC = () => {
     contacts: 0,
     cabinets: 0
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadStats();
@@ -61,8 +74,8 @@ const DashboardPage: React.FC = () => {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const storedUser = sessionStorage.getItem('startingbloch_user');
-      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+  const storedUser = sessionStorage.getItem('startingbloch_user');
+  const role = storedUser ? ((JSON.parse(storedUser).role ?? '') as string).toLowerCase() : '';
       const [clientsResponse, brevetsResponse, contactsResponse, cabinetsResponse] = await Promise.all([
         clientService.getAll(),
         brevetService.getAll(),
@@ -74,10 +87,10 @@ const DashboardPage: React.FC = () => {
       ]);
 
       setStats({
-        clients: clientsResponse.success ? (clientsResponse.data?.length || 0) : 0,
-        brevets: brevetsResponse.success ? (brevetsResponse.data?.length || 0) : 0,
-        contacts: contactsResponse.success ? (contactsResponse.data?.length || 0) : 0,
-  cabinets: cabinetsResponse.success ? (cabinetsResponse.data?.length || 0) : 0
+    clients: clientsResponse.success ? (clientsResponse.data?.length ?? 0) : 0,
+    brevets: brevetsResponse.success ? (brevetsResponse.data?.length ?? 0) : 0,
+    contacts: contactsResponse.success ? (contactsResponse.data?.length ?? 0) : 0,
+  cabinets: cabinetsResponse.success ? (cabinetsResponse.data?.length ?? 0) : 0
       });
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
@@ -95,40 +108,40 @@ const DashboardPage: React.FC = () => {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
             <Title level={2} style={{ marginBottom: 8 }}>
-              Dashboard
+              {t('dashboard.title')}
             </Title>
             <Typography.Text type="secondary">
-              Aperçu de vos données et statistiques
+              {t('dashboard.subtitle')}
             </Typography.Text>
           </div>
 
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={6}>
-              <StatsCard>
-                <Statistic
-                  title="Total Clients"
+              <ClickableCard onClick={() => navigate('/clients')}>
+          <Statistic
+            title={t('dashboard.stats.clients')}
                   value={stats.clients}
                   prefix={<TeamOutlined />}
                   valueStyle={{ color: '#1890ff' }}
                   loading={loading}
                 />
-              </StatsCard>
+              </ClickableCard>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <StatsCard>
+              <ClickableCard onClick={() => navigate('/brevets')}>
                 <Statistic
-                  title="Brevets"
+                  title={t('dashboard.stats.brevets')}
                   value={stats.brevets}
                   prefix={<FileProtectOutlined />}
                   valueStyle={{ color: '#52c41a' }}
                   loading={loading}
                 />
-              </StatsCard>
+              </ClickableCard>
             </Col>
             <Col xs={24} sm={12} md={6}>
               <StatsCard>
                 <Statistic
-                  title="Contacts"
+                  title={t('dashboard.stats.contacts')}
                   value={stats.contacts}
                   prefix={<UserOutlined />}
                   valueStyle={{ color: '#faad14' }}
@@ -137,21 +150,21 @@ const DashboardPage: React.FC = () => {
               </StatsCard>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <StatsCard>
+              <ClickableCard onClick={() => navigate('/cabinets')}>
                 <Statistic
-                  title="Cabinets"
+                  title={t('dashboard.stats.cabinets')}
                   value={stats.cabinets}
                   prefix={<BankOutlined />}
                   valueStyle={{ color: '#f5222d' }}
                   loading={loading}
                 />
-              </StatsCard>
+              </ClickableCard>
             </Col>
           </Row>
 
-          <Card title="Activité récente" style={{ marginTop: 24 }}>
+          <Card title={t('dashboard.recent.title')} style={{ marginTop: 24 }}>
             <Typography.Text type="secondary">
-              Aucune activité récente à afficher.
+              {t('dashboard.recent.empty')}
             </Typography.Text>
           </Card>
         </Space>

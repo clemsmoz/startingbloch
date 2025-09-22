@@ -127,7 +127,6 @@ public class CreateCabinetDto
     /// Nom cabinet OBLIGATOIRE - dénomination légale mandataire.
     /// Validation stricte longueur pour compatibilité bases données.
     /// </summary>
-    [Required(ErrorMessage = "Le nom du cabinet est requis")]
     [StringLength(255, ErrorMessage = "Le nom du cabinet ne peut pas dépasser 255 caractères")]
     public string NomCabinet { get; set; } = string.Empty;
 
@@ -135,7 +134,6 @@ public class CreateCabinetDto
     /// Adresse cabinet OBLIGATOIRE - siège social correspondances.
     /// Validation longueur pour adresses internationales complexes.
     /// </summary>
-    [Required(ErrorMessage = "L'adresse est requise")]
     [StringLength(500, ErrorMessage = "L'adresse ne peut pas dépasser 500 caractères")]
     public string AdresseCabinet { get; set; } = string.Empty;
 
@@ -150,7 +148,6 @@ public class CreateCabinetDto
     /// Pays cabinet OBLIGATOIRE - juridiction et réglementation.
     /// Détermine compétences légales et zones intervention autorisées.
     /// </summary>
-    [Required(ErrorMessage = "Le pays est requis")]
     [StringLength(100, ErrorMessage = "Le pays ne peut pas dépasser 100 caractères")]
     public string PaysCabinet { get; set; } = string.Empty;
 
@@ -173,7 +170,6 @@ public class CreateCabinetDto
     /// Type de spécialisation du cabinet : Annuité ou Procédure.
     /// Détermine le domaine d'expertise principal du cabinet.
     /// </summary>
-    [Required(ErrorMessage = "Le type de cabinet est requis")]
     public CabinetType Type { get; set; }
 }
 
@@ -188,7 +184,6 @@ public class UpdateCabinetDto
     /// Nom cabinet OBLIGATOIRE maintenu en modification.
     /// Dénomination légale ne peut être vide pour cohérence partenariat.
     /// </summary>
-    [Required(ErrorMessage = "Le nom du cabinet est requis")]
     [StringLength(255, ErrorMessage = "Le nom du cabinet ne peut pas dépasser 255 caractères")]
     public string NomCabinet { get; set; } = string.Empty;
 
@@ -196,7 +191,6 @@ public class UpdateCabinetDto
     /// Adresse cabinet OBLIGATOIRE maintenue en modification.
     /// Siège social requis pour correspondances officielles continues.
     /// </summary>
-    [Required(ErrorMessage = "L'adresse est requise")]
     [StringLength(500, ErrorMessage = "L'adresse ne peut pas dépasser 500 caractères")]
     public string AdresseCabinet { get; set; } = string.Empty;
 
@@ -211,7 +205,6 @@ public class UpdateCabinetDto
     /// Pays cabinet OBLIGATOIRE maintenu en modification.
     /// Juridiction compétence ne peut être indéterminée.
     /// </summary>
-    [Required(ErrorMessage = "Le pays est requis")]
     [StringLength(100, ErrorMessage = "Le pays ne peut pas dépasser 100 caractères")]
     public string PaysCabinet { get; set; } = string.Empty;
 
@@ -234,6 +227,5 @@ public class UpdateCabinetDto
     /// Type de spécialisation du cabinet : Annuité ou Procédure.
     /// Peut être modifié selon évolution des compétences du cabinet.
     /// </summary>
-    [Required(ErrorMessage = "Le type de cabinet est requis")]
     public CabinetType Type { get; set; }
 }

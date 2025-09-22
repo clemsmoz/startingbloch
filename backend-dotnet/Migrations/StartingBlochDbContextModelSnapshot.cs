@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StartingBloch.Backend.Data;
 
 #nullable disable
@@ -15,369 +16,430 @@ namespace StartingBloch.Backend.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "8.0.4")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Brevet", b =>
                 {
                     b.Property<int>("IdBrevet")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdBrevet"));
+
                     b.Property<string>("Commentaire")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("commentaire");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("ReferenceFamille")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("reference_famille");
 
                     b.Property<string>("Titre")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("titre");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("IdBrevet");
+                    b.HasKey("IdBrevet")
+                        .HasName("pk_brevets");
 
                     b.HasIndex("ReferenceFamille")
                         .HasDatabaseName("IX_Brevets_ReferenceFamille");
 
-                    b.ToTable("Brevets");
+                    b.ToTable("brevets", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.BrevetCabinet", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdCabinet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_cabinet");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_brevetcabinets");
 
-                    b.HasIndex("IdBrevet");
+                    b.HasIndex("IdBrevet")
+                        .HasDatabaseName("ix_brevetcabinets_id_brevet");
 
-                    b.HasIndex("IdCabinet");
+                    b.HasIndex("IdCabinet")
+                        .HasDatabaseName("ix_brevetcabinets_id_cabinet");
 
-                    b.ToTable("BrevetCabinets");
+                    b.ToTable("brevetcabinets", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.BrevetClient", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdClient")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_client");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_brevetclients");
 
-                    b.HasIndex("IdClient");
+                    b.HasIndex("IdClient")
+                        .HasDatabaseName("ix_brevetclients_id_client");
 
                     b.HasIndex("IdBrevet", "IdClient")
                         .IsUnique()
                         .HasDatabaseName("IX_BrevetClients_Unique");
 
-                    b.ToTable("BrevetClients");
+                    b.ToTable("brevetclients", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.BrevetDeposant", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdDeposant")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_deposant");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_brevetdeposants");
 
-                    b.HasIndex("IdDeposant");
+                    b.HasIndex("IdDeposant")
+                        .HasDatabaseName("ix_brevetdeposants_id_deposant");
 
                     b.HasIndex("IdBrevet", "IdDeposant")
                         .IsUnique()
                         .HasDatabaseName("IX_BrevetDeposants_Unique");
 
-                    b.ToTable("BrevetDeposants");
+                    b.ToTable("brevetdeposants", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.BrevetInventeur", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdInventeur")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_inventeur");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_brevetinventeurs");
 
-                    b.HasIndex("IdInventeur");
+                    b.HasIndex("IdInventeur")
+                        .HasDatabaseName("ix_brevetinventeurs_id_inventeur");
 
                     b.HasIndex("IdBrevet", "IdInventeur")
                         .IsUnique()
                         .HasDatabaseName("IX_BrevetInventeurs_Unique");
 
-                    b.ToTable("BrevetInventeurs");
+                    b.ToTable("brevetinventeurs", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.BrevetTitulaire", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdTitulaire")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_titulaire");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_brevettitulaires");
 
-                    b.HasIndex("IdTitulaire");
+                    b.HasIndex("IdTitulaire")
+                        .HasDatabaseName("ix_brevettitulaires_id_titulaire");
 
                     b.HasIndex("IdBrevet", "IdTitulaire")
                         .IsUnique()
                         .HasDatabaseName("IX_BrevetTitulaires_Unique");
 
-                    b.ToTable("BrevetTitulaires");
+                    b.ToTable("brevettitulaires", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Cabinet", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AdresseCabinet")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("adresse_cabinet");
 
                     b.Property<string>("CodePostal")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("code_postal");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("EmailCabinet")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("email_cabinet");
 
                     b.Property<string>("NomCabinet")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("nom_cabinet");
 
                     b.Property<string>("PaysCabinet")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("pays_cabinet");
 
                     b.Property<string>("TelephoneCabinet")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("telephone_cabinet");
 
                     b.Property<int>("Type")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("type");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_cabinets");
 
-                    b.ToTable("Cabinets");
+                    b.ToTable("cabinets", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Client", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AdresseClient")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("adresse_client");
 
-                    b.Property<bool>("CanRead")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("CanRead")
+                        .HasColumnType("integer")
                         .HasColumnName("can_read");
 
-                    b.Property<bool>("CanWrite")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("CanWrite")
+                        .HasColumnType("integer")
                         .HasColumnName("can_write");
 
                     b.Property<string>("CodePostal")
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("code_postal");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("EmailClient")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("email_client");
 
-                    b.Property<bool>("IsBlocked")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("IsBlocked")
+                        .HasColumnType("integer")
                         .HasColumnName("is_blocked");
 
                     b.Property<string>("NomClient")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("nom_client");
 
                     b.Property<string>("PaysClient")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("pays_client");
 
                     b.Property<string>("ReferenceClient")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("reference_client");
 
                     b.Property<string>("TelephoneClient")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("telephone_client");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_clients");
 
                     b.HasIndex("NomClient")
                         .HasDatabaseName("IX_Clients_NomClient");
 
-                    b.ToTable("Clients");
+                    b.ToTable("clients", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.ClientCabinet", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CabinetId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("cabinetid");
 
                     b.Property<int>("ClientId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("clientid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("IsActive")
+                        .HasColumnType("integer")
+                        .HasColumnName("isactive");
 
                     b.Property<string>("Type")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("type");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_clientcabinets");
 
-                    b.HasIndex("CabinetId");
+                    b.HasIndex("CabinetId")
+                        .HasDatabaseName("ix_clientcabinets_cabinetid");
 
                     b.HasIndex("ClientId", "CabinetId")
                         .IsUnique()
                         .HasDatabaseName("IX_ClientCabinets_Unique");
 
-                    b.ToTable("ClientCabinets");
+                    b.ToTable("clientcabinets", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Contact", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Email")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("email");
 
                     b.Property<string>("EmailsJson")
@@ -386,16 +448,16 @@ namespace StartingBloch.Backend.Migrations
                         .HasColumnName("emails_json");
 
                     b.Property<int?>("IdCabinet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_cabinet");
 
                     b.Property<int?>("IdClient")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_client");
 
                     b.Property<string>("Nom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("nom");
 
                     b.Property<string>("PhonesJson")
@@ -405,12 +467,12 @@ namespace StartingBloch.Backend.Migrations
 
                     b.Property<string>("Prenom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("prenom");
 
                     b.Property<string>("Role")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("role");
 
                     b.Property<string>("RolesJson")
@@ -420,710 +482,807 @@ namespace StartingBloch.Backend.Migrations
 
                     b.Property<string>("Telephone")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("telephone");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_contacts");
 
-                    b.HasIndex("IdCabinet");
+                    b.HasIndex("IdCabinet")
+                        .HasDatabaseName("ix_contacts_id_cabinet");
 
-                    b.HasIndex("IdClient");
+                    b.HasIndex("IdClient")
+                        .HasDatabaseName("ix_contacts_id_client");
 
-                    b.ToTable("Contacts");
+                    b.ToTable("contacts", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Deposant", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Adresse")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("adresse");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Email")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("email");
 
                     b.Property<string>("Nom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("nom");
 
                     b.Property<string>("Prenom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("prenom");
 
                     b.Property<string>("Telephone")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("telephone");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_deposants");
 
-                    b.ToTable("Deposants");
+                    b.ToTable("deposants", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.DeposantPays", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int?>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdDeposant")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_deposant");
 
                     b.Property<int>("IdPays")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_pays");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_deposantpays");
 
-                    b.HasIndex("IdBrevet");
+                    b.HasIndex("IdBrevet")
+                        .HasDatabaseName("ix_deposantpays_id_brevet");
 
-                    b.HasIndex("IdDeposant");
+                    b.HasIndex("IdDeposant")
+                        .HasDatabaseName("ix_deposantpays_id_deposant");
 
-                    b.HasIndex("IdPays");
+                    b.HasIndex("IdPays")
+                        .HasDatabaseName("ix_deposantpays_id_pays");
 
-                    b.ToTable("DeposantPays");
+                    b.ToTable("deposantpays", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepot", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Commentaire")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("commentaire");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
-                    b.Property<DateTime?>("DateDelivrance")
-                        .HasColumnType("TEXT")
+                    b.Property<string>("DateDelivrance")
+                        .HasColumnType("text")
                         .HasColumnName("date_delivrance");
 
-                    b.Property<DateTime?>("DateDepot")
-                        .HasColumnType("TEXT")
+                    b.Property<string>("DateDepot")
+                        .HasColumnType("text")
                         .HasColumnName("date_depot");
 
-                    b.Property<DateTime?>("DatePublication")
-                        .HasColumnType("TEXT")
+                    b.Property<string>("DatePublication")
+                        .HasColumnType("text")
                         .HasColumnName("date_publication");
 
                     b.Property<int>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int?>("IdPays")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_pays");
 
                     b.Property<int?>("IdStatuts")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_statuts");
 
-                    b.Property<bool>("Licence")
+                    b.Property<int>("Licence")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false)
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
                         .HasColumnName("licence");
 
                     b.Property<string>("NumeroDelivrance")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("numero_delivrance");
 
                     b.Property<string>("NumeroDepot")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("numero_depot");
 
                     b.Property<string>("NumeroPublication")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("numero_publication");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_informationsdepot");
 
-                    b.HasIndex("IdBrevet");
+                    b.HasIndex("IdBrevet")
+                        .HasDatabaseName("ix_informationsdepot_id_brevet");
 
-                    b.HasIndex("IdPays");
+                    b.HasIndex("IdPays")
+                        .HasDatabaseName("ix_informationsdepot_id_pays");
 
-                    b.HasIndex("IdStatuts");
+                    b.HasIndex("IdStatuts")
+                        .HasDatabaseName("ix_informationsdepot_id_statuts");
 
-                    b.ToTable("InformationsDepot");
+                    b.ToTable("informationsdepot", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinet", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<int>("CabinetId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("cabinet_id");
 
                     b.Property<int>("Category")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("category");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("InformationDepotId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("information_depot_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_informationdepotcabinets");
 
-                    b.HasIndex("CabinetId");
+                    b.HasIndex("CabinetId")
+                        .HasDatabaseName("ix_informationdepotcabinets_cabinet_id");
 
                     b.HasIndex("InformationDepotId", "CabinetId", "Category")
                         .IsUnique()
                         .HasDatabaseName("IX_InfoDepotCab_Unique");
 
-                    b.ToTable("InformationDepotCabinets");
+                    b.ToTable("informationdepotcabinets", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinetContact", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<int>("ContactId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("contact_id");
 
                     b.Property<int>("InformationDepotCabinetId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("information_depot_cabinet_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_informationdepotcabinetcontacts");
 
-                    b.HasIndex("ContactId");
+                    b.HasIndex("ContactId")
+                        .HasDatabaseName("ix_informationdepotcabinetcontacts_contact_id");
 
                     b.HasIndex("InformationDepotCabinetId", "ContactId")
                         .IsUnique()
                         .HasDatabaseName("IX_InfoDepotCabContact_Unique");
 
-                    b.ToTable("InformationDepotCabinetContacts");
+                    b.ToTable("informationdepotcabinetcontacts", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.InformationDepotCabinetRole", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
                     b.Property<int>("InformationDepotCabinetId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("information_depot_cabinet_id");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("role");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_informationdepotcabinetroles");
 
                     b.HasIndex("InformationDepotCabinetId", "Role")
                         .IsUnique()
                         .HasDatabaseName("IX_InfoDepotCabRole_Unique");
 
-                    b.ToTable("InformationDepotCabinetRoles");
+                    b.ToTable("informationdepotcabinetroles", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Inventeur", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Adresse")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("adresse");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Email")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("email");
 
                     b.Property<string>("Nom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("nom");
 
                     b.Property<string>("Prenom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("prenom");
 
                     b.Property<string>("Telephone")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("telephone");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_inventeurs");
 
-                    b.ToTable("Inventeurs");
+                    b.ToTable("inventeurs", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.InventeurPays", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int?>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdInventeur")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_inventeur");
 
                     b.Property<int>("IdPays")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_pays");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_inventeurpays");
 
-                    b.HasIndex("IdBrevet");
+                    b.HasIndex("IdBrevet")
+                        .HasDatabaseName("ix_inventeurpays_id_brevet");
 
-                    b.HasIndex("IdInventeur");
+                    b.HasIndex("IdInventeur")
+                        .HasDatabaseName("ix_inventeurpays_id_inventeur");
 
-                    b.HasIndex("IdPays");
+                    b.HasIndex("IdPays")
+                        .HasDatabaseName("ix_inventeurpays_id_pays");
 
-                    b.ToTable("InventeurPays");
+                    b.ToTable("inventeurpays", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Log", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Action")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("action");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Details")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("details");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(45)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
 
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("level");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("message");
 
                     b.Property<string>("NewValues")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("new_values");
 
                     b.Property<string>("OldValues")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("old_values");
 
                     b.Property<int?>("RecordId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("record_id");
 
                     b.Property<string>("TableName")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("table_name");
 
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT")
+                    b.Property<string>("Timestamp")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("timestamp");
 
                     b.Property<string>("UserAgent")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("user_agent");
 
                     b.Property<string>("UserId")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
-                        .HasColumnName("userId");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("userid");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_logs");
 
-                    b.ToTable("Logs");
+                    b.ToTable("logs", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.NumeroPays", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("description");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER")
+                    b.Property<int>("IsActive")
+                        .HasColumnType("integer")
                         .HasColumnName("is_active");
 
                     b.Property<string>("Numero")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("numero");
 
                     b.Property<string>("PaysCode")
                         .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("pays_code");
 
                     b.Property<int?>("PaysId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("paysid");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_numeropays");
 
-                    b.HasIndex("PaysId");
+                    b.HasIndex("PaysId")
+                        .HasDatabaseName("ix_numeropays_paysid");
 
-                    b.ToTable("NumeroPays");
+                    b.ToTable("numeropays", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Pays", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CodeIso")
                         .HasMaxLength(10)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("code_iso");
 
                     b.Property<string>("CodeIso3")
                         .HasMaxLength(10)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(10)")
                         .HasColumnName("code_iso3");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("NomFrFr")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("nom_fr_fr");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_pays");
 
-                    b.ToTable("Pays");
+                    b.ToTable("pays", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Role", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Description")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("description");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_roles");
 
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("IX_Roles_Name");
 
-                    b.ToTable("Roles");
+                    b.ToTable("roles", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Statuts", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("description");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_statuts");
 
-                    b.ToTable("Statuts");
+                    b.ToTable("statuts", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.Titulaire", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Adresse")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("adresse");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Email")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("email");
 
                     b.Property<string>("Nom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("nom");
 
                     b.Property<string>("Prenom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("prenom");
 
                     b.Property<string>("Telephone")
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("telephone");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_titulaires");
 
-                    b.ToTable("Titulaires");
+                    b.ToTable("titulaires", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.TitulairePays", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int?>("IdBrevet")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_brevet");
 
                     b.Property<int>("IdPays")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_pays");
 
                     b.Property<int>("IdTitulaire")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id_titulaire");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_titulairepays");
 
-                    b.HasIndex("IdBrevet");
+                    b.HasIndex("IdBrevet")
+                        .HasDatabaseName("ix_titulairepays_id_brevet");
 
-                    b.HasIndex("IdPays");
+                    b.HasIndex("IdPays")
+                        .HasDatabaseName("ix_titulairepays_id_pays");
 
-                    b.HasIndex("IdTitulaire");
+                    b.HasIndex("IdTitulaire")
+                        .HasDatabaseName("ix_titulairepays_id_titulaire");
 
-                    b.ToTable("TitulairePays");
+                    b.ToTable("titulairepays", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<bool>("CanRead")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("canRead");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("CanWrite")
+                    b.Property<int>("CanRead")
+                        .HasColumnType("integer")
+                        .HasColumnName("canread");
+
+                    b.Property<int>("CanWrite")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false)
-                        .HasColumnName("canWrite");
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("canwrite");
 
                     b.Property<int?>("ClientId")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("clientId");
+                        .HasColumnType("integer")
+                        .HasColumnName("clientid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("createdAt");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("email");
 
-                    b.Property<bool>("IsActive")
+                    b.Property<int>("IsActive")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true)
-                        .HasColumnName("isActive");
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("isactive");
 
-                    b.Property<bool>("IsBlocked")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("isBlocked");
+                    b.Property<int>("IsBlocked")
+                        .HasColumnType("integer")
+                        .HasColumnName("isblocked");
 
-                    b.Property<DateTime?>("LastLogin")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("lastLogin");
+                    b.Property<string>("LastLogin")
+                        .HasColumnType("text")
+                        .HasColumnName("lastlogin");
 
                     b.Property<string>("Nom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("nom");
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("TEXT")
+                        .HasColumnType("text")
                         .HasColumnName("password");
 
                     b.Property<string>("Prenom")
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("prenom");
 
                     b.Property<string>("Role")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(50)")
                         .HasDefaultValue("user")
                         .HasColumnName("role");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("updatedAt");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("username");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_users");
 
                     b.HasIndex("ClientId")
                         .HasDatabaseName("IX_Users_ClientId");
@@ -1136,41 +1295,54 @@ namespace StartingBloch.Backend.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Users_Username");
 
-                    b.ToTable("Users");
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.UserRole", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("ClientId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("clientid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("createdat");
 
                     b.Property<int>("RoleId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("roleid");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("updatedat");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer")
+                        .HasColumnName("userid");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_userroles");
 
-                    b.HasIndex("ClientId");
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_userroles_clientid");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_userroles_roleid");
 
                     b.HasIndex("UserId", "RoleId", "ClientId")
                         .IsUnique()
                         .HasDatabaseName("IX_UserRoles_Unique");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("userroles", (string)null);
                 });
 
             modelBuilder.Entity("StartingBloch.Backend.Models.BrevetCabinet", b =>
@@ -1179,13 +1351,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("BrevetCabinets")
                         .HasForeignKey("IdBrevet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetcabinets_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Cabinet", "Cabinet")
                         .WithMany("BrevetCabinets")
                         .HasForeignKey("IdCabinet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetcabinets_cabinets_id_cabinet");
 
                     b.Navigation("Brevet");
 
@@ -1198,13 +1372,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("BrevetClients")
                         .HasForeignKey("IdBrevet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetclients_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Client", "Client")
                         .WithMany("BrevetClients")
                         .HasForeignKey("IdClient")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetclients_clients_id_client");
 
                     b.Navigation("Brevet");
 
@@ -1217,13 +1393,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("BrevetDeposants")
                         .HasForeignKey("IdBrevet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetdeposants_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Deposant", "Deposant")
                         .WithMany("BrevetDeposants")
                         .HasForeignKey("IdDeposant")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetdeposants_deposants_id_deposant");
 
                     b.Navigation("Brevet");
 
@@ -1236,13 +1414,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("BrevetInventeurs")
                         .HasForeignKey("IdBrevet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetinventeurs_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Inventeur", "Inventeur")
                         .WithMany("BrevetInventeurs")
                         .HasForeignKey("IdInventeur")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevetinventeurs_inventeurs_id_inventeur");
 
                     b.Navigation("Brevet");
 
@@ -1255,13 +1435,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("BrevetTitulaires")
                         .HasForeignKey("IdBrevet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevettitulaires_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Titulaire", "Titulaire")
                         .WithMany("BrevetTitulaires")
                         .HasForeignKey("IdTitulaire")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_brevettitulaires_titulaires_id_titulaire");
 
                     b.Navigation("Brevet");
 
@@ -1274,13 +1456,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("ClientCabinets")
                         .HasForeignKey("CabinetId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_clientcabinets_cabinets_cabinetid");
 
                     b.HasOne("StartingBloch.Backend.Models.Client", "Client")
                         .WithMany("ClientCabinets")
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_clientcabinets_clients_clientid");
 
                     b.Navigation("Cabinet");
 
@@ -1292,12 +1476,14 @@ namespace StartingBloch.Backend.Migrations
                     b.HasOne("StartingBloch.Backend.Models.Cabinet", "Cabinet")
                         .WithMany("Contacts")
                         .HasForeignKey("IdCabinet")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_contacts_cabinets_id_cabinet");
 
                     b.HasOne("StartingBloch.Backend.Models.Client", "Client")
                         .WithMany("Contacts")
                         .HasForeignKey("IdClient")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_contacts_clients_id_client");
 
                     b.Navigation("Cabinet");
 
@@ -1309,19 +1495,22 @@ namespace StartingBloch.Backend.Migrations
                     b.HasOne("StartingBloch.Backend.Models.Brevet", "Brevet")
                         .WithMany()
                         .HasForeignKey("IdBrevet")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_deposantpays_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Deposant", "Deposant")
                         .WithMany("DeposantPays")
                         .HasForeignKey("IdDeposant")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_deposantpays_deposants_id_deposant");
 
                     b.HasOne("StartingBloch.Backend.Models.Pays", "Pays")
                         .WithMany("DeposantPays")
                         .HasForeignKey("IdPays")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_deposantpays_pays_id_pays");
 
                     b.Navigation("Brevet");
 
@@ -1336,15 +1525,18 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("InformationsDepot")
                         .HasForeignKey("IdBrevet")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_informationsdepot_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Pays", "Pays")
                         .WithMany("InformationsDepot")
-                        .HasForeignKey("IdPays");
+                        .HasForeignKey("IdPays")
+                        .HasConstraintName("fk_informationsdepot_pays_id_pays");
 
                     b.HasOne("StartingBloch.Backend.Models.Statuts", "Statuts")
                         .WithMany("InformationsDepot")
-                        .HasForeignKey("IdStatuts");
+                        .HasForeignKey("IdStatuts")
+                        .HasConstraintName("fk_informationsdepot_statuts_id_statuts");
 
                     b.Navigation("Brevet");
 
@@ -1359,13 +1551,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany()
                         .HasForeignKey("CabinetId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_informationdepotcabinets_cabinets_cabinet_id");
 
                     b.HasOne("StartingBloch.Backend.Models.InformationDepot", "InformationDepot")
                         .WithMany("InformationDepotCabinets")
                         .HasForeignKey("InformationDepotId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_informationdepotcabinets_informationsdepot_information_depo~");
 
                     b.Navigation("Cabinet");
 
@@ -1378,13 +1572,15 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany()
                         .HasForeignKey("ContactId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_informationdepotcabinetcontacts_contacts_contact_id");
 
                     b.HasOne("StartingBloch.Backend.Models.InformationDepotCabinet", "InformationDepotCabinet")
                         .WithMany("Contacts")
                         .HasForeignKey("InformationDepotCabinetId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_informationdepotcabinetcontacts_informationdepotcabinets_in~");
 
                     b.Navigation("Contact");
 
@@ -1397,7 +1593,8 @@ namespace StartingBloch.Backend.Migrations
                         .WithMany("Roles")
                         .HasForeignKey("InformationDepotCabinetId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_informationdepotcabinetroles_informationdepotcabinets_infor~");
 
                     b.Navigation("InformationDepotCabinet");
                 });
@@ -1407,19 +1604,22 @@ namespace StartingBloch.Backend.Migrations
                     b.HasOne("StartingBloch.Backend.Models.Brevet", "Brevet")
                         .WithMany()
                         .HasForeignKey("IdBrevet")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_inventeurpays_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Inventeur", "Inventeur")
                         .WithMany("InventeurPays")
                         .HasForeignKey("IdInventeur")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_inventeurpays_inventeurs_id_inventeur");
 
                     b.HasOne("StartingBloch.Backend.Models.Pays", "Pays")
                         .WithMany("InventeurPays")
                         .HasForeignKey("IdPays")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_inventeurpays_pays_id_pays");
 
                     b.Navigation("Brevet");
 
@@ -1432,7 +1632,8 @@ namespace StartingBloch.Backend.Migrations
                 {
                     b.HasOne("StartingBloch.Backend.Models.Pays", "Pays")
                         .WithMany()
-                        .HasForeignKey("PaysId");
+                        .HasForeignKey("PaysId")
+                        .HasConstraintName("fk_numeropays_pays_paysid");
 
                     b.Navigation("Pays");
                 });
@@ -1442,19 +1643,22 @@ namespace StartingBloch.Backend.Migrations
                     b.HasOne("StartingBloch.Backend.Models.Brevet", "Brevet")
                         .WithMany()
                         .HasForeignKey("IdBrevet")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_titulairepays_brevets_id_brevet");
 
                     b.HasOne("StartingBloch.Backend.Models.Pays", "Pays")
                         .WithMany("TitulairePays")
                         .HasForeignKey("IdPays")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_titulairepays_pays_id_pays");
 
                     b.HasOne("StartingBloch.Backend.Models.Titulaire", "Titulaire")
                         .WithMany("TitulairePays")
                         .HasForeignKey("IdTitulaire")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_titulairepays_titulaires_id_titulaire");
 
                     b.Navigation("Brevet");
 
@@ -1468,7 +1672,8 @@ namespace StartingBloch.Backend.Migrations
                     b.HasOne("StartingBloch.Backend.Models.Client", "Client")
                         .WithMany("Users")
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_users_clients_clientid");
 
                     b.Navigation("Client");
                 });
@@ -1478,19 +1683,22 @@ namespace StartingBloch.Backend.Migrations
                     b.HasOne("StartingBloch.Backend.Models.Client", "Client")
                         .WithMany()
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_userroles_clients_clientid");
 
                     b.HasOne("StartingBloch.Backend.Models.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_userroles_roles_roleid");
 
                     b.HasOne("StartingBloch.Backend.Models.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_userroles_users_userid");
 
                     b.Navigation("Client");
 

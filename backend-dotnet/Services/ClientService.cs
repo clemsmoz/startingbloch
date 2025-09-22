@@ -45,6 +45,8 @@
  */
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using StartingBloch.Backend.Data;
 using StartingBloch.Backend.DTOs;
 using StartingBloch.Backend.Models;
@@ -58,15 +60,19 @@ namespace StartingBloch.Backend.Services;
 public class ClientService : IClientService
 {
     private readonly StartingBlochDbContext _context;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<ClientService> _logger;
 
     /// <summary>
     /// Initialise service clients avec contexte données.
-    /// Configuration accès base données optimisée requêtes relations.
+    /// Configuration accès base de données optimisée requêtes relations.
     /// </summary>
     /// <param name="context">Contexte base données Entity Framework</param>
-    public ClientService(StartingBlochDbContext context)
+    public ClientService(StartingBlochDbContext context, INotificationService notificationService, ILogger<ClientService> logger)
     {
         _context = context;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -189,6 +195,8 @@ public class ClientService : IClientService
     /// <returns>Client créé complet ou erreur validation</returns>
     public async Task<ApiResponse<ClientDto>> CreateClientAsync(CreateClientDto createClientDto)
     {
+        int createdClientId = 0;
+        string? createdClientName = null;
         try
         {
             var client = new Client
@@ -207,6 +215,9 @@ public class ClientService : IClientService
 
             _context.Clients.Add(client);
             await _context.SaveChangesAsync();
+
+            createdClientId = client.Id;
+            createdClientName = client.NomClient;
 
             var clientDto = new ClientDto
             {
@@ -240,6 +251,27 @@ public class ClientService : IClientService
                 Errors = ex.Message
             };
         }
+        finally
+        {
+            // Fire-and-forget notification (non bloquant) si création réussie
+            try
+            {
+                if (createdClientId != 0)
+                {
+                    _logger?.LogInformation("[NOTIF-TRACE] ClientService.CreateClientAsync -> will create notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message}", "Client", "Created", createdClientId, createdClientId, $"Nouveau client : {createdClientName}");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Client",
+                        Action = "Created",
+                        Message = $"Nouveau client : {createdClientName}",
+                        ReferenceId = createdClientId,
+                        ClientId = createdClientId,
+                        Metadata = JsonSerializer.Serialize(new { nomClient = createdClientName })
+                    });
+                }
+            }
+            catch (Exception ex) { _logger?.LogWarning(ex, "[NOTIF-TRACE] ClientService.CreateClientAsync -> exception while calling CreateNotificationAsync"); }
+        }
     }
 
     /// <summary>
@@ -251,6 +283,8 @@ public class ClientService : IClientService
     /// <returns>Client modifié ou erreur validation</returns>
     public async Task<ApiResponse<ClientDto>> UpdateClientAsync(int id, UpdateClientDto updateClientDto)
     {
+        int updatedClientId = 0;
+        string? updatedClientName = null;
         try
         {
             var client = await _context.Clients.FindAsync(id);
@@ -287,6 +321,9 @@ public class ClientService : IClientService
 
             await _context.SaveChangesAsync();
 
+            updatedClientId = client.Id;
+            updatedClientName = client.NomClient;
+
             var clientDto = new ClientDto
             {
                 Id = client.Id,
@@ -319,6 +356,26 @@ public class ClientService : IClientService
                 Errors = ex.Message
             };
         }
+        finally
+        {
+            try
+            {
+                if (updatedClientId != 0)
+                {
+                    _logger?.LogInformation("[NOTIF-TRACE] ClientService.UpdateClientAsync -> will create notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message}", "Client", "Updated", updatedClientId, updatedClientId, $"Client modifié : {updatedClientName}");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Client",
+                        Action = "Updated",
+                        Message = $"Client modifié : {updatedClientName}",
+                        ReferenceId = updatedClientId,
+                        ClientId = updatedClientId,
+                        Metadata = JsonSerializer.Serialize(new { nomClient = updatedClientName })
+                    });
+                }
+            }
+            catch (Exception ex) { _logger?.LogWarning(ex, "[NOTIF-TRACE] ClientService.UpdateClientAsync -> exception while calling CreateNotificationAsync"); }
+        }
     }
 
     /// <summary>
@@ -329,6 +386,7 @@ public class ClientService : IClientService
     /// <returns>Succès suppression ou erreur contraintes</returns>
     public async Task<ApiResponse<bool>> DeleteClientAsync(int id)
     {
+        int deletedClientId = 0;
         try
         {
             var client = await _context.Clients.FindAsync(id);
@@ -341,6 +399,8 @@ public class ClientService : IClientService
                     Message = "Client non trouvé"
                 };
             }
+
+            deletedClientId = client.Id;
 
             _context.Clients.Remove(client);
             await _context.SaveChangesAsync();
@@ -360,6 +420,30 @@ public class ClientService : IClientService
                 Message = "Erreur lors de la suppression du client",
                 Errors = ex.Message
             };
+        }
+        finally
+        {
+            try
+            {
+                if (deletedClientId != 0)
+                {
+                    // Try to include the name if available
+                    var client = await _context.Clients.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == deletedClientId);
+                    var name = client?.NomClient;
+
+                    _logger?.LogInformation("[NOTIF-TRACE] ClientService.DeleteClientAsync -> will create notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message}", "Client", "Deleted", deletedClientId, deletedClientId, $"Client supprimé");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Client",
+                        Action = "Deleted",
+                        Message = $"Client supprimé",
+                        ReferenceId = deletedClientId,
+                        ClientId = deletedClientId,
+                        Metadata = JsonSerializer.Serialize(new { nomClient = name })
+                    });
+                }
+            }
+            catch (Exception ex) { _logger?.LogWarning(ex, "[NOTIF-TRACE] ClientService.DeleteClientAsync -> exception while calling CreateNotificationAsync"); }
         }
     }
 

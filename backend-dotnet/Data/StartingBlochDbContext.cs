@@ -136,6 +136,11 @@ public class StartingBlochDbContext : DbContext
     public DbSet<InformationDepotCabinet> InformationDepotCabinets { get; set; }
     public DbSet<InformationDepotCabinetRole> InformationDepotCabinetRoles { get; set; }
     public DbSet<InformationDepotCabinetContact> InformationDepotCabinetContacts { get; set; }
+    
+    /// <summary>Notifications système pour UI/clients</summary>
+    public DbSet<StartingBloch.Backend.Models.Notification> Notifications { get; set; }
+    /// <summary>Préférences notifications (global / par client / par type)</summary>
+    public DbSet<StartingBloch.Backend.Models.NotificationPreference> NotificationPreferences { get; set; }
 
     // ================================================================================================
     // SYSTÈME RÔLES GRANULAIRES AVANCÉ
@@ -190,6 +195,11 @@ public class StartingBlochDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+    // Forcer le schéma par défaut sur public afin que EF génère des noms qualifiés
+    // (utile si la session/app a un search_path différent). Cela évite les erreurs
+    // "relation \"Users\" does not exist" quand la table est dans public.
+    modelBuilder.HasDefaultSchema("public");
+
         // Option de compatibilité: forcer tous les noms de tables en minuscules (PostgreSQL non quoté)
         // Activez-la en définissant EF_TABLES_LOWERCASE=true (utile si les tables existent déjà en minuscules)
         var lowerCaseTables = Environment.GetEnvironmentVariable("EF_TABLES_LOWERCASE")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
@@ -243,24 +253,29 @@ public class StartingBlochDbContext : DbContext
             }
         }
 
-        // Compat Postgres: convertir int(0/1) <-> bool pour colonnes importées en integer
-    var providerName = Database.ProviderName ?? string.Empty;
-    var isNpgsql = providerName.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0;
+        // Compat Postgres (legacy import) : conversion bool <-> int uniquement si EF_BOOL_INT_COMPAT=true
+        var providerName = Database.ProviderName ?? string.Empty;
+        var isNpgsql = providerName.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0;
         if (isNpgsql)
         {
-            var boolProps = modelBuilder.Model.GetEntityTypes()
-                .SelectMany(et => et.GetProperties())
-                .Where(p => p.ClrType == typeof(bool));
-
-            foreach (var prop in boolProps)
+            var enableBoolIntCompat = Environment.GetEnvironmentVariable("EF_BOOL_INT_COMPAT")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+            if (enableBoolIntCompat)
             {
-                // Applique une conversion bool <-> int pour lecture/écriture
-                modelBuilder.Entity(prop.DeclaringType.ClrType)
-                    .Property(prop.Name)
-                    .HasConversion<int>();
+                // Active temporairement une conversion pour bases où les colonnes bool étaient encore stockées en integer (0/1).
+                // IMPORTANT : Une fois les colonnes migrées en type BOOLEAN natif, NE PAS définir EF_BOOL_INT_COMPAT afin d'éviter les InvalidCast.
+                var boolProps = modelBuilder.Model.GetEntityTypes()
+                    .SelectMany(et => et.GetProperties())
+                    .Where(p => p.ClrType == typeof(bool));
+
+                foreach (var prop in boolProps)
+                {
+                    modelBuilder.Entity(prop.DeclaringType.ClrType)
+                        .Property(prop.Name)
+                        .HasConversion<int>();
+                }
             }
 
-            // Option: colonnes DateTime stockées en TEXT (import SQLite) -> conversion string ISO <-> DateTime
+            // Option: colonnes DateTime stockées en TEXT (import SQLite) -> conversion string ISO <-> DateTime (contrôlée par EF_DATETIME_AS_TEXT)
             var datesAsText = Environment.GetEnvironmentVariable("EF_DATETIME_AS_TEXT")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
             if (datesAsText)
             {
@@ -296,6 +311,22 @@ public class StartingBlochDbContext : DbContext
         }
 
         ConfigureIndexes(modelBuilder);
+        // Index sur notifications createdAt et client
+        modelBuilder.Entity<StartingBloch.Backend.Models.Notification>()
+            .HasIndex(n => n.CreatedAt)
+            .HasDatabaseName("IX_Notifications_CreatedAt");
+        modelBuilder.Entity<StartingBloch.Backend.Models.Notification>()
+            .HasIndex(n => n.ClientId).HasDatabaseName("IX_Notifications_ClientId");
+        // Keep Metadata as string in the model but store it as jsonb in Postgres
+        modelBuilder.Entity<StartingBloch.Backend.Models.Notification>(eb =>
+        {
+            eb.Property(n => n.Metadata).HasColumnType("jsonb");
+        });
+        // Metadata is stored as plain text in the DB (schema uses text). Keep model property as string.
+        // Index includes UserId to support user-specific preferences lookup
+        modelBuilder.Entity<StartingBloch.Backend.Models.NotificationPreference>()
+            .HasIndex(np => new { np.UserId, np.ClientId, np.NotificationType })
+            .HasDatabaseName("IX_NotificationPreferences_User_Client_Type");
         ConfigureRelations(modelBuilder);
         ConfigureDefaultValues(modelBuilder);
     ConfigureSeedData(modelBuilder);
@@ -515,12 +546,12 @@ public class StartingBlochDbContext : DbContext
             .HasDefaultValue("user");
 
         modelBuilder.Entity<User>()
-            .Property(u => u.CanWrite)
-            .HasDefaultValue(false);
+            .Property<int>("CanWriteInt")
+            .HasDefaultValue(0);
 
         modelBuilder.Entity<User>()
-            .Property(u => u.IsActive)
-            .HasDefaultValue(true);
+            .Property<int>("IsActiveInt")
+            .HasDefaultValue(1);
 
         // Valeurs par défaut informations dépôt
         modelBuilder.Entity<InformationDepot>()

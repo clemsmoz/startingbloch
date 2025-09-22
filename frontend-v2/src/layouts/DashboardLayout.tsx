@@ -19,7 +19,6 @@ import {
   Typography,
   Space,
   Button,
-  Badge,
   Drawer,
 } from 'antd';
 import {
@@ -33,12 +32,14 @@ import {
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  BellOutlined,
+  
 } from '@ant-design/icons';
+import NotificationBell from '../components/NotificationBell';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { useAuthStore } from '@store/authStore';
-import { useNotificationStore } from '@store/notificationStore';
+// ...existing code...
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -119,30 +120,30 @@ const DesktopSider = styled(Sider)`
 /**
  * Configuration du menu de navigation
  */
-const getMenuItems = (userRole: string) => {
+const getMenuItems = (userRole: string, t: (s: string) => string) => {
   const role = (userRole || '').toLowerCase();
   console.log('🎯 Menu - Rôle utilisateur:', userRole);
   console.log('🎯 Menu - Est Admin?', role === 'admin');
 
   // Base: toujours Dashboard, Brevets, Cabinets
   const baseItems = [
-    { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+    { key: '/dashboard', icon: <DashboardOutlined />, label: t('menu.dashboard') },
     // Clients n'est visible que si l'utilisateur n'est pas de rôle 'client'
-    ...(role !== 'client' ? [{ key: '/clients', icon: <TeamOutlined />, label: 'Clients' }] : []),
-    { key: '/brevets', icon: <FileProtectOutlined />, label: 'Brevets' },
-    { key: '/cabinets', icon: <BankOutlined />, label: 'Cabinets' },
+    ...(role !== 'client' ? [{ key: '/clients', icon: <TeamOutlined />, label: t('menu.clients') }] : []),
+    { key: '/brevets', icon: <FileProtectOutlined />, label: t('menu.brevets') },
+    { key: '/cabinets', icon: <BankOutlined />, label: t('menu.cabinets') },
   ];
 
   const adminItems = role === 'admin' ? [
     {
       key: '/admin/users',
       icon: <UserOutlined />,
-      label: 'Gestion Utilisateurs',
+      label: t('menu.adminUsers'),
     },
     {
       key: '/logs',
       icon: <AuditOutlined />,
-      label: 'Logs système',
+      label: t('menu.logs'),
     },
   ] : [];
   
@@ -162,7 +163,6 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { notifications } = useNotificationStore();
 
   console.log('👤 DashboardLayout - Utilisateur:', user);
   console.log('👤 DashboardLayout - Rôle:', user?.role);
@@ -178,17 +178,19 @@ const DashboardLayout: React.FC = () => {
     navigate('/login');
   };
 
+  const { t } = useTranslation();
+
   const userMenuItems = [
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: 'Mon profil',
+      label: t('user.profile'),
       onClick: () => navigate('/profile'),
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
-      label: 'Paramètres',
+      label: t('user.settings'),
       onClick: () => navigate('/settings'),
     },
     {
@@ -197,12 +199,12 @@ const DashboardLayout: React.FC = () => {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Déconnexion',
+      label: t('user.logout'),
       onClick: handleLogout,
     },
   ];
 
-  const menuItems = getMenuItems(user?.role || 'User');
+  const menuItems = getMenuItems(user?.role ?? 'User', t);
 
   const siderContent = (
     <Menu
@@ -238,13 +240,7 @@ const DashboardLayout: React.FC = () => {
 
         <HeaderActions>
           {/* Notifications */}
-          <Badge count={notifications.length} size="small">
-            <Button
-              type="text"
-              icon={<BellOutlined />}
-              style={{ fontSize: '16px' }}
-            />
-          </Badge>
+          <NotificationBell clientId={(user as any)?.clientId} />
 
           {/* Bouton collapse pour desktop */}
           <Button
@@ -267,10 +263,10 @@ const DashboardLayout: React.FC = () => {
               <Avatar size="small" icon={<UserOutlined />} />
               <Space direction="vertical" size={0}>
                 <Text strong style={{ fontSize: '14px' }}>
-                  {user?.username || 'Utilisateur'}
+                  {user?.username ?? t('user.defaultName')}
                 </Text>
                 <Text type="secondary" style={{ fontSize: '12px' }}>
-                  {user?.role || 'User'}
+                  {user?.role ?? t('user.defaultRole')}
                 </Text>
               </Space>
             </UserInfo>
@@ -291,7 +287,7 @@ const DashboardLayout: React.FC = () => {
 
         {/* Sidebar Mobile */}
         <Drawer
-          title="Navigation"
+          title={t('ui.navigation')}
           placement="left"
           onClose={() => setMobileMenuVisible(false)}
           open={mobileMenuVisible}

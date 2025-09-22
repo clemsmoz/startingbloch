@@ -44,8 +44,11 @@
 
 using Microsoft.EntityFrameworkCore;
 using StartingBloch.Backend.Data;
+using Microsoft.Extensions.Logging;
+using System.Data.Common;
 using StartingBloch.Backend.DTOs;
 using StartingBloch.Backend.Models;
+using System.Text.Json;
 
 namespace StartingBloch.Backend.Services;
 
@@ -56,15 +59,19 @@ namespace StartingBloch.Backend.Services;
 public class CabinetService : ICabinetService
 {
     private readonly StartingBlochDbContext _context;
+    private readonly ILogger<CabinetService> _logger;
+    private readonly INotificationService _notificationService;
 
     /// <summary>
     /// Initialise service cabinets avec contexte données Entity Framework.
     /// Configuration accès base données optimisée requêtes relations.
     /// </summary>
     /// <param name="context">Contexte base données Entity Framework</param>
-    public CabinetService(StartingBlochDbContext context)
+    public CabinetService(StartingBlochDbContext context, ILogger<CabinetService> logger, INotificationService notificationService)
     {
         _context = context;
+        _logger = logger;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -204,6 +211,8 @@ public class CabinetService : ICabinetService
     /// <returns>Cabinet créé complet ou erreur validation</returns>
     public async Task<ApiResponse<CabinetDto>> CreateCabinetAsync(CreateCabinetDto createCabinetDto)
     {
+        int createdCabinetId = 0;
+        string? createdCabinetName = null;
         try
         {
             var cabinet = new Cabinet
@@ -219,6 +228,9 @@ public class CabinetService : ICabinetService
 
             _context.Cabinets.Add(cabinet);
             await _context.SaveChangesAsync();
+
+            createdCabinetId = cabinet.Id;
+            createdCabinetName = cabinet.NomCabinet;
 
             var cabinetDto = new CabinetDto
             {
@@ -244,12 +256,88 @@ public class CabinetService : ICabinetService
         }
         catch (Exception ex)
         {
+            // Log exception complete et payload
+            try
+            {
+                _logger?.LogError(ex, "Erreur lors de la création du cabinet. Payload: {@Payload}", createCabinetDto);
+            }
+            catch { /* noop */ }
+
+            // Si provider PostgreSQL, tenter de récupérer le nom de la séquence, sa valeur courante et le MAX(id)
+            try
+            {
+                var provider = _context.Database.ProviderName ?? string.Empty;
+                if (provider.IndexOf("Npgsql", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var conn = _context.Database.GetDbConnection();
+                    await conn.OpenAsync();
+                    try
+                    {
+                        using var cmd = conn.CreateCommand();
+                        cmd.CommandText = "SELECT pg_get_serial_sequence('public.cabinets','id')";
+                        var seqObj = await cmd.ExecuteScalarAsync();
+                        var seqName = seqObj?.ToString();
+                        if (!string.IsNullOrEmpty(seqName))
+                        {
+                            using var cmd2 = conn.CreateCommand();
+                            cmd2.CommandText = $"SELECT last_value, is_called FROM {seqName}";
+                            try
+                            {
+                                using var reader = await cmd2.ExecuteReaderAsync();
+                                if (await reader.ReadAsync())
+                                {
+                                    var last = reader.IsDBNull(0) ? null : reader.GetValue(0);
+                                    var isCalled = reader.IsDBNull(1) ? null : reader.GetValue(1);
+                                    _logger?.LogWarning("Postgres sequence {Seq} last_value={Last} is_called={IsCalled}", seqName, last, isCalled);
+                                }
+                            }
+                            catch (Exception exSeq)
+                            {
+                                _logger?.LogWarning(exSeq, "Impossible de lire last_value/is_called pour la séquence {Seq}", seqName);
+                            }
+                        }
+
+                        using var cmd3 = conn.CreateCommand();
+                        cmd3.CommandText = "SELECT COALESCE(MAX(id), NULL) FROM public.cabinets";
+                        var maxId = await cmd3.ExecuteScalarAsync();
+                        _logger?.LogWarning("Postgres MAX(id) for public.cabinets = {MaxId}", maxId ?? "(null)");
+                    }
+                    finally
+                    {
+                        try { await conn.CloseAsync(); } catch { }
+                    }
+                }
+            }
+            catch (Exception exLog)
+            {
+                _logger?.LogWarning(exLog, "Erreur lors de la lecture des informations de séquence PostgreSQL");
+            }
+
             return new ApiResponse<CabinetDto>
             {
                 Success = false,
                 Message = "Erreur lors de la création du cabinet",
-                Errors = ex.Message
+                Errors = ex.ToString()
             };
+        }
+        finally
+        {
+            try
+            {
+                if (createdCabinetId != 0)
+                {
+                    _logger?.LogInformation("🔔 [NOTIF-TRACE] CabinetService.CreateCabinetAsync -> creating notification Type={Type} Action={Action} ReferenceId={ReferenceId} Message={Message}", "Cabinet", "Created", createdCabinetId, $"Cabinet créé : {createdCabinetName}");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Cabinet",
+                        Action = "Created",
+                        Message = $"Cabinet créé : {createdCabinetName}",
+                        ReferenceId = createdCabinetId,
+                        Metadata = JsonSerializer.Serialize(new { nom_cabinet = createdCabinetName })
+                    });
+                }
+            }
+            catch { }
         }
     }
 
@@ -262,6 +350,8 @@ public class CabinetService : ICabinetService
     /// <returns>Cabinet modifié ou erreur validation</returns>
     public async Task<ApiResponse<CabinetDto>> UpdateCabinetAsync(int id, UpdateCabinetDto updateCabinetDto)
     {
+        int updatedCabinetId = 0;
+        string? updatedCabinetName = null;
         try
         {
             var cabinet = await _context.Cabinets.FindAsync(id);
@@ -274,15 +364,68 @@ public class CabinetService : ICabinetService
                 };
             }
 
-            cabinet.NomCabinet = updateCabinetDto.NomCabinet;
-            cabinet.AdresseCabinet = updateCabinetDto.AdresseCabinet;
-            cabinet.CodePostal = updateCabinetDto.CodePostal;
-            cabinet.PaysCabinet = updateCabinetDto.PaysCabinet;
-            cabinet.EmailCabinet = updateCabinetDto.EmailCabinet;
-            cabinet.TelephoneCabinet = updateCabinetDto.TelephoneCabinet;
-            cabinet.Type = updateCabinetDto.Type;
+            // Log current values to help debugging accidental overwrites
+            try
+            {
+                _logger?.LogDebug("UpdateCabinet - before update for id={Id}: {@Cabinet}", id, new {
+                    cabinet.NomCabinet,
+                    cabinet.AdresseCabinet,
+                    cabinet.CodePostal,
+                    cabinet.PaysCabinet,
+                    cabinet.EmailCabinet,
+                    cabinet.TelephoneCabinet,
+                    cabinet.Type
+                });
+            }
+            catch { }
+
+            // Only overwrite string fields when the incoming value is not null/whitespace
+            if (!string.IsNullOrWhiteSpace(updateCabinetDto.NomCabinet))
+                cabinet.NomCabinet = updateCabinetDto.NomCabinet;
+
+            if (!string.IsNullOrWhiteSpace(updateCabinetDto.AdresseCabinet))
+                cabinet.AdresseCabinet = updateCabinetDto.AdresseCabinet;
+
+            if (!string.IsNullOrWhiteSpace(updateCabinetDto.CodePostal))
+                cabinet.CodePostal = updateCabinetDto.CodePostal;
+
+            if (!string.IsNullOrWhiteSpace(updateCabinetDto.PaysCabinet))
+                cabinet.PaysCabinet = updateCabinetDto.PaysCabinet;
+
+            if (!string.IsNullOrWhiteSpace(updateCabinetDto.EmailCabinet))
+                cabinet.EmailCabinet = updateCabinetDto.EmailCabinet;
+
+            if (!string.IsNullOrWhiteSpace(updateCabinetDto.TelephoneCabinet))
+                cabinet.TelephoneCabinet = updateCabinetDto.TelephoneCabinet;
+
+            // Only set Type if it maps to a valid enum value (avoid accidental 0)
+            try
+            {
+                if (Enum.IsDefined(typeof(CabinetType), updateCabinetDto.Type))
+                {
+                    cabinet.Type = updateCabinetDto.Type;
+                }
+            }
+            catch { /* ignore enum check errors */ }
+
+            try
+            {
+                _logger?.LogDebug("UpdateCabinet - after applying update for id={Id}: {@Cabinet}", id, new {
+                    cabinet.NomCabinet,
+                    cabinet.AdresseCabinet,
+                    cabinet.CodePostal,
+                    cabinet.PaysCabinet,
+                    cabinet.EmailCabinet,
+                    cabinet.TelephoneCabinet,
+                    cabinet.Type
+                });
+            }
+            catch { }
 
             await _context.SaveChangesAsync();
+
+            updatedCabinetId = cabinet.Id;
+            updatedCabinetName = cabinet.NomCabinet;
 
             var cabinetDto = new CabinetDto
             {
@@ -314,6 +457,25 @@ public class CabinetService : ICabinetService
                 Errors = ex.Message
             };
         }
+        finally
+        {
+            try
+            {
+                if (updatedCabinetId != 0)
+                {
+                    _logger?.LogInformation("🔔 [NOTIF-TRACE] CabinetService.UpdateCabinetAsync -> creating notification Type={Type} Action={Action} ReferenceId={ReferenceId} Message={Message}", "Cabinet", "Updated", updatedCabinetId, $"Cabinet mis à jour : {updatedCabinetName}");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Cabinet",
+                        Action = "Updated",
+                        Message = $"Cabinet mis à jour : {updatedCabinetName}",
+                        ReferenceId = updatedCabinetId,
+                        Metadata = JsonSerializer.Serialize(new { nom_cabinet = updatedCabinetName })
+                    });
+                }
+            }
+            catch { }
+        }
     }
 
     /// <summary>
@@ -324,6 +486,7 @@ public class CabinetService : ICabinetService
     /// <returns>Succès suppression ou erreur contraintes</returns>
     public async Task<ApiResponse<bool>> DeleteCabinetAsync(int id)
     {
+        int deletedCabinetId = 0;
         try
         {
             var cabinet = await _context.Cabinets.FindAsync(id);
@@ -335,6 +498,8 @@ public class CabinetService : ICabinetService
                     Message = "Cabinet non trouvé"
                 };
             }
+
+            deletedCabinetId = cabinet.Id;
 
             _context.Cabinets.Remove(cabinet);
             await _context.SaveChangesAsync();
@@ -354,6 +519,25 @@ public class CabinetService : ICabinetService
                 Message = "Erreur lors de la suppression du cabinet",
                 Errors = ex.Message
             };
+        }
+        finally
+        {
+            try
+            {
+                if (deletedCabinetId != 0)
+                {
+                    _logger?.LogInformation("🔔 [NOTIF-TRACE] CabinetService.DeleteCabinetAsync -> creating notification Type={Type} Action={Action} ReferenceId={ReferenceId} Message={Message}", "Cabinet", "Deleted", deletedCabinetId, $"Cabinet supprimé");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Cabinet",
+                        Action = "Deleted",
+                        Message = $"Cabinet supprimé",
+                        ReferenceId = deletedCabinetId,
+                        Metadata = JsonSerializer.Serialize(new { nom_cabinet = (await _context.Cabinets.FindAsync(deletedCabinetId))?.NomCabinet })
+                    });
+                }
+            }
+            catch { }
         }
     }
 
@@ -621,6 +805,8 @@ public class CabinetService : ICabinetService
     /// </summary>
     public async Task<ApiResponse<CabinetDto>> CreateCabinetForClientAsync(int clientId, CreateCabinetDto createCabinetDto)
     {
+        int createdDtoId = 0;
+        string? createdDtoName = null;
         try
         {
             // Créer le cabinet
@@ -667,6 +853,9 @@ public class CabinetService : ICabinetService
                 NombreClients = cabinet.ClientCabinets?.Count ?? 0
             };
 
+            createdDtoId = dto.Id;
+            createdDtoName = dto.NomCabinet;
+
             return new ApiResponse<CabinetDto>
             {
                 Success = true,
@@ -683,6 +872,40 @@ public class CabinetService : ICabinetService
                 Errors = ex.Message
             };
         }
+            finally
+            {
+                try
+                {
+                    if (createdDtoId != 0)
+                    {
+                        // Notification ciblée pour le client lié
+                        var clientNotif = new Models.Notification
+                        {
+                            Type = "Cabinet",
+                            Action = "Created",
+                            Message = $"Un cabinet a été créé et lié à votre compte : {createdDtoName}",
+                            ReferenceId = createdDtoId,
+                            ClientId = clientId,
+                            Metadata = JsonSerializer.Serialize(new { nomCabinet = createdDtoName })
+                        };
+                        _logger?.LogInformation("[NOTIF-TRACE] CabinetService.CreateCabinetForClientAsync -> will create client-scoped notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message} Metadata={Metadata}", clientNotif.Type, clientNotif.Action, clientNotif.ClientId, clientNotif.ReferenceId, clientNotif.Message, clientNotif.Metadata);
+                        var _ = _notificationService.CreateNotificationAsync(clientNotif);
+
+                        // Notification globale pour les admins/utilisateurs généraux
+                        var globalNotif = new Models.Notification
+                        {
+                            Type = "Cabinet",
+                            Action = "Created",
+                            Message = $"Cabinet créé et lié au client : {createdDtoName}",
+                            ReferenceId = createdDtoId,
+                            Metadata = JsonSerializer.Serialize(new { nomCabinet = createdDtoName })
+                        };
+                        _logger?.LogInformation("[NOTIF-TRACE] CabinetService.CreateCabinetForClientAsync -> will create global notification Type={Type} Action={Action} ReferenceId={ReferenceId} Message={Message} Metadata={Metadata}", globalNotif.Type, globalNotif.Action, globalNotif.ReferenceId, globalNotif.Message, globalNotif.Metadata);
+                        var __ = _notificationService.CreateNotificationAsync(globalNotif);
+                    }
+                }
+                catch { }
+            }
     }
 
     /// <summary>

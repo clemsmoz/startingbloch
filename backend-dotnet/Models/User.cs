@@ -79,29 +79,59 @@ public class User
     /// Permission d'écriture (création, modification, suppression)
     /// False = utilisateur en lecture seule
     /// </summary>
+    // Stockage base en entier (0/1) pour compatibilité historique
     [Column("canWrite")]
-    public bool CanWrite { get; set; } = false;
+    public int CanWriteInt { get; set; } = 0;
+
+    // Propriété de confort bool (non mappée) conservant l'API existante
+    [NotMapped]
+    public bool CanWrite
+    {
+        get => CanWriteInt == 1;
+        set => CanWriteInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Permission de lecture (consultation des données)
     /// True par défaut - très rarement désactivé
     /// </summary>
     [Column("canRead")]
-    public bool CanRead { get; set; } = true;
+    public int CanReadInt { get; set; } = 1;
+
+    [NotMapped]
+    public bool CanRead
+    {
+        get => CanReadInt == 1;
+        set => CanReadInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Statut actif de l'utilisateur
     /// False = compte désactivé (soft delete)
     /// </summary>
     [Column("isActive")]
-    public bool IsActive { get; set; } = true;
+    public int IsActiveInt { get; set; } = 1;
+
+    [NotMapped]
+    public bool IsActive
+    {
+        get => IsActiveInt == 1;
+        set => IsActiveInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Statut de blocage de sécurité
     /// True = compte temporairement bloqué (tentatives de connexion échouées, etc.)
     /// </summary>
     [Column("isBlocked")]
-    public bool IsBlocked { get; set; } = false;
+    public int IsBlockedInt { get; set; } = 0;
+
+    [NotMapped]
+    public bool IsBlocked
+    {
+        get => IsBlockedInt == 1;
+        set => IsBlockedInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Nom de famille de l'utilisateur (optionnel)

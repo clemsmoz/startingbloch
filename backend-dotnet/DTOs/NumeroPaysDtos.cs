@@ -61,12 +61,10 @@ public class NumeroPaysDto
 public class CreateNumeroPaysDto
 {
     /// <summary>Code numérique OBLIGATOIRE selon standard international.</summary>
-    [Required(ErrorMessage = "Le numéro est requis")]
     [StringLength(50, ErrorMessage = "Le numéro ne peut pas dépasser 50 caractères")]
     public string Numero { get; set; } = string.Empty;
 
     /// <summary>Pays référence OBLIGATOIRE pour association géographique.</summary>
-    [Required(ErrorMessage = "L'ID du pays est requis")]
     public int PaysId { get; set; }
 }
 
@@ -76,11 +74,9 @@ public class CreateNumeroPaysDto
 public class UpdateNumeroPaysDto
 {
     /// <summary>Code numérique OBLIGATOIRE maintenu en modification.</summary>
-    [Required(ErrorMessage = "Le numéro est requis")]
     [StringLength(50, ErrorMessage = "Le numéro ne peut pas dépasser 50 caractères")]
     public string Numero { get; set; } = string.Empty;
 
     /// <summary>Pays référence OBLIGATOIRE maintenu pour cohérence.</summary>
-    [Required(ErrorMessage = "L'ID du pays est requis")]
     public int PaysId { get; set; }
 }

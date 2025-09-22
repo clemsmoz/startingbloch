@@ -537,16 +537,28 @@ public class UserAdminService : IUserAdminService
     {
         try
         {
-            var user = await _context.Users
+            // Charger tous les utilisateurs correspondant à l'email (en cas de doublons historiques)
+            var users = await _context.Users
                 .Include(u => u.Client)
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .Where(u => u.Email == email)
+                .OrderByDescending(u => u.LastLogin) // prioriser le plus récemment connecté
+                .ThenByDescending(u => u.Id)
+                .ToListAsync();
 
-            if (user == null)
+            if (users.Count == 0)
             {
                 return null;
             }
+
+            if (users.Count > 1)
+            {
+                // Log minimal vers console (fallback) pour signaler doublons à corriger
+                Console.WriteLine($"[WARN] {users.Count} utilisateurs avec le même email '{email}'. Utilisation du plus récent (Id={users[0].Id}).");
+            }
+
+            var user = users[0];
 
             return new UserDto
             {
@@ -817,11 +829,13 @@ public class UserAdminService : IUserAdminService
         }
         catch (Exception ex)
         {
+            // Retourner le message de l'inner exception si présent pour faciliter le diagnostic
+            var err = ex.InnerException?.Message ?? ex.Message;
             return new ApiResponse<UserDto>
             {
                 Success = false,
                 Message = "Erreur lors de la création de l'employé",
-                Errors = ex.Message
+                Errors = err
             };
         }
     }

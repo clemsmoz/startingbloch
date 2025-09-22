@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using StartingBloch.Backend.DTOs;
 using StartingBloch.Backend.Services;
 using StartingBloch.Backend.Middleware;
+using System.Text.Json;
 using System.Security.Claims;
 
 namespace StartingBloch.Backend.Controllers;
@@ -44,15 +45,17 @@ public class BrevetController : ControllerBase
 {
     // Service principal pour la logique métier des brevets
     private readonly IBrevetService _brevetService;
+    private readonly ILogger<BrevetController> _logger;
 
     /// <summary>
     /// Constructeur du contrôleur de brevets
     /// Injection du service métier pour l'accès aux données et la logique
     /// </summary>
     /// <param name="brevetService">Service métier pour les opérations sur les brevets</param>
-    public BrevetController(IBrevetService brevetService)
+    public BrevetController(IBrevetService brevetService, ILogger<BrevetController> logger)
     {
         _brevetService = brevetService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -314,8 +317,10 @@ public class BrevetController : ControllerBase
         [FromBody] UpdateBrevetDto updateBrevetDto)
     {
         // Validation préalable du modèle de données reçu
+        _logger?.LogInformation("UpdateBrevet called for id={Id}", id);
         if (!ModelState.IsValid)
         {
+            _logger?.LogWarning("ModelState invalid for UpdateBrevet id={Id}: {Errors}", id, ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
             return BadRequest(new ApiResponse<BrevetDto>
             {
                 Success = false,
@@ -327,13 +332,65 @@ public class BrevetController : ControllerBase
             });
         }
 
+        // Log a summary of the incoming DTO to help debugging
+        try
+        {
+            var dtoSummary = new {
+                ReferenceFamille = updateBrevetDto.ReferenceFamille,
+                Titre = updateBrevetDto.Titre,
+                ClientCount = updateBrevetDto.ClientIds?.Count ?? 0,
+                InventeurCount = updateBrevetDto.InventeurIds?.Count ?? 0,
+                DeposantCount = updateBrevetDto.DeposantIds?.Count ?? 0,
+                TitulaireCount = updateBrevetDto.TitulaireIds?.Count ?? 0,
+                InformationsDepotCount = updateBrevetDto.InformationsDepot?.Count ?? 0
+            };
+            _logger?.LogInformation("UpdateBrevet payload summary for id={Id}: {@Summary}", id, dtoSummary);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to log UpdateBrevet payload summary for id={Id}", id);
+        }
+
+        // Also write the full DTO to console (helpful when debugging locally)
+        try
+        {
+            var serialized = JsonSerializer.Serialize(updateBrevetDto, new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+            Console.WriteLine($"[DEBUG] UpdateBrevet - incoming DTO for id={id}: {serialized}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[DEBUG] Failed to serialize UpdateBrevetDto for id={id}: {ex}");
+        }
+
         // Délégation de la mise à jour au service métier
         var result = await _brevetService.UpdateBrevetAsync(id, updateBrevetDto);
-        
+
         // Gestion des erreurs de mise à jour (brevet inexistant, etc.)
         if (!result.Success)
+        {
+            // Log détaillé pour aider au diagnostic (inclut éventuellement inner exceptions)
+            try
+            {
+                _logger?.LogError("UpdateBrevet failed for id={Id}. Success={Success}. Message={Message}. Errors={Errors}", id, result.Success, result.Message, result.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to log UpdateBrevet failure for id={Id}", id);
+            }
+
+            // Ecrire aussi sur la console pour que l'erreur soit facile à repérer
+            try
+            {
+                Console.Error.WriteLine(new string('=', 80));
+                Console.Error.WriteLine($"[ERROR] UpdateBrevet failed for id={id} - Message: {result.Message}");
+                Console.Error.WriteLine($"[ERROR] UpdateBrevet - Errors: {result.Errors}");
+                Console.Error.WriteLine(new string('=', 80));
+            }
+            catch { /* Ne pas bloquer la réponse si l'écriture console échoue */ }
+
             return NotFound(result);
-            
+        }
+
         return Ok(result);
     }
 

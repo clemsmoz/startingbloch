@@ -47,6 +47,7 @@ import type { Brevet } from '../types';
 
 // Hooks
 import { useNotificationStore } from '../store/notificationStore';
+import { useTranslation } from 'react-i18next';
 
 const BrevetsPage: React.FC = () => {
   const [brevets, setBrevets] = useState<Brevet[]>([]);
@@ -65,6 +66,7 @@ const BrevetsPage: React.FC = () => {
   
   
   const { addNotification } = useNotificationStore();
+  const { t } = useTranslation();
 
   // Fonction pour obtenir l'image du drapeau du pays (x2)
   const getFlagImage = (codeIso?: string): React.ReactNode => {
@@ -165,14 +167,14 @@ const BrevetsPage: React.FC = () => {
       if (response.success && response.data) {
         setBrevets(response.data);
         setAllBrevets(response.data); // Stocker tous les brevets pour le filtrage local
-        setTotalCount(response.totalCount || 0);
-        setCurrentPage(response.page || page);
+        setTotalCount(response.totalCount ?? 0);
+        setCurrentPage(response.page ?? page);
       }
     } catch (error) {
       addNotification({
         type: 'error',
-        message: 'Erreur',
-        description: 'Impossible de charger la liste des brevets'
+        message: t('notifications.error'),
+        description: t('brevets.loadError')
       });
     } finally {
       setLoading(false);
@@ -185,8 +187,21 @@ const BrevetsPage: React.FC = () => {
   };
 
   const handleEdit = (brevet: Brevet) => {
-    setBrevetToEdit(brevet);
-    setIsEditModalVisible(true);
+    (async () => {
+      try {
+        const resp = await brevetService.getById(brevet.id);
+        if (resp && resp.success && resp.data) {
+          setBrevetToEdit(resp.data);
+        } else {
+          setBrevetToEdit(brevet);
+        }
+      } catch (e) {
+        console.error('Erreur chargement brevet complet pour édition', e);
+        setBrevetToEdit(brevet);
+      } finally {
+        setIsEditModalVisible(true);
+      }
+    })();
   };
 
   const handleView = async (brevet: Brevet) => {
@@ -203,7 +218,7 @@ const BrevetsPage: React.FC = () => {
         setSelectedBrevet(brevet);
         addNotification({
           type: 'warning',
-          message: 'Certains détails pourraient ne pas être disponibles'
+          message: t('brevets.partialDetailsWarning')
         });
       }
     } catch (error) {
@@ -212,7 +227,7 @@ const BrevetsPage: React.FC = () => {
       setSelectedBrevet(brevet);
       addNotification({
         type: 'warning',
-        message: 'Impossible de récupérer tous les détails du brevet'
+        message: t('brevets.detailFetchError')
       });
     } finally {
       setLoading(false);
@@ -224,14 +239,14 @@ const BrevetsPage: React.FC = () => {
       await brevetService.delete(id);
       addNotification({
         type: 'success',
-        message: 'Brevet supprimé avec succès'
+        message: t('brevets.deleteSuccess') ?? 'Brevet supprimé avec succès'
       });
       loadBrevets();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       addNotification({
         type: 'error',
-        message: 'Erreur lors de la suppression du brevet'
+        message: t('brevets.deleteError') ?? 'Erreur lors de la suppression du brevet'
       });
     }
   };
@@ -241,7 +256,7 @@ const BrevetsPage: React.FC = () => {
     loadBrevets();
     addNotification({
       type: 'success',
-      message: 'Brevet ajouté avec succès'
+      message: t('brevets.addSuccess') ?? 'Brevet ajouté avec succès'
     });
   };
 
@@ -251,7 +266,7 @@ const BrevetsPage: React.FC = () => {
     loadBrevets();
     addNotification({
       type: 'success',
-      message: 'Brevet modifié avec succès'
+      message: t('brevets.editSuccess') ?? 'Brevet modifié avec succès'
     });
   };
 
@@ -261,7 +276,7 @@ const BrevetsPage: React.FC = () => {
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
-    const newPageSize = size || pageSize;
+    const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
   loadBrevets(page, newPageSize);
@@ -269,35 +284,36 @@ const BrevetsPage: React.FC = () => {
 
   // Recherche locale en temps réel
   const handleSearch = (value: string) => {
-    if (!value.trim()) {
+    const term = (value ?? '').trim();
+    if (!term) {
       // Si recherche vide, afficher tous les brevets
       setBrevets(allBrevets);
       setTotalCount(allBrevets.length);
       setCurrentPage(1);
-    } else {
-      // Filtrer localement les brevets
-      const searchTerm = value.toLowerCase();
-      const filteredBrevets = allBrevets.filter(brevet => 
-        (brevet.titreBrevet?.toLowerCase().includes(searchTerm)) ||
-        (brevet.numeroBrevet?.toLowerCase().includes(searchTerm)) ||
-        (brevet.descriptionBrevet?.toLowerCase().includes(searchTerm)) ||
-        (brevet.classesBrevet?.toLowerCase().includes(searchTerm))
-      );
-      
-      setBrevets(filteredBrevets);
-      setTotalCount(filteredBrevets.length);
-      setCurrentPage(1);
+      return;
     }
+    // Filtrer localement les brevets de façon insensible à la casse
+    const searchTerm = term.toLowerCase();
+    const filteredBrevets = allBrevets.filter(brevet => 
+      (brevet.titreBrevet?.toLowerCase().includes(searchTerm)) ||
+      (brevet.numeroBrevet?.toLowerCase().includes(searchTerm)) ||
+      (brevet.descriptionBrevet?.toLowerCase().includes(searchTerm)) ||
+      (brevet.classesBrevet?.toLowerCase().includes(searchTerm))
+    );
+
+    setBrevets(filteredBrevets);
+    setTotalCount(filteredBrevets.length);
+    setCurrentPage(1);
   };
 
   // Supprimer un brevet avec confirmation
   const confirmDelete = (brevet: Brevet) => {
     Modal.confirm({
-      title: 'Confirmer la suppression',
-      content: `Êtes-vous sûr de vouloir supprimer le brevet "${brevet.titreBrevet}" ?`,
-      okText: 'Supprimer',
+      title: t('brevets.confirmDelete.title'),
+      content: t('brevets.confirmDelete.content', { title: brevet.titreBrevet }),
+      okText: t('actions.delete'),
       okType: 'danger',
-      cancelText: 'Annuler',
+      cancelText: t('actions.cancel'),
       onOk: () => handleDelete(brevet.id)
     });
   };
@@ -306,13 +322,13 @@ const BrevetsPage: React.FC = () => {
   const getRowActions = (record: Brevet): MenuProps['items'] => [
     {
       key: 'view',
-      label: 'Voir les détails',
+      label: t('actions.viewDetails'),
       icon: <EyeOutlined />,
       onClick: () => handleView(record)
     },
     {
       key: 'edit',
-      label: 'Modifier',
+      label: t('actions.edit'),
       icon: <EditOutlined />,
       onClick: () => handleEdit(record)
     },
@@ -321,7 +337,7 @@ const BrevetsPage: React.FC = () => {
     },
     {
       key: 'delete',
-      label: 'Supprimer',
+      label: t('actions.delete'),
       icon: <DeleteOutlined />,
       danger: true,
       onClick: () => confirmDelete(record)
@@ -330,28 +346,28 @@ const BrevetsPage: React.FC = () => {
 
   // Colonnes de la table
   const columns: ColumnsType<Brevet> = [
-    {
-      title: 'Titre',
-      dataIndex: 'titreBrevet',
-      key: 'titreBrevet',
-      sorter: (a, b) => (a.titreBrevet || '').localeCompare(b.titreBrevet || ''),
-      filterSearch: true,
-      render: (titre: string) => (
-        <Tooltip title={titre}>
-          <span style={{ maxWidth: 200, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {titre || 'Sans titre'}
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'référence famille',
+  {
+  title: t('brevets.columns.reference'),
       dataIndex: 'numeroBrevet',
       key: 'numeroBrevet',
       width: 120,
     },
     {
-      title: 'Actions',
+  title: t('brevets.columns.title'),
+      dataIndex: 'titreBrevet',
+      key: 'titreBrevet',
+      sorter: (a, b) => (a.titreBrevet ?? '').localeCompare(b.titreBrevet ?? ''),
+      filterSearch: true,
+      render: (titre: string) => (
+        <Tooltip title={titre}>
+          <span style={{ maxWidth: 200, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {titre ?? t('brevets.noTitle')}
+          </span>
+        </Tooltip>
+      ),
+    },
+    {
+    title: t('actions.title'),
       key: 'actions',
       width: 120,
       render: (_, record) => (
@@ -375,10 +391,10 @@ const BrevetsPage: React.FC = () => {
       key="export"
       icon={<ExportOutlined />}
       onClick={() => {
-        message.info('Fonctionnalité d\'export en cours de développement');
+        message.info(t('common.exportInProgress'));
       }}
     >
-      Exporter
+      {t('actions.export')}
     </Button>,
     <Button
       key="add"
@@ -386,7 +402,7 @@ const BrevetsPage: React.FC = () => {
       icon={<PlusOutlined />}
       onClick={handleAdd}
     >
-      Nouveau brevet
+      {t('brevets.actions.new')}
     </Button>
   ];
 
@@ -398,22 +414,22 @@ const BrevetsPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <PageHeader
-        title="Brevets"
-        description="Gestion des brevets et de leurs statuts"
+        <PageHeader
+        title={t('menu.brevets')}
+        description={t('brevets.pageDescription')}
         breadcrumbs={[
-          { title: 'Brevets' }
+          { title: t('menu.brevets') }
         ]}
         actions={headerActions}
       />
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <SearchInput
-          placeholder="Rechercher un brevet..."
+          <SearchInput
+          placeholder={t('brevets.searchPlaceholder')}
           onSearch={handleSearch}
           style={{ maxWidth: 400 }}
         />
-
+        
         <DataTable
           columns={columns}
           data={brevets}
@@ -425,8 +441,7 @@ const BrevetsPage: React.FC = () => {
             total: totalCount,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} sur ${total} brevets`,
+              showTotal: (total, range) => t('brevets.pagination.showTotal', { from: range[0], to: range[1], total }),
             pageSizeOptions: ['10', '20', '50', '100'],
             onChange: handleTableChange,
             onShowSizeChange: handleTableChange,
@@ -437,9 +452,9 @@ const BrevetsPage: React.FC = () => {
       {/* Modal de détails */}
       <Modal
         title={
-          <Space>
+            <Space>
             <FileProtectOutlined />
-            {`Détails du brevet - ${selectedBrevet?.titreBrevet || selectedBrevet?.numeroBrevet}`}
+            {`${t('brevets.detailTitle')} - ${selectedBrevet?.titreBrevet ?? selectedBrevet?.numeroBrevet}`}
           </Space>
         }
         open={isDetailModalVisible}
@@ -449,41 +464,43 @@ const BrevetsPage: React.FC = () => {
         }}
         footer={[
           <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
-            Fermer
+            {t('actions.close') ?? 'Fermer'}
           </Button>
         ]}
         width={900}
       >
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}>
-            <p>Chargement des détails...</p>
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+            <p>{t('brevets.loadingDetails')}</p>
           </div>
         ) : (
           selectedBrevet && (
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               {/* Informations générales */}
-              <Card title="📋 Informations générales" size="small">
+              <Card title={t('brevets.generalInfoTitle') ?? '📋 Informations générales'} size="small">
                 <Descriptions bordered size="small" column={1}>
-                  <Descriptions.Item label="Référence famille">{selectedBrevet.numeroBrevet || 'Non renseigné'}</Descriptions.Item>
-                  <Descriptions.Item label="Titre">{selectedBrevet.titreBrevet || 'Non renseigné'}</Descriptions.Item>
+                  <Descriptions.Item label={t('brevets.labels.reference')}>{selectedBrevet.numeroBrevet ?? t('common.notProvided')}</Descriptions.Item>
+                  <Descriptions.Item label={t('brevets.labels.title')}>{selectedBrevet.titreBrevet ?? t('common.notProvided')}</Descriptions.Item>
                   {selectedBrevet.descriptionBrevet && (
-                    <Descriptions.Item label="Description">{selectedBrevet.descriptionBrevet}</Descriptions.Item>
+                    <Descriptions.Item label={t('common.description')}>{selectedBrevet.descriptionBrevet}</Descriptions.Item>
                   )}
-                  <Descriptions.Item label="Date d'ajout au portefeuille">{new Date(selectedBrevet.createdAt).toLocaleDateString('fr-FR')}</Descriptions.Item>
+                  <Descriptions.Item label={t('brevets.labels.addedDate')}>
+                    {selectedBrevet.createdAt ? new Date(selectedBrevet.createdAt).toLocaleDateString('fr-FR') : t('common.notProvided')}
+                  </Descriptions.Item>
                 </Descriptions>
               </Card>
 
               {/* Clients */}
               {selectedBrevet.clients && selectedBrevet.clients.length > 0 && (
                 <div>
-                  <h3>🏢 Clients ({selectedBrevet.clients.length})</h3>
+                  <h3>{t('brevets.sections.clients')} ({selectedBrevet.clients.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     {selectedBrevet.clients.map((client: any) => (
-                      <div key={client.Id || client.ReferenceClient || `${client.NomClient}-${client.EmailClient}`} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
-                        <div><strong>{client.NomClient}</strong> ({client.ReferenceClient})</div>
-                        <div>📧 {client.EmailClient}</div>
-                        <div>📞 {client.TelephoneClient}</div>
-                        <div>📍 {client.AdresseClient}, {client.PaysClient}</div>
+                      <div key={client.Id ?? client.ReferenceClient ?? `${client.NomClient ?? ''}-${client.EmailClient ?? ''}`} style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                        <div><strong>{client.NomClient ?? ''}</strong> ({client.ReferenceClient ?? ''})</div>
+                        <div>📧 {client.EmailClient ?? ''}</div>
+                        <div>📞 {client.TelephoneClient ?? ''}</div>
+                        <div>📍 {client.AdresseClient ?? ''}, {client.PaysClient ?? ''}</div>
                       </div>
                     ))}
                   </Space>
@@ -493,20 +510,20 @@ const BrevetsPage: React.FC = () => {
               {/* Inventeurs */}
               {selectedBrevet.inventeurs && selectedBrevet.inventeurs.length > 0 && (
                 <div>
-                  <h3>👨‍🔬 Inventeurs ({selectedBrevet.inventeurs.length})</h3>
+                  <h3>{t('brevets.sections.inventors')} ({selectedBrevet.inventeurs.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     {selectedBrevet.inventeurs.map((inventeur: any) => (
                       <div key={inventeur.Id || `${inventeur.Nom}-${inventeur.Prenom}-${inventeur.Email || ''}`}
                            style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
-                        <div><strong>{inventeur.Prenom} {inventeur.Nom}</strong></div>
-                        <div>📧 {inventeur.Email}</div>
+                        <div><strong>{(inventeur.Prenom ?? '') + ' ' + (inventeur.Nom ?? '')}</strong></div>
+                        <div>📧 {inventeur.Email ?? ''}</div>
                         {inventeur.Pays && inventeur.Pays.length > 0 && (
                           <div style={{ marginTop: 4 }}>
                             {inventeur.Pays.map((pays: any) => (
-                              <Tag key={pays.Id || pays.CodeIso || pays.CodePays || pays.NomPays || pays.NomFrFr}
+                              <Tag key={pays.Id ?? pays.CodeIso ?? pays.CodePays ?? pays.NomPays ?? pays.NomFrFr}
                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                <span>{getFlagImage(pays.CodeIso || pays.CodePays)}</span>
-                                <span>{pays.NomPays || pays.NomFrFr || 'Pays'}</span>
+                                <span>{getFlagImage(pays.CodeIso ?? pays.CodePays)}</span>
+                                <span>{pays.NomPays ?? pays.NomFrFr ?? 'Pays'}</span>
                               </Tag>
                             ))}
                           </div>
@@ -520,20 +537,20 @@ const BrevetsPage: React.FC = () => {
               {/* Déposants */}
               {selectedBrevet.deposants && selectedBrevet.deposants.length > 0 && (
                 <div>
-                  <h3>📝 Déposants ({selectedBrevet.deposants.length})</h3>
+                  <h3>{t('brevets.sections.filers')} ({selectedBrevet.deposants.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     {selectedBrevet.deposants.map((deposant: any) => (
-                      <div key={deposant.Id || `${deposant.Nom}-${deposant.Email || ''}`}
-                           style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
-                        <div><strong>{deposant.Nom}</strong></div>
-                        <div>📧 {deposant.Email || 'Non renseigné'}</div>
+               <div key={deposant.Id ?? `${deposant.Nom ?? ''}-${deposant.Email ?? ''}`}
+                  style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
+                <div><strong>{deposant.Nom ?? ''}</strong></div>
+                <div>📧 {deposant.Email ?? t('common.notProvided')}</div>
                         {deposant.Pays && deposant.Pays.length > 0 && (
                           <div style={{ marginTop: 4 }}>
                             {deposant.Pays.map((pays: any) => (
-                              <Tag key={pays.Id || pays.CodeIso || pays.CodePays || pays.NomPays || pays.NomFrFr}
+                              <Tag key={pays.Id ?? pays.CodeIso ?? pays.CodePays ?? pays.NomPays ?? pays.NomFrFr}
                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                <span>{getFlagImage(pays.CodeIso || pays.CodePays)}</span>
-                                <span>{pays.NomPays || pays.NomFrFr || 'Pays'}</span>
+                                <span>{getFlagImage(pays.CodeIso ?? pays.CodePays)}</span>
+                                <span>{pays.NomPays ?? pays.NomFrFr ?? 'Pays'}</span>
                               </Tag>
                             ))}
                           </div>
@@ -547,20 +564,20 @@ const BrevetsPage: React.FC = () => {
               {/* Titulaires */}
               {selectedBrevet.titulaires && selectedBrevet.titulaires.length > 0 && (
                 <div>
-                  <h3>👑 Titulaires ({selectedBrevet.titulaires.length})</h3>
+                  <h3>{t('brevets.sections.holders')} ({selectedBrevet.titulaires.length})</h3>
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     {selectedBrevet.titulaires.map((titulaire: any) => (
                       <div key={titulaire.Id || `${titulaire.Nom}-${titulaire.Email || ''}`}
                            style={{ padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
-                        <div><strong>{titulaire.Nom}</strong></div>
-                        <div>📧 {titulaire.Email || 'Non renseigné'}</div>
+                        <div><strong>{titulaire.Nom ?? ''}</strong></div>
+                        <div>📧 {titulaire.Email ?? t('common.notProvided')}</div>
                         {titulaire.Pays && titulaire.Pays.length > 0 && (
                           <div style={{ marginTop: 4 }}>
                             {titulaire.Pays.map((pays: any) => (
-                              <Tag key={pays.Id || pays.CodeIso || pays.CodePays || pays.NomPays || pays.NomFrFr}
+                                <Tag key={pays.Id ?? pays.CodeIso ?? pays.CodePays ?? pays.NomPays ?? pays.NomFrFr}
                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                <span>{getFlagImage(pays.CodeIso || pays.CodePays)}</span>
-                                <span>{pays.NomPays || pays.NomFrFr || 'Pays'}</span>
+                                <span>{getFlagImage(pays.CodeIso ?? pays.CodePays)}</span>
+                                <span>{pays.NomPays ?? pays.NomFrFr ?? 'Pays'}</span>
                               </Tag>
                             ))}
                           </div>
@@ -576,21 +593,21 @@ const BrevetsPage: React.FC = () => {
               {/* Informations de dépôt */}
               {selectedBrevet.informationsDepot && selectedBrevet.informationsDepot.length > 0 && (
                 <div>
-                  <h3>🗂️ Informations de dépôt ({selectedBrevet.informationsDepot.length})</h3>
+                  <h3>{t('brevets.sections.filingInfo')} ({selectedBrevet.informationsDepot.length})</h3>
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {selectedBrevet.informationsDepot.map((info: any) => (
-                      <Card key={info.Id || info.NumeroDepot || `${info.Pays?.CodeIso || info.Pays?.CodePays}-${info.DateDepot || ''}`}
+          <Card key={info.Id ?? info.NumeroDepot ?? `${info.Pays?.CodeIso ?? info.Pays?.CodePays}-${info.DateDepot ?? ''}`}
                            size="small" bodyStyle={{ backgroundColor: '#fafafa' }} headStyle={{ background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
                         {/* En-tête avec drapeau et pays */}
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 54, height: 36, marginRight: 12, background: '#fff', borderRadius: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.05)' }}>
-                            {getFlagImage(info.Pays?.CodeIso || info.Pays?.CodePays)}
+                            {getFlagImage(info.Pays?.CodeIso ?? info.Pays?.CodePays)}
                           </span>
                           <strong style={{ fontSize: 18 }}>
-                            {info.Pays?.NomPays || info.Pays?.NomFrFr || 'Pays non spécifié'}
-                            {(info.Pays?.CodeIso || info.Pays?.CodePays) && (
+                            {info.Pays?.NomPays ?? info.Pays?.NomFrFr ?? (t('common.countryNotSpecified') ?? 'Pays non spécifié')}
+                            {(info.Pays?.CodeIso ?? info.Pays?.CodePays) && (
                               <span style={{ marginLeft: 8, color: '#666', fontSize: 14 }}>
-                                ({info.Pays?.CodeIso || info.Pays?.CodePays})
+                                ({info.Pays?.CodeIso ?? info.Pays?.CodePays})
                               </span>
                             )}
                           </strong>
@@ -598,40 +615,40 @@ const BrevetsPage: React.FC = () => {
                         
                         {/* Statut avec couleur */}
                         <div style={{ marginBottom: '8px' }}>
-                          <strong>Statut: </strong>
+                          <strong>{t('brevets.labels.status') ?? 'Statut'}: </strong>
                           <Tag 
                             color={getStatutColor(info.Statuts?.NomStatut)} 
                             style={{ marginLeft: '8px', fontWeight: 'bold' }}
                           >
-                            {info.Statuts?.NomStatut || 'Statut non défini'}
+                            {info.Statuts?.NomStatut ?? (t('brevets.statusNotDefined') ?? 'Statut non défini')}
                           </Tag>
                         </div>
                         
                         {/* Informations de dépôt */}
                         <Descriptions bordered size="small" column={2} style={{ marginBottom: 8 }}>
-                          <Descriptions.Item label="N° Dépôt">{info.NumeroDepot || 'Non renseigné'}</Descriptions.Item>
+                          <Descriptions.Item label={t('brevets.labels.filingNumber') ?? 'N° Dépôt'}>{info.NumeroDepot ?? (t('common.notProvided') ?? 'Non renseigné')}</Descriptions.Item>
                           {info.NumeroPublication && (
-                            <Descriptions.Item label="N° Publication">{info.NumeroPublication}</Descriptions.Item>
+                            <Descriptions.Item label={t('brevets.labels.publicationNumber') ?? 'N° Publication'}>{info.NumeroPublication}</Descriptions.Item>
                           )}
                           {info.NumeroDelivrance && (
-                            <Descriptions.Item label="N° Délivrance">{info.NumeroDelivrance}</Descriptions.Item>
+                            <Descriptions.Item label={t('brevets.labels.deliveryNumber') ?? 'N° Délivrance'}>{info.NumeroDelivrance}</Descriptions.Item>
                           )}
-                          <Descriptions.Item label="Date de dépôt">
-                            {info.DateDepot ? new Date(info.DateDepot).toLocaleDateString('fr-FR') : 'Non renseignée'}
+                            <Descriptions.Item label={t('brevets.labels.filingDate') ?? 'Date de dépôt'}>
+                            {info.DateDepot ? new Date(info.DateDepot).toLocaleDateString('fr-FR') : (t('common.notProvided') ?? 'Non renseigné')}
                           </Descriptions.Item>
                           {info.DatePublication && (
-                            <Descriptions.Item label="Date de publication">
+                              <Descriptions.Item label={t('brevets.labels.publicationDate') ?? 'Date de publication'}>
                               {new Date(info.DatePublication).toLocaleDateString('fr-FR')}
                             </Descriptions.Item>
                           )}
                           {info.DateDelivrance && (
-                            <Descriptions.Item label="Date de délivrance">
+                              <Descriptions.Item label={t('brevets.labels.deliveryDate') ?? 'Date de délivrance'}>
                               {new Date(info.DateDelivrance).toLocaleDateString('fr-FR')}
                             </Descriptions.Item>
                           )}
-                          <Descriptions.Item label="Licence">
+                          <Descriptions.Item label={t('brevets.labels.licence') ?? 'Licence'}>
                             <Tag color={info.Licence ? 'green' : 'default'}>
-                              {info.Licence ? '✅ Oui' : '❌ Non'}
+                              {info.Licence ? (t('common.yes') ?? '✅ Oui') : (t('common.no') ?? '❌ Non')}
                             </Tag>
                           </Descriptions.Item>
                         </Descriptions>
@@ -648,14 +665,14 @@ const BrevetsPage: React.FC = () => {
                           <h4 style={{ marginBottom: 8 }}>🏛️ Cabinets liés</h4>
                           {/* Annuités */}
                           <div style={{ marginBottom: 6 }}>
-                            <div style={{ color: '#1890ff', marginBottom: 4 }}>Annuités</div>
+                            <div style={{ color: '#1890ff', marginBottom: 4 }}>{t('brevets.sections.annuities')}</div>
                             {(!info.CabinetsAnnuites || info.CabinetsAnnuites.length === 0) ? (
-                              <span style={{ color: '#999' }}>Aucun</span>
+                              <span style={{ color: '#999' }}>{t('common.none') ?? 'Aucun'}</span>
                             ) : (
                               <ul style={{ margin: 0, paddingLeft: 18 }}>
                                 {info.CabinetsAnnuites.map((row: any, idx: number) => (
-                                  <li key={`ann-${info.Id || info._tempId || idx}`} style={{ marginBottom: 4 }}>
-                                    <strong>{row.CabinetNom || 'Cabinet'}</strong>
+                                  <li key={`ann-${info.Id ?? info._tempId ?? idx}`} style={{ marginBottom: 4 }}>
+                                    <strong>{row.CabinetNom ?? 'Cabinet'}</strong>
                                     {row.Roles && row.Roles.length > 0 && (
                                       <span style={{ marginLeft: 8 }}>
                                         {row.Roles.map((r: string, i: number) => (
@@ -668,8 +685,8 @@ const BrevetsPage: React.FC = () => {
                                     {row.Contacts && row.Contacts.length > 0 && (
                                       <span style={{ marginLeft: 8 }}>
                                         {row.Contacts.map((c: any, i: number) => (
-                                          <Tooltip key={`ca-${i}`} title={c.Email || c.email || ''}>
-                                            <Tag>{`${c.Prenom || c.prenom || ''} ${c.Nom || c.nom || ''}`.trim()}</Tag>
+                                          <Tooltip key={`ca-${i}`} title={c.Email ?? c.email ?? ''}>
+                                            <Tag>{`${c.Prenom ?? c.prenom ?? ''} ${c.Nom ?? c.nom ?? ''}`.trim()}</Tag>
                                           </Tooltip>
                                         ))}
                                       </span>
@@ -681,14 +698,14 @@ const BrevetsPage: React.FC = () => {
                           </div>
                           {/* Procédures */}
                           <div>
-                            <div style={{ color: '#fa8c16', marginBottom: 4 }}>Procédures</div>
+                            <div style={{ color: '#fa8c16', marginBottom: 4 }}>{t('brevets.sections.procedures')}</div>
                             {(!info.CabinetsProcedures || info.CabinetsProcedures.length === 0) ? (
-                              <span style={{ color: '#999' }}>Aucun</span>
+                              <span style={{ color: '#999' }}>{t('common.none') ?? 'Aucun'}</span>
                             ) : (
                               <ul style={{ margin: 0, paddingLeft: 18 }}>
                                 {info.CabinetsProcedures.map((row: any, idx: number) => (
-                                  <li key={`proc-${info.Id || info._tempId || idx}`} style={{ marginBottom: 4 }}>
-                                    <strong>{row.CabinetNom || 'Cabinet'}</strong>
+                                  <li key={`proc-${info.Id ?? info._tempId ?? idx}`} style={{ marginBottom: 4 }}>
+                                    <strong>{row.CabinetNom ?? 'Cabinet'}</strong>
                                     {row.Roles && row.Roles.length > 0 && (
                                       <span style={{ marginLeft: 8 }}>
                                         {row.Roles.map((r: string, i: number) => (
@@ -701,8 +718,8 @@ const BrevetsPage: React.FC = () => {
                                     {row.Contacts && row.Contacts.length > 0 && (
                                       <span style={{ marginLeft: 8 }}>
                                         {row.Contacts.map((c: any, i: number) => (
-                                          <Tooltip key={`cp-${i}`} title={c.Email || c.email || ''}>
-                                            <Tag>{`${c.Prenom || c.prenom || ''} ${c.Nom || c.nom || ''}`.trim()}</Tag>
+                                          <Tooltip key={`cp-${i}`} title={c.Email ?? c.email ?? ''}>
+                                            <Tag>{`${c.Prenom ?? c.prenom ?? ''} ${c.Nom ?? c.nom ?? ''}`.trim()}</Tag>
                                           </Tooltip>
                                         ))}
                                       </span>
@@ -735,7 +752,7 @@ const BrevetsPage: React.FC = () => {
             console.error('Erreur création brevet:', error);
             addNotification({
               type: 'error',
-              message: 'Erreur lors de la création du brevet'
+              message: t('brevets.createError') || 'Erreur lors de la création du brevet'
             });
           }
         }}
@@ -757,7 +774,7 @@ const BrevetsPage: React.FC = () => {
             console.error('Erreur modification brevet:', error);
             addNotification({
               type: 'error',
-              message: 'Erreur lors de la modification du brevet'
+              message: t('brevets.updateError') || 'Erreur lors de la modification du brevet'
             });
           }
         }}

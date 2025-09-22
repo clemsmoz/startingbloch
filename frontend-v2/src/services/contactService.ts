@@ -96,8 +96,28 @@ export const contactService = {
 
   // Mettre à jour un contact
   update: async (id: number, contact: UpdateContactDto): Promise<ApiResponse<Contact>> => {
-    const response = await api.put(`${config.api.endpoints.contacts}/${id}`, contact);
-    return response.data;
+    try {
+      console.log(`✏️ Contact Service - Mise à jour contact ${id} avec données:`, contact);
+      const response = await api.put(`${config.api.endpoints.contacts}/${id}`, contact);
+      console.log('✅ Contact Service - Réponse mise à jour:', response.data);
+      return response.data;
+    } catch (error: any) {
+      // Log verbeux pour diagnostiquer les erreurs PUT
+      try {
+        console.error('❌ Contact Service - Erreur lors de la mise à jour du contact:', error?.toString ? error.toString() : error);
+        console.error('❌ Contact Service - HTTP status:', error.response?.status);
+        console.error('❌ Contact Service - Détails (response.data):', JSON.stringify(error.response?.data ?? error.response ?? error, null, 2));
+      } catch (logErr) {
+        console.error('❌ Contact Service - Erreur lors du logging:', logErr);
+      }
+
+      return {
+        data: {} as Contact,
+        success: false,
+        message: error.response?.data?.message || error.response?.data?.Message || 'Erreur lors de la mise à jour du contact',
+        errors: error.response?.data?.errors || error.response?.data?.Errors
+      };
+    }
   },
 
   // Supprimer un contact

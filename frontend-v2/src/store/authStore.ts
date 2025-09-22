@@ -64,21 +64,21 @@ export const useAuthStore = create<AuthState>()(
           
           // Le backend peut retourner Token (majuscule) au lieu de token (minuscule)
           const resultAny = result as any;
-          const token = result.token || resultAny.Token || '';
-          const refreshToken = result.refreshToken || resultAny.RefreshToken || '';
-          const userRaw = (result.user || resultAny.User || null) as any;
+          const token = result.token ?? resultAny.Token ?? '';
+          const refreshToken = result.refreshToken ?? resultAny.RefreshToken ?? '';
+          const userRaw = (result.user ?? resultAny.User ?? null) as any;
           
           // Mapper les propriétés backend vers frontend
           const user = userRaw ? {
-            id: userRaw.id || userRaw.Id,
-            email: userRaw.email || userRaw.Email,
-            username: userRaw.username || userRaw.Username || userRaw.email || userRaw.Email,
-            nom: userRaw.nom || userRaw.LastName,
-            prenom: userRaw.prenom || userRaw.FirstName,
-            role: userRaw.role || userRaw.Role,
+            id: userRaw.id ?? userRaw.Id,
+            email: userRaw.email ?? userRaw.Email,
+            username: userRaw.username ?? userRaw.Username ?? userRaw.email ?? userRaw.Email,
+            nom: userRaw.nom ?? userRaw.LastName,
+            prenom: userRaw.prenom ?? userRaw.FirstName,
+            role: userRaw.role ?? userRaw.Role,
             isActive: userRaw.isActive !== undefined ? userRaw.isActive : userRaw.IsActive,
-            createdAt: userRaw.createdAt || userRaw.CreatedAt || new Date().toISOString(),
-            updatedAt: userRaw.updatedAt || userRaw.UpdatedAt || new Date().toISOString()
+            createdAt: userRaw.createdAt ?? userRaw.CreatedAt ?? new Date().toISOString(),
+            updatedAt: userRaw.updatedAt ?? userRaw.UpdatedAt ?? new Date().toISOString()
           } : null;
           
           console.log('📝 Stockage des tokens...');
@@ -161,15 +161,15 @@ export const useAuthStore = create<AuthState>()(
             
             // Mapper les propriétés comme dans le login
             const user = {
-              id: userRaw.id || userRaw.Id,
-              email: userRaw.email || userRaw.Email,
-              username: userRaw.username || userRaw.Username || userRaw.email || userRaw.Email,
-              nom: userRaw.nom || userRaw.LastName,
-              prenom: userRaw.prenom || userRaw.FirstName,
-              role: userRaw.role || userRaw.Role,
+              id: userRaw.id ?? userRaw.Id,
+              email: userRaw.email ?? userRaw.Email,
+              username: userRaw.username ?? userRaw.Username ?? userRaw.email ?? userRaw.Email,
+              nom: userRaw.nom ?? userRaw.LastName,
+              prenom: userRaw.prenom ?? userRaw.FirstName,
+              role: userRaw.role ?? userRaw.Role,
               isActive: userRaw.isActive !== undefined ? userRaw.isActive : userRaw.IsActive,
-              createdAt: userRaw.createdAt || userRaw.CreatedAt || new Date().toISOString(),
-              updatedAt: userRaw.updatedAt || userRaw.UpdatedAt || new Date().toISOString()
+              createdAt: userRaw.createdAt ?? userRaw.CreatedAt ?? new Date().toISOString(),
+              updatedAt: userRaw.updatedAt ?? userRaw.UpdatedAt ?? new Date().toISOString()
             };
             
             console.log('🔄 RefreshAuth - User mappé:', user);

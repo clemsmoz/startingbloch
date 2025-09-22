@@ -32,15 +32,13 @@ export const cabinetService = {
   // Récupérer tous les cabinets
   getAll: async (page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Cabinet>> => {
     try {
-      // console.log(`🏢 Cabinet Service - Récupération des cabinets (page ${page}, taille ${pageSize})...`);
-      // console.log('URL complète:', `${config.api.baseUrl}${config.api.endpoints.cabinets}`);
+      
       
       const response = await api.get(config.api.endpoints.cabinets, {
         params: { page, pageSize }
       });
       
-      // console.log('✅ Cabinet Service - Réponse reçue:', response.data);
-      // console.log('🔍 Cabinet Service - Structure complète:', JSON.stringify(response.data, null, 2));
+      
       
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((cabinet: any) => ({
@@ -58,7 +56,7 @@ export const cabinetService = {
         clients: cabinet.Clients
       })) || [];
       
-      //console.log('🔄 Cabinet Service - Données transformées:', transformedData);
+      
       
       // Retourner dans le format attendu par le frontend
       return {
@@ -73,9 +71,6 @@ export const cabinetService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      // console.error('❌ Cabinet Service - Erreur:', error);
-      // console.error('Détails de l\'erreur:', error.response?.data);
-      
       return {
         data: [],
         success: false,
@@ -171,14 +166,19 @@ export const cabinetService = {
         message: 'Cabinet créé avec succès'
       };
     } catch (error: any) {
-      console.error('❌ Cabinet Service - Erreur lors de la création:', error);
-      console.error('❌ Détails de l\'erreur:', error.response?.data);
-      
+      // Log plus verbeux pour capturer la réponse server-side (JSON) proprement
+      try {
+        console.error('❌ Cabinet Service - Erreur lors de la création:', error?.toString ? error.toString() : error);
+        console.error('❌ Cabinet Service - Détails (response.data):', JSON.stringify(error.response?.data ?? error.response ?? error, null, 2));
+      } catch (logErr) {
+        console.error('❌ Cabinet Service - Erreur lors du logging:', logErr);
+      }
+
       return {
         data: {} as Cabinet,
         success: false,
         message: error.response?.data?.Message || error.response?.data?.message || 'Erreur lors de la création du cabinet',
-        errors: error.response?.data?.Errors || error.response?.data?.errors
+        errors: error.response?.data?.Errors || error.response?.data?.errors || error.response?.data
       };
     }
   },
@@ -248,16 +248,24 @@ export const cabinetService = {
       console.log('🔄 Cabinet Service - Données envoyées au backend:', requestData);
       
       const response = await api.put(`${config.api.endpoints.cabinets}/${cabinetData.id}`, requestData);
-      
+
+      console.log('✅ Cabinet Service - Réponse mise à jour:', response.data);
+
       return {
         data: response.data.data || response.data,
         success: true,
         message: 'Cabinet mis à jour avec succès'
       };
     } catch (error: any) {
-      console.error('❌ Cabinet Service - Erreur lors de la mise à jour:', error);
-      console.error('❌ Détails de l\'erreur:', error.response?.data);
-      
+      // Log verbeux pour diagnostiquer les erreurs PUT
+      try {
+        console.error('❌ Cabinet Service - Erreur lors de la mise à jour:', error?.toString ? error.toString() : error);
+        console.error('❌ Cabinet Service - HTTP status:', error.response?.status);
+        console.error('❌ Cabinet Service - Détails (response.data):', JSON.stringify(error.response?.data ?? error.response ?? error, null, 2));
+      } catch (logErr) {
+        console.error('❌ Cabinet Service - Erreur lors du logging:', logErr);
+      }
+
       return {
         data: {} as Cabinet,
         success: false,

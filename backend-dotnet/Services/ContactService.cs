@@ -43,6 +43,7 @@
  */
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using StartingBloch.Backend.Data;
 using StartingBloch.Backend.DTOs;
 using StartingBloch.Backend.Models;
@@ -56,15 +57,19 @@ namespace StartingBloch.Backend.Services;
 public class ContactService : IContactService
 {
     private readonly StartingBlochDbContext _context;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<ContactService> _logger;
 
     /// <summary>
     /// Initialise service contacts avec contexte données Entity Framework.
     /// Configuration accès base données optimisée requêtes relations.
     /// </summary>
     /// <param name="context">Contexte base données Entity Framework</param>
-    public ContactService(StartingBlochDbContext context)
+    public ContactService(StartingBlochDbContext context, INotificationService notificationService, ILogger<ContactService> logger)
     {
         _context = context;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -207,6 +212,9 @@ public class ContactService : IContactService
     /// <returns>Contact créé avec détails complets et relations</returns>
     public async Task<ApiResponse<ContactDto>> CreateContactAsync(CreateContactDto createContactDto)
     {
+        int createdContactId = 0;
+        string? createdContactName = null;
+        string? createdContactPrenom = null;
         try
         {
             var contact = new Contact
@@ -254,6 +262,9 @@ public class ContactService : IContactService
                 CabinetNom = contact.Cabinet?.Nom,
                 ClientNom = contact.Client?.Nom
             };
+            createdContactId = contact.Id;
+            createdContactName = contact.Nom;
+            createdContactPrenom = contact.Prenom;
 
             return new ApiResponse<ContactDto>
             {
@@ -271,6 +282,26 @@ public class ContactService : IContactService
                 Errors = ex.Message
             };
         }
+        finally
+        {
+            try
+            {
+                if (createdContactId != 0)
+                {
+                    _logger?.LogInformation("[NOTIF-TRACE] ContactService.CreateContactAsync -> will create notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message}", "Contact", "Created", createContactDto.IdClient, createdContactId, $"Contact créé : {createdContactName} (ID={createdContactId})");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Contact",
+                        Action = "Created",
+                        Message = $"Contact créé : {createdContactName}",
+                        ReferenceId = createdContactId,
+                        ClientId = createContactDto.IdClient,
+                        Metadata = System.Text.Json.JsonSerializer.Serialize(new { prenom = createdContactPrenom, nom = createdContactName })
+                    });
+                }
+            }
+            catch (Exception ex) { _logger?.LogWarning(ex, "[NOTIF-TRACE] ContactService.CreateContactAsync -> exception while calling CreateNotificationAsync"); }
+        }
     }
 
     /// <summary>
@@ -282,6 +313,10 @@ public class ContactService : IContactService
     /// <returns>Contact modifié avec détails complets mis à jour</returns>
     public async Task<ApiResponse<ContactDto>> UpdateContactAsync(int id, UpdateContactDto updateContactDto)
     {
+        int updatedContactId = 0;
+        string? updatedContactName = null;
+        string? updatedContactPrenom = null;
+        int? notifClientId = null;
         try
         {
             var contact = await _context.Contacts
@@ -298,19 +333,48 @@ public class ContactService : IContactService
                 };
             }
 
-            contact.Nom = updateContactDto.Nom;
-            contact.Prenom = updateContactDto.Prenom;
-            contact.Email = updateContactDto.Email;
-            contact.Telephone = updateContactDto.Telephone;
-            contact.Role = updateContactDto.Role;
-            contact.IdCabinet = updateContactDto.IdCabinet;
-            contact.IdClient = updateContactDto.IdClient;
-            contact.Emails = updateContactDto.Emails ?? contact.Emails;
-            contact.Phones = updateContactDto.Phones ?? contact.Phones;
-            contact.Roles = updateContactDto.Roles ?? contact.Roles;
+            // Appliquer uniquement les champs fournis pour éviter d'
+            // écraser involontairement des données (ex: dissocier d'un client/cabinet)
+            if (!string.IsNullOrWhiteSpace(updateContactDto.Nom))
+                contact.Nom = updateContactDto.Nom;
+
+            if (!string.IsNullOrWhiteSpace(updateContactDto.Prenom))
+                contact.Prenom = updateContactDto.Prenom;
+
+            if (!string.IsNullOrWhiteSpace(updateContactDto.Email))
+                contact.Email = updateContactDto.Email;
+
+            if (!string.IsNullOrWhiteSpace(updateContactDto.Telephone))
+                contact.Telephone = updateContactDto.Telephone;
+
+            if (!string.IsNullOrWhiteSpace(updateContactDto.Role))
+                contact.Role = updateContactDto.Role;
+
+            // Associations : n'affecter que si une valeur a été fournie (HasValue)
+            if (updateContactDto.IdCabinet.HasValue)
+                contact.IdCabinet = updateContactDto.IdCabinet;
+
+            if (updateContactDto.IdClient.HasValue)
+                contact.IdClient = updateContactDto.IdClient;
+
+            // Collections : n'écraser que si un tableau a été explicitement envoyé (même vide)
+            if (updateContactDto.Emails != null)
+                contact.Emails = updateContactDto.Emails;
+
+            if (updateContactDto.Phones != null)
+                contact.Phones = updateContactDto.Phones;
+
+            if (updateContactDto.Roles != null)
+                contact.Roles = updateContactDto.Roles;
+
             contact.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            updatedContactId = contact.Id;
+            updatedContactName = contact.Nom;
+            updatedContactPrenom = contact.Prenom;
+            notifClientId = contact.IdClient;
 
             var contactDto = new ContactDto
             {
@@ -330,7 +394,6 @@ public class ContactService : IContactService
                 CabinetNom = contact.Cabinet?.Nom,
                 ClientNom = contact.Client?.Nom
             };
-
             return new ApiResponse<ContactDto>
             {
                 Success = true,
@@ -347,6 +410,28 @@ public class ContactService : IContactService
                 Errors = ex.Message
             };
         }
+        finally
+        {
+            try
+            {
+                if (updatedContactId != 0)
+                {
+                    var fullName = $"{updateContactDto.Prenom} {updateContactDto.Nom}".Trim();
+                    if (string.IsNullOrWhiteSpace(fullName)) fullName = updatedContactName ?? string.Empty;
+                    _logger?.LogInformation("[NOTIF-TRACE] ContactService.UpdateContactAsync -> will create notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message}", "Contact", "Updated", updateContactDto.IdClient ?? notifClientId, updatedContactId, $"Contact mis à jour : {fullName}");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Contact",
+                        Action = "Updated",
+                        Message = $"Contact mis à jour : {fullName}",
+                        ReferenceId = updatedContactId,
+                        ClientId = updateContactDto.IdClient ?? notifClientId,
+                        Metadata = System.Text.Json.JsonSerializer.Serialize(new { prenom = updateContactDto.Prenom ?? updatedContactPrenom ?? string.Empty, nom = updateContactDto.Nom ?? updatedContactName ?? string.Empty })
+                    });
+                }
+            }
+            catch (Exception ex) { _logger?.LogWarning(ex, "[NOTIF-TRACE] ContactService.UpdateContactAsync -> exception while calling CreateNotificationAsync"); }
+        }
     }
 
     /// <summary>
@@ -357,6 +442,8 @@ public class ContactService : IContactService
     /// <returns>Confirmation succès suppression contact</returns>
     public async Task<ApiResponse<bool>> DeleteContactAsync(int id)
     {
+        int deletedContactId = 0;
+        int? clientId = null;
         try
         {
             var contact = await _context.Contacts.FindAsync(id);
@@ -368,6 +455,9 @@ public class ContactService : IContactService
                     Message = "Contact non trouvé"
                 };
             }
+
+            deletedContactId = contact.Id;
+            clientId = contact.IdClient;
 
             _context.Contacts.Remove(contact);
             await _context.SaveChangesAsync();
@@ -387,6 +477,29 @@ public class ContactService : IContactService
                 Message = "Erreur lors de la suppression du contact",
                 Errors = ex.Message
             };
+        }
+        finally
+        {
+            try
+            {
+                if (deletedContactId != 0)
+                {
+                    // Try to get the contact name if possible
+                    var contact = await _context.Contacts.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == deletedContactId);
+                    var fullName = contact != null ? $"{contact.Prenom} {contact.Nom}".Trim() : string.Empty;
+                    _logger?.LogInformation("[NOTIF-TRACE] ContactService.DeleteContactAsync -> will create notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Message={Message}", "Contact", "Deleted", clientId, deletedContactId, $"Contact supprimé : {fullName}");
+                    var _ = _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Contact",
+                        Action = "Deleted",
+                        Message = $"Contact supprimé : {fullName}",
+                        ReferenceId = deletedContactId,
+                        ClientId = clientId,
+                        Metadata = System.Text.Json.JsonSerializer.Serialize(new { prenom = contact?.Prenom ?? string.Empty, nom = contact?.Nom ?? string.Empty })
+                    });
+                }
+            }
+            catch (Exception ex) { _logger?.LogWarning(ex, "[NOTIF-TRACE] ContactService.DeleteContactAsync -> exception while calling CreateNotificationAsync"); }
         }
     }
 

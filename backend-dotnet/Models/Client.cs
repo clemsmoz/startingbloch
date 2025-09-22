@@ -119,7 +119,14 @@ public class Client
     /// False = client en lecture seule (consultation/audit)
     /// </summary>
     [Column("can_write")]
-    public bool CanWrite { get; set; } = false;
+    public int CanWriteInt { get; set; } = 0;
+
+    [NotMapped]
+    public bool CanWrite
+    {
+        get => CanWriteInt == 1;
+        set => CanWriteInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Permission de lecture pour ce client
@@ -127,7 +134,14 @@ public class Client
     /// True par défaut pour accès minimal garanti
     /// </summary>
     [Column("can_read")]
-    public bool CanRead { get; set; } = true;
+    public int CanReadInt { get; set; } = 1;
+
+    [NotMapped]
+    public bool CanRead
+    {
+        get => CanReadInt == 1;
+        set => CanReadInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Indicateur de blocage du client
@@ -135,7 +149,14 @@ public class Client
     /// Utilisé pour gestion des impayés ou violations
     /// </summary>
     [Column("is_blocked")]
-    public bool IsBlocked { get; set; } = false;
+    public int IsBlockedInt { get; set; } = 0;
+
+    [NotMapped]
+    public bool IsBlocked
+    {
+        get => IsBlockedInt == 1;
+        set => IsBlockedInt = value ? 1 : 0;
+    }
 
     /// <summary>
     /// Date de création de l'enregistrement client

@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Row, Col, message } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined } from '@ant-design/icons';
 import { deposantService } from '../../services';
@@ -27,12 +28,13 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (values: any) => {
     setLoading(true);
     try {
       // Détection doublon: par email si fourni, sinon (nom + prénom)
-      const norm = (s?: string) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const norm = (s?: string) => (s ?? '').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
       const email = norm(values.emailDeposant);
       const nom = norm(values.nomDeposant);
       const prenom = norm(values.prenomDeposant);
@@ -46,7 +48,7 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
       });
 
       if (duplicate) {
-        message.info("Ce déposant existe déjà, il a été sélectionné.");
+        message.info(t('deposants.messages.duplicate'));
         onDuplicate?.(duplicate);
         form.resetFields();
         onCancel();
@@ -82,7 +84,7 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
 
   return (
     <Modal
-      title="Créer un nouveau déposant"
+      title={t('deposants.modals.create.title')}
       open={visible}
       onCancel={handleCancel}
       onOk={() => form.submit()}
@@ -99,15 +101,14 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="nomDeposant"
-              label="Nom"
+              label={t('deposants.fields.lastName')}
               rules={[
-                { required: true, message: 'Le nom est obligatoire' },
-                { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                { max: 100, message: t('deposants.validation.nameMax') }
               ]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="Nom du déposant"
+                placeholder={t('deposants.placeholders.lastName')}
                 maxLength={100}
               />
             </Form.Item>
@@ -115,13 +116,13 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="prenomDeposant"
-              label="Prénom"
+              label={t('deposants.fields.firstName')}
               rules={[
-                { max: 100, message: 'Le prénom ne peut pas dépasser 100 caractères' }
+                { max: 100, message: t('deposants.validation.firstNameMax') }
               ]}
             >
               <Input
-                placeholder="Prénom du déposant"
+                placeholder={t('deposants.placeholders.firstName')}
                 maxLength={100}
               />
             </Form.Item>
@@ -132,14 +133,14 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
           <Col span={24}>
             <Form.Item
               name="adresseDeposant"
-              label="Adresse"
+              label={t('deposants.fields.address')}
               rules={[
-                { max: 500, message: 'L\'adresse ne peut pas dépasser 500 caractères' }
+                { max: 500, message: t('deposants.validation.addressMax') }
               ]}
             >
               <Input
                 prefix={<HomeOutlined />}
-                placeholder="Adresse complète"
+                placeholder={t('deposants.placeholders.address')}
                 maxLength={500}
               />
             </Form.Item>
@@ -150,15 +151,15 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="emailDeposant"
-              label="Email"
+              label={t('deposants.fields.email')}
               rules={[
-                { type: 'email', message: 'Format d\'email invalide' },
-                { max: 255, message: 'L\'email ne peut pas dépasser 255 caractères' }
+                { type: 'email', message: t('deposants.validation.emailInvalid') },
+                { max: 255, message: t('deposants.validation.emailMax') }
               ]}
             >
               <Input
                 prefix={<MailOutlined />}
-                placeholder="email@exemple.com"
+                placeholder={t('deposants.placeholders.email')}
                 maxLength={255}
               />
             </Form.Item>
@@ -166,14 +167,14 @@ const CreateDeposantModal: React.FC<CreateDeposantModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="telephoneDeposant"
-              label="Téléphone"
+              label={t('deposants.fields.phone')}
               rules={[
-                { max: 20, message: 'Le téléphone ne peut pas dépasser 20 caractères' }
+                { max: 20, message: t('deposants.validation.phoneMax') }
               ]}
             >
               <Input
                 prefix={<PhoneOutlined />}
-                placeholder="+33 1 23 45 67 89"
+                placeholder={t('deposants.placeholders.phone')}
                 maxLength={20}
               />
             </Form.Item>

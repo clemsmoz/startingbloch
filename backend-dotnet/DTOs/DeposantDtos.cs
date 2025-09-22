@@ -77,7 +77,6 @@ public class CreateDeposantDto
     /// Nom déposant OBLIGATOIRE - dénomination légale pour dépôts.
     /// Validation stricte conformité identification officielle.
     /// </summary>
-    [Required(ErrorMessage = "Le nom est requis")]
     [StringLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
     public string Nom { get; set; } = string.Empty;
 
@@ -108,7 +107,6 @@ public class UpdateDeposantDto
     /// Nom déposant OBLIGATOIRE maintenu en modification.
     /// Identification légale ne peut être supprimée pour continuité procédures.
     /// </summary>
-    [Required(ErrorMessage = "Le nom est requis")]
     [StringLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
     public string Nom { get; set; } = string.Empty;
 

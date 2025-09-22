@@ -91,7 +91,6 @@ public class CreateContactDto
     /// Nom contact OBLIGATOIRE pour identification professionnelle.
     /// Élément central référencement et communication formelle.
     /// </summary>
-    [Required(ErrorMessage = "Le nom est requis")]
     [StringLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
     public string? Nom { get; set; }
 
@@ -166,7 +165,6 @@ public class UpdateContactDto
     /// Nom contact OBLIGATOIRE maintenu en modification.
     /// Identification professionnelle ne peut être supprimée.
     /// </summary>
-    [Required(ErrorMessage = "Le nom est requis")]
     [StringLength(100, ErrorMessage = "Le nom ne peut pas dépasser 100 caractères")]
     public string? Nom { get; set; }
 

@@ -13,6 +13,7 @@ import { Modal, Form, Input, Select, Row, Col, Tabs, Button, Space, Card, Descri
 import { UserOutlined, MailOutlined, PhoneOutlined, TeamOutlined, PlusOutlined, DeleteOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import type { CreateContactDto, Client, Cabinet } from '../../types';
 import { clientService, cabinetService } from '../../services';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -38,6 +39,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
   prefilledContactId
 }) => {
   const [form] = Form.useForm();
+  const { t } = useTranslation();
   const [clients, setClients] = useState<Client[]>([]);
   const [cabinets, setCabinets] = useState<Cabinet[]>([]);
   const [emails, setEmails] = useState<{ id: string; value: string }[]>([{ id: crypto.randomUUID(), value: '' }]);
@@ -79,15 +81,15 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
   const loadReferenceData = async () => {
     try {
       const clientsResponse = await clientService.getAll();
-      if (clientsResponse.success) setClients(clientsResponse.data || []);
+  if (clientsResponse.success) setClients(clientsResponse.data ?? []);
       
       const storedUser = sessionStorage.getItem('startingbloch_user');
-      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+  const role = storedUser ? (JSON.parse(storedUser).role ?? '').toLowerCase() : '';
       const cabinetsResponse = role === 'client' ? await (async () => {
         const r = await cabinetService.getMine();
         return { success: r.success, data: r.data } as any;
       })() : await cabinetService.getAll();
-  if (cabinetsResponse.success) setCabinets(cabinetsResponse.data || []);
+  if (cabinetsResponse.success) setCabinets(cabinetsResponse.data ?? []);
     } catch (error) {
       console.error('Erreur lors du chargement des données de référence:', error);
     }
@@ -114,9 +116,9 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
         role: formData.role,
         idCabinet: formData.idCabinet,
         idClient: formData.idClient,
-        emails: formData.emails || [],
-        phones: formData.phones || [],
-        roles: formData.roles || [],
+  emails: formData.emails ?? [],
+  phones: formData.phones ?? [],
+  roles: formData.roles ?? [],
       };
 
       await onSubmit(contactData);
@@ -183,44 +185,44 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
     <div>
       <Title level={4} style={{ textAlign: 'center', marginBottom: 24 }}>
         <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-        Récapitulatif de création du contact
+        {t('contacts.modals.add.recapTitle')}
       </Title>
       
-      <Card title="Informations du contact" style={{ marginBottom: 16 }}>
+  <Card title={t('contacts.modals.add.cardTitle')} style={{ marginBottom: 16 }}>
         <Descriptions bordered size="small">
-          <Descriptions.Item label="Nom" span={1}>
+          <Descriptions.Item label={t('contacts.fields.lastName')} span={1}>
             {formData.nom}
           </Descriptions.Item>
-          <Descriptions.Item label="Prénom" span={2}>
+          <Descriptions.Item label={t('contacts.fields.firstName')} span={2}>
             {formData.prenom}
           </Descriptions.Item>
           
           {formData.idClient && (
-            <Descriptions.Item label="Client" span={3}>
+            <Descriptions.Item label={t('contacts.fields.client')} span={3}>
               {clients.find(c => c.id === formData.idClient)?.nomClient}
             </Descriptions.Item>
           )}
-          
+
           {formData.idCabinet && (
-            <Descriptions.Item label="Cabinet" span={3}>
+            <Descriptions.Item label={t('contacts.fields.cabinet')} span={3}>
               {cabinets.find(c => c.id === formData.idCabinet)?.nomCabinet}
             </Descriptions.Item>
           )}
-          
+
           {formData.emails && formData.emails.length > 0 && (
-            <Descriptions.Item label="Emails" span={3}>
+            <Descriptions.Item label={t('contacts.sections.emails')} span={3}>
               {formData.emails.join(', ')}
             </Descriptions.Item>
           )}
-          
+
           {formData.phones && formData.phones.length > 0 && (
-            <Descriptions.Item label="Téléphones" span={3}>
+            <Descriptions.Item label={t('contacts.sections.phones')} span={3}>
               {formData.phones.join(', ')}
             </Descriptions.Item>
           )}
-          
+
           {formData.roles && formData.roles.length > 0 && (
-            <Descriptions.Item label="Rôles" span={3}>
+            <Descriptions.Item label={t('contacts.sections.roles')} span={3}>
               {formData.roles.join(', ')}
             </Descriptions.Item>
           )}
@@ -230,25 +232,25 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
   );
 
   return (
-    <Modal
-      title={currentStep === 'form' ? "Ajouter un nouveau contact" : "Confirmer la création"}
+      <Modal
+      title={currentStep === 'form' ? t('contacts.modals.add.title') : t('contacts.modals.add.confirmTitle')}
       open={visible}
       onCancel={handleCancel}
       width={800}
       footer={
         currentStep === 'form' ? [
           <Button key="cancel" onClick={handleCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>,
           <Button key="next" type="primary" onClick={() => form.submit()}>
-            Suivant - Récapitulatif
+            {t('common.next')}
           </Button>
         ] : [
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={handleBackToForm}>
-            Retour au formulaire
+            {t('common.back')}
           </Button>,
           <Button key="cancel" onClick={handleCancel}>
-            Annuler
+            {t('common.cancel')}
           </Button>,
           <Button 
             key="submit" 
@@ -257,7 +259,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
             onClick={handleFinalSubmit}
             icon={<CheckCircleOutlined />}
           >
-            Créer le contact
+            {t('contacts.modals.add.create')}
           </Button>
         ]
       }
@@ -270,19 +272,19 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
           autoComplete="off"
         >
         <Tabs defaultActiveKey="1">
-          <TabPane tab="Informations générales" key="1">
+          <TabPane tab={t('contacts.modals.add.tabs.general')} key="1">
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="prenom"
-                  label="Prénom"
+                    label={t('contacts.fields.firstName')}
                   rules={[
-                    { max: 100, message: 'Le prénom ne peut pas dépasser 100 caractères' }
+                      { max: 100, message: t('contacts.validation.firstNameMax') }
                   ]}
                 >
                   <Input
                     prefix={<UserOutlined />}
-                    placeholder="Prénom du contact"
+                      placeholder={t('contacts.placeholders.firstName')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -290,14 +292,14 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="nom"
-                  label="Nom"
+                    label={t('contacts.fields.lastName')}
                   rules={[
-                    { max: 100, message: 'Le nom ne peut pas dépasser 100 caractères' }
+                      { max: 100, message: t('contacts.validation.lastNameMax') }
                   ]}
                 >
                   <Input
                     prefix={<UserOutlined />}
-                    placeholder="Nom de famille du contact"
+                      placeholder={t('contacts.placeholders.lastName')}
                     maxLength={100}
                   />
                 </Form.Item>
@@ -305,16 +307,16 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
             </Row>
           </TabPane>
 
-          <TabPane tab="Organisation" key="2">
+          <TabPane tab={t('contacts.modals.add.tabs.organization')} key="2">
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
+                  <Form.Item
                   name="idClient"
-                  label="Client associé"
-                  tooltip="Lier le contact à une organisation cliente"
+                  label={t('contacts.fields.client')}
+                  tooltip={t('contacts.tooltips.client')}
                 >
                   <Select
-                    placeholder="Sélectionner un client"
+                    placeholder={t('contacts.placeholders.selectClient')}
                     showSearch
                     optionFilterProp="children"
                     allowClear
@@ -330,11 +332,11 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
               <Col span={12}>
                 <Form.Item
                   name="idCabinet"
-                  label="Cabinet associé"
-                  tooltip="Lier le contact à un cabinet d'avocats"
+                    label={t('contacts.modals.add.labels.cabinet')}
+                    tooltip={t('contacts.modals.add.tooltips.cabinet')}
                 >
-                  <Select
-                    placeholder="Sélectionner un cabinet"
+                    <Select
+                      placeholder={t('contacts.modals.add.placeholders.selectCabinet')}
                     showSearch
                     optionFilterProp="children"
                     allowClear
@@ -350,7 +352,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
             </Row>
           </TabPane>
 
-          <TabPane tab="Emails" key="3">
+          <TabPane tab={t('contacts.modals.add.tabs.emails')} key="3">
             <div style={{ marginBottom: 16 }}>
               <Button 
                 type="dashed" 
@@ -358,16 +360,16 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
                 icon={<PlusOutlined />}
                 style={{ width: '100%' }}
               >
-                Ajouter un email
+                {t('contacts.actions.addEmail')}
               </Button>
             </div>
 
             {emails.map((email) => (
               <div key={email.id} style={{ marginBottom: 8 }}>
                 <Space.Compact style={{ display: 'flex' }}>
-                  <Input
+                    <Input
                     prefix={<MailOutlined />}
-                    placeholder="email@example.com"
+                    placeholder={t('contacts.placeholders.email')}
                     value={email.value}
                     onChange={(e) => updateEmail(email.id, e.target.value)}
                     style={{ flex: 1 }}
@@ -385,7 +387,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
             ))}
           </TabPane>
 
-          <TabPane tab="Téléphones" key="4">
+          <TabPane tab={t('contacts.modals.add.tabs.phones')} key="4">
             <div style={{ marginBottom: 16 }}>
               <Button 
                 type="dashed" 
@@ -393,7 +395,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
                 icon={<PlusOutlined />}
                 style={{ width: '100%' }}
               >
-                Ajouter un téléphone
+                {t('contacts.actions.addPhone')}
               </Button>
             </div>
 
@@ -402,7 +404,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input
                     prefix={<PhoneOutlined />}
-                    placeholder="+33 1 23 45 67 89"
+                    placeholder={t('contacts.placeholders.phone')}
                     value={phone.value}
                     onChange={(e) => updatePhone(phone.id, e.target.value)}
                     style={{ flex: 1 }}
@@ -420,7 +422,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
             ))}
           </TabPane>
 
-          <TabPane tab="Rôles" key="5">
+          <TabPane tab={t('contacts.modals.add.tabs.roles')} key="5">
             <div style={{ marginBottom: 16 }}>
               <Button 
                 type="dashed" 
@@ -428,7 +430,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
                 icon={<PlusOutlined />}
                 style={{ width: '100%' }}
               >
-                Ajouter un rôle
+                {t('contacts.actions.addRole')}
               </Button>
             </div>
 
@@ -437,7 +439,7 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input
                     prefix={<TeamOutlined />}
-                    placeholder="Ex: Inventeur, Titulaire, Déposant"
+                    placeholder={t('contacts.placeholders.roleExample')}
                     value={role.value}
                     onChange={(e) => updateRole(role.id, e.target.value)}
                     style={{ flex: 1 }}

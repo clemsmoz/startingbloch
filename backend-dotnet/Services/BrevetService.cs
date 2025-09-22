@@ -47,8 +47,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using StartingBloch.Backend.Data;
+using System.Text.Json;
 using StartingBloch.Backend.DTOs;
 using StartingBloch.Backend.Models;
+using Microsoft.Extensions.Logging;
 
 namespace StartingBloch.Backend.Services;
 
@@ -59,15 +61,19 @@ namespace StartingBloch.Backend.Services;
 public class BrevetService : IBrevetService
 {
     private readonly StartingBlochDbContext _context;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<BrevetService> _logger;
 
     /// <summary>
     /// Initialise service brevets avec contexte données Entity Framework.
     /// Configuration accès base données optimisée requêtes complexes.
     /// </summary>
     /// <param name="context">Contexte base données Entity Framework</param>
-    public BrevetService(StartingBlochDbContext context)
+    public BrevetService(StartingBlochDbContext context, INotificationService notificationService, ILogger<BrevetService> logger)
     {
         _context = context;
+        _notificationService = notificationService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -303,9 +309,9 @@ public class BrevetService : IBrevetService
                         NumeroDepot = infoDepot.NumeroDepot,
                         NumeroPublication = infoDepot.NumeroPublication,
                         NumeroDelivrance = infoDepot.NumeroDelivrance,
-                        DateDepot = infoDepot.DateDepot,
-                        DatePublication = infoDepot.DatePublication,
-                        DateDelivrance = infoDepot.DateDelivrance,
+                        DateDepot = ToUtc(infoDepot.DateDepot),
+                        DatePublication = ToUtc(infoDepot.DatePublication),
+                        DateDelivrance = ToUtc(infoDepot.DateDelivrance),
                         Licence = infoDepot.Licence,
                         Commentaire = infoDepot.Commentaire
                     };
@@ -473,7 +479,49 @@ public class BrevetService : IBrevetService
             // Récupérer le brevet créé avec toutes ses relations
             var result = await GetBrevetByIdAsync(brevet.Id);
             result.Message = "Brevet créé avec succès";
-            
+
+            // Emit notification(s)
+            try
+            {
+                // If brevet linked to clients, create client-scoped notifications
+                var clientIds = createBrevetDto.ClientIds ?? new List<int>();
+                if (clientIds.Any())
+                {
+                    foreach (var cid in clientIds.Distinct())
+                    {
+                        var meta = JsonSerializer.Serialize(new { referenceFamille = brevet.ReferenceFamille });
+                        _logger?.LogInformation("🔔 [NOTIF-TRACE] BrevetService.CreateBrevetAsync -> creating notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Metadata={Metadata}", "Brevet", "Created", cid, brevet.Id, meta);
+                        await _notificationService.CreateNotificationAsync(new Models.Notification
+                        {
+                            Type = "Brevet",
+                            Action = "Created",
+                            Message = $"Un brevet a été créé (ID={brevet.Id})",
+                            ReferenceId = brevet.Id,
+                            ClientId = cid,
+                            Metadata = meta
+                        });
+                    }
+                }
+                else
+                {
+                    // global notification
+                    var meta = JsonSerializer.Serialize(new { referenceFamille = brevet.ReferenceFamille });
+                    _logger?.LogInformation("🔔 [NOTIF-TRACE] BrevetService.CreateBrevetAsync -> creating GLOBAL notification Type={Type} Action={Action} ReferenceId={ReferenceId} Metadata={Metadata}", "Brevet", "Created", brevet.Id, meta);
+                    await _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Brevet",
+                        Action = "Created",
+                        Message = $"Un brevet a été créé (ID={brevet.Id})",
+                        ReferenceId = brevet.Id,
+                        Metadata = meta
+                    });
+                }
+            }
+            catch
+            {
+                // Notifications doivent rester non bloquantes
+            }
+
             return result;
             }
             catch (Exception ex)
@@ -483,7 +531,8 @@ public class BrevetService : IBrevetService
                 {
                     Success = false,
                     Message = "Erreur lors de la création du brevet",
-                    Errors = ex.Message
+                    // Renvoyer le ToString() complet pour exposer inner exceptions et stack trace au debug
+                    Errors = ex.ToString()
                 };
             }
         });
@@ -530,7 +579,7 @@ public class BrevetService : IBrevetService
             {
                 // Supprimer les anciennes relations
                 var existingClients = await _context.BrevetClients
-                    .Where(bc => bc.BrevetId == id)
+                    .Where(bc => bc.IdBrevet == id)
                     .ToListAsync();
                 _context.BrevetClients.RemoveRange(existingClients);
 
@@ -539,9 +588,234 @@ public class BrevetService : IBrevetService
                 {
                     _context.BrevetClients.Add(new BrevetClient
                     {
-                        BrevetId = id,
-                        ClientId = clientId
+                        IdBrevet = id,
+                        IdClient = clientId
                     });
+                }
+            }
+
+            // Inventeurs (null = ne rien changer, liste vide = supprimer tous)
+            if (updateBrevetDto.InventeurIds != null)
+            {
+                var existingInv = await _context.BrevetInventeurs
+                    .Where(bi => bi.IdBrevet == id)
+                    .ToListAsync();
+                _context.BrevetInventeurs.RemoveRange(existingInv);
+                foreach (var inventeurId in updateBrevetDto.InventeurIds)
+                {
+                    _context.BrevetInventeurs.Add(new BrevetInventeur
+                    {
+                        IdBrevet = id,
+                        IdInventeur = inventeurId
+                    });
+                }
+            }
+
+            // Déposants
+            if (updateBrevetDto.DeposantIds != null)
+            {
+                var existingDep = await _context.BrevetDeposants
+                    .Where(bd => bd.IdBrevet == id)
+                    .ToListAsync();
+                _context.BrevetDeposants.RemoveRange(existingDep);
+                foreach (var deposantId in updateBrevetDto.DeposantIds)
+                {
+                    _context.BrevetDeposants.Add(new BrevetDeposant
+                    {
+                        IdBrevet = id,
+                        IdDeposant = deposantId
+                    });
+                }
+            }
+
+            // Titulaires
+            if (updateBrevetDto.TitulaireIds != null)
+            {
+                var existingTit = await _context.BrevetTitulaires
+                    .Where(bt => bt.IdBrevet == id)
+                    .ToListAsync();
+                _context.BrevetTitulaires.RemoveRange(existingTit);
+                foreach (var titulaireId in updateBrevetDto.TitulaireIds)
+                {
+                    _context.BrevetTitulaires.Add(new BrevetTitulaire
+                    {
+                        IdBrevet = id,
+                        IdTitulaire = titulaireId
+                    });
+                }
+            }
+
+            // InformationsDepot: remplacer si fourni (null = ne rien faire)
+            if (updateBrevetDto.InformationsDepot != null)
+            {
+                // Supprimer les anciennes informations et leurs liens
+                var existingInfos = await _context.InformationsDepot
+                    .Where(i => i.IdBrevet == id)
+                    .ToListAsync();
+
+                foreach (var info in existingInfos)
+                {
+                    var links = await _context.InformationDepotCabinets
+                        .Where(l => l.InformationDepotId == info.Id)
+                        .ToListAsync();
+                    foreach (var l in links)
+                    {
+                        var roles = await _context.InformationDepotCabinetRoles
+                            .Where(r => r.InformationDepotCabinetId == l.Id)
+                            .ToListAsync();
+                        _context.InformationDepotCabinetRoles.RemoveRange(roles);
+
+                        var contacts = await _context.InformationDepotCabinetContacts
+                            .Where(c => c.InformationDepotCabinetId == l.Id)
+                            .ToListAsync();
+                        _context.InformationDepotCabinetContacts.RemoveRange(contacts);
+                    }
+                    _context.InformationDepotCabinets.RemoveRange(links);
+                }
+                _context.InformationsDepot.RemoveRange(existingInfos);
+
+                // Ajouter les nouvelles informations fournies (construction du graphe en mémoire,
+                // puis persistance en une seule SaveChanges pour réduire les allers-retours SQL)
+                if (updateBrevetDto.InformationsDepot.Any())
+                {
+                    foreach (var infoDepot in updateBrevetDto.InformationsDepot)
+                    {
+                        var entity = new InformationDepot
+                        {
+                            IdBrevet = id,
+                            IdPays = infoDepot.IdPays,
+                            IdStatuts = infoDepot.IdStatuts,
+                            NumeroDepot = infoDepot.NumeroDepot,
+                            NumeroPublication = infoDepot.NumeroPublication,
+                            NumeroDelivrance = infoDepot.NumeroDelivrance,
+                            DateDepot = ToUtc(infoDepot.DateDepot),
+                            DatePublication = ToUtc(infoDepot.DatePublication),
+                            DateDelivrance = ToUtc(infoDepot.DateDelivrance),
+                            Licence = infoDepot.Licence,
+                            Commentaire = infoDepot.Commentaire,
+                            InformationDepotCabinets = new List<InformationDepotCabinet>()
+                        };
+
+                        // Cabinets Annuités
+                        if (infoDepot.CabinetsAnnuites?.Any() == true)
+                        {
+                            foreach (var cab in infoDepot.CabinetsAnnuites)
+                            {
+                                var link = new InformationDepotCabinet
+                                {
+                                    CabinetId = cab.CabinetId,
+                                    Category = CabinetType.Annuite,
+                                    Roles = cab.Roles?.Distinct(StringComparer.OrdinalIgnoreCase)
+                                        .Select(r => new InformationDepotCabinetRole { Role = r.Trim().ToLowerInvariant() })
+                                        .ToList() ?? new List<InformationDepotCabinetRole>(),
+                                    Contacts = cab.ContactIds?.Distinct()
+                                        .Select(cid => new InformationDepotCabinetContact { ContactId = cid })
+                                        .ToList() ?? new List<InformationDepotCabinetContact>()
+                                };
+                                entity.InformationDepotCabinets.Add(link);
+                            }
+                        }
+
+                        // Cabinets Procédures
+                        if (infoDepot.CabinetsProcedures?.Any() == true)
+                        {
+                            foreach (var cab in infoDepot.CabinetsProcedures)
+                            {
+                                var link = new InformationDepotCabinet
+                                {
+                                    CabinetId = cab.CabinetId,
+                                    Category = CabinetType.Procedure,
+                                    Roles = cab.Roles?.Distinct(StringComparer.OrdinalIgnoreCase)
+                                        .Select(r => new InformationDepotCabinetRole { Role = r.Trim().ToLowerInvariant() })
+                                        .ToList() ?? new List<InformationDepotCabinetRole>(),
+                                    Contacts = cab.ContactIds?.Distinct()
+                                        .Select(cid => new InformationDepotCabinetContact { ContactId = cid })
+                                        .ToList() ?? new List<InformationDepotCabinetContact>()
+                                };
+                                entity.InformationDepotCabinets.Add(link);
+                            }
+                        }
+
+                        _context.InformationsDepot.Add(entity);
+                    }
+                    // Les entités seront persistées par le SaveChangesAsync final du flux
+                }
+            }
+
+            // Mettre à jour les pays par inventeur si fournis (null = ne rien faire)
+            if (updateBrevetDto.InventeursPays != null)
+            {
+                foreach (var link in updateBrevetDto.InventeursPays)
+                {
+                    // Supprimer les pays existants pour cet inventeur et ce brevet
+                    var exist = await _context.InventeurPays
+                        .Where(ip => ip.IdInventeur == link.InventeurId && ip.IdBrevet == id)
+                        .ToListAsync();
+                    if (exist.Any()) _context.InventeurPays.RemoveRange(exist);
+
+                    // Ajouter les nouveaux pays si fournis
+                    if (link.PaysIds?.Any() == true)
+                    {
+                        foreach (var pid in link.PaysIds.Distinct())
+                        {
+                            _context.InventeurPays.Add(new InventeurPays
+                            {
+                                IdInventeur = link.InventeurId,
+                                IdPays = pid,
+                                IdBrevet = id
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Mettre à jour les pays par déposant si fournis
+            if (updateBrevetDto.DeposantsPays != null)
+            {
+                foreach (var link in updateBrevetDto.DeposantsPays)
+                {
+                    var exist = await _context.DeposantPays
+                        .Where(dp => dp.IdDeposant == link.DeposantId && dp.IdBrevet == id)
+                        .ToListAsync();
+                    if (exist.Any()) _context.DeposantPays.RemoveRange(exist);
+
+                    if (link.PaysIds?.Any() == true)
+                    {
+                        foreach (var pid in link.PaysIds.Distinct())
+                        {
+                            _context.DeposantPays.Add(new DeposantPays
+                            {
+                                IdDeposant = link.DeposantId,
+                                IdPays = pid,
+                                IdBrevet = id
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Mettre à jour les pays par titulaire si fournis
+            if (updateBrevetDto.TitulairesPays != null)
+            {
+                foreach (var link in updateBrevetDto.TitulairesPays)
+                {
+                    var exist = await _context.TitulairePays
+                        .Where(tp => tp.IdTitulaire == link.TitulaireId && tp.IdBrevet == id)
+                        .ToListAsync();
+                    if (exist.Any()) _context.TitulairePays.RemoveRange(exist);
+
+                    if (link.PaysIds?.Any() == true)
+                    {
+                        foreach (var pid in link.PaysIds.Distinct())
+                        {
+                            _context.TitulairePays.Add(new TitulairePays
+                            {
+                                IdTitulaire = link.TitulaireId,
+                                IdPays = pid,
+                                IdBrevet = id
+                            });
+                        }
+                    }
                 }
             }
 
@@ -550,7 +824,46 @@ public class BrevetService : IBrevetService
 
             var result = await GetBrevetByIdAsync(id);
             result.Message = "Brevet mis à jour avec succès";
-            
+
+            // Emit notifications
+                try
+                {
+                    // If brevet linked to clients, notify those clients
+                    var clientIds = await _context.BrevetClients.Where(bc => bc.IdBrevet == id).Select(bc => bc.IdClient).ToListAsync();
+                    // Attempt to include referenceFamille in metadata by reloading the brevet DTO
+                    var full = await GetBrevetByIdAsync(id);
+                    var referenceFamille = full?.Data?.ReferenceFamille;
+                    var meta = JsonSerializer.Serialize(new { referenceFamille = referenceFamille });
+                    if (clientIds.Any())
+                    {
+                        foreach (var cid in clientIds.Distinct())
+                        {
+                            _logger?.LogInformation("🔔 [NOTIF-TRACE] BrevetService.UpdateBrevetAsync -> creating notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Metadata={Metadata}", "Brevet", "Updated", cid, id, meta);
+                            await _notificationService.CreateNotificationAsync(new Models.Notification
+                            {
+                                Type = "Brevet",
+                                Action = "Updated",
+                                Message = $"Un brevet a été modifié (ID={id})",
+                                ReferenceId = id,
+                                ClientId = cid,
+                                Metadata = meta
+                            });
+                        }
+                    }
+                    else
+                    {
+                        _logger?.LogInformation("🔔 [NOTIF-TRACE] BrevetService.UpdateBrevetAsync -> creating GLOBAL notification Type={Type} Action={Action} ReferenceId={ReferenceId} Metadata={Metadata}", "Brevet", "Updated", id, meta);
+                        await _notificationService.CreateNotificationAsync(new Models.Notification
+                        {
+                            Type = "Brevet",
+                            Action = "Updated",
+                            Message = $"Un brevet a été modifié (ID={id})",
+                            ReferenceId = id,
+                            Metadata = meta
+                        });
+                    }
+                }
+                catch { }
             return result;
             }
             catch (Exception ex)
@@ -560,7 +873,8 @@ public class BrevetService : IBrevetService
                 {
                     Success = false,
                     Message = "Erreur lors de la mise à jour du brevet",
-                    Errors = ex.Message
+                    // Fournir le ToString complet pour aider le debug (inner exceptions)
+                    Errors = ex.ToString()
                 };
             }
         });
@@ -591,9 +905,51 @@ public class BrevetService : IBrevetService
                 };
             }
 
+            // Récupérer les clientIds liés AVANT la suppression car les relations seront cascade-supprimées
+            var clientIds = await _context.BrevetClients.Where(bc => bc.IdBrevet == id).Select(bc => bc.IdClient).ToListAsync();
+            // Capture referenceFamille for metadata before the entity is removed
+            var existing = await _context.Brevets.AsNoTracking().Where(b => b.IdBrevet == id).Select(b => b.ReferenceFamille).FirstOrDefaultAsync();
+            var referenceFamille = existing;
+
             _context.Brevets.Remove(brevet);
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // Emit notification about deletion (non bloquant)
+            try
+            {
+                // include referenceFamille captured earlier
+                var meta = JsonSerializer.Serialize(new { referenceFamille = referenceFamille });
+                if (clientIds.Any())
+                {
+                    foreach (var cid in clientIds.Distinct())
+                    {
+                        _logger?.LogInformation("🔔 [NOTIF-TRACE] BrevetService.DeleteBrevetAsync -> creating notification Type={Type} Action={Action} ClientId={ClientId} ReferenceId={ReferenceId} Metadata={Metadata}", "Brevet", "Deleted", cid, id, meta);
+                        await _notificationService.CreateNotificationAsync(new Models.Notification
+                        {
+                            Type = "Brevet",
+                            Action = "Deleted",
+                            Message = $"Un brevet a été supprimé (ID={id})",
+                            ReferenceId = id,
+                            ClientId = cid,
+                            Metadata = meta
+                        });
+                    }
+                }
+                else
+                {
+                    _logger?.LogInformation("🔔 [NOTIF-TRACE] BrevetService.DeleteBrevetAsync -> creating GLOBAL notification Type={Type} Action={Action} ReferenceId={ReferenceId} Metadata={Metadata}", "Brevet", "Deleted", id, meta);
+                    await _notificationService.CreateNotificationAsync(new Models.Notification
+                    {
+                        Type = "Brevet",
+                        Action = "Deleted",
+                        Message = $"Un brevet a été supprimé (ID={id})",
+                        ReferenceId = id,
+                        Metadata = meta
+                    });
+                }
+            }
+            catch { }
 
             return new ApiResponse<bool>
             {
@@ -925,6 +1281,17 @@ public class BrevetService : IBrevetService
         };
     }
 
+    // Helper: normalize nullable DateTime to UTC (Npgsql requires DateTimeKind.Utc for timestamptz)
+    private static DateTime? ToUtc(DateTime? dt)
+    {
+        if (!dt.HasValue) return null;
+        var d = dt.Value;
+        if (d.Kind == DateTimeKind.Utc) return d;
+        if (d.Kind == DateTimeKind.Local) return d.ToUniversalTime();
+        // Unspecified -> assume it's UTC if it looks like UTC, otherwise force as UTC
+        return DateTime.SpecifyKind(d, DateTimeKind.Utc);
+    }
+
     /// <summary>
     /// Vérifie autorisations accès utilisateur brevet spécifique système.
     /// Contrôle sécurisé isolation clients et permissions employés.
@@ -948,7 +1315,7 @@ public class BrevetService : IBrevetService
             if (role == "client" && user.ClientId.HasValue)
             {
                 var brevetExists = await _context.BrevetClients
-                    .AnyAsync(bc => bc.BrevetId == brevetId && bc.ClientId == user.ClientId.Value);
+                    .AnyAsync(bc => bc.IdBrevet == brevetId && bc.IdClient == user.ClientId.Value);
                 return brevetExists;
             }
 

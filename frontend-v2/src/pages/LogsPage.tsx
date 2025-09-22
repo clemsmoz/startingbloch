@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Button, 
   Space, 
@@ -277,6 +278,7 @@ const getEntityDisplayName = (log: Log, parsedPairs?: KeyValue[]): string | unde
  * Page des logs système - Liste des utilisateurs avec option de voir leurs logs
  */
 const LogsPage: React.FC = () => {
+  const { t } = useTranslation();
   // États principaux
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -446,32 +448,31 @@ const LogsPage: React.FC = () => {
     return user.username || user.email;
   };
 
-  // Formater l'action pour qu'elle soit plus lisible
-  const formatActionDescription = (log: Log): string => {
+  
+
+  // Version utilisant t(...) pour les labels
+  const formatActionDescriptionLocal = (log: Log): string => {
     const action = log.action || '';
     const upper = normalizeAction(action);
 
     const actionMap: { [key: string]: string } = {
-      'CREATE': 'Création',
-      'POST': 'Création',
-      'UPDATE': 'Modification',
-      'PUT': 'Modification',
-      'DELETE': 'Suppression'
+  'CREATE': t('logs.action.creation'),
+  'POST': t('logs.action.creation'),
+  'UPDATE': t('logs.action.modification'),
+  'PUT': t('logs.action.modification'),
+  'DELETE': t('logs.action.suppression')
     };
 
-    // Dernière connexion
-    if (isLastLoginEvent(log)) return "Dernière connexion d'un utilisateur";
+  if (isLastLoginEvent(log)) return t('logs.action.lastLoginFull');
 
     const translatedAction = actionMap[upper] || (
-      upper.includes('DELETE') || upper.includes('SUPPRESSION') ? 'Suppression' :
-      upper.includes('PUT') || upper.includes('UPDATE') || upper.includes('MODIFICATION') ? 'Modification' :
-      upper.includes('POST') || upper.includes('CREATE') || upper.includes('CREATION') ? 'Création' : action
+  upper.includes('DELETE') || upper.includes('SUPPRESSION') ? t('logs.action.suppression') :
+  upper.includes('PUT') || upper.includes('UPDATE') || upper.includes('MODIFICATION') ? t('logs.action.modification') :
+  upper.includes('POST') || upper.includes('CREATE') || upper.includes('CREATION') ? t('logs.action.creation') : action
     );
 
-    // Déterminer le type d'entité à afficher (singulier, minuscule)
     let type = (log.entityType || '').toString();
     if (!type) {
-      // Fallback naïf basé sur le texte d'action
       const lowerAct = action.toLowerCase();
       if (lowerAct.includes('client')) type = 'client';
       else if (lowerAct.includes('contact')) type = 'contact';
@@ -481,9 +482,8 @@ const LogsPage: React.FC = () => {
     }
     const typeClean = singularize(type).toLowerCase();
 
-    // Affichage court et propre: on n'ajoute pas entityName (évite doublons)
     return typeClean
-      ? `${translatedAction} d'un ${typeClean}`
+  ? `${translatedAction} ${t('logs.ofEntityPreposition')} ${typeClean}`
       : translatedAction;
   };
 
@@ -509,7 +509,7 @@ const LogsPage: React.FC = () => {
   // Colonnes de la table des utilisateurs
   const userColumns: ColumnsType<User> = [
     {
-      title: 'Utilisateur',
+  title: t('users.column.user'),
       key: 'user',
       render: (_, record) => (
         <Space>
@@ -530,7 +530,7 @@ const LogsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Rôle',
+  title: t('users.column.role'),
       dataIndex: 'role',
       key: 'role',
       render: (role: string) => (
@@ -540,18 +540,18 @@ const LogsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Statut',
+  title: t('users.column.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
         <Badge
           status={isActive ? 'success' : 'default'}
-          text={isActive ? 'Actif' : 'Inactif'}
+          text={isActive ? t('users.status.active') : t('users.status.inactive')}
         />
       ),
     },
     {
-      title: 'Actions',
+  title: t('common.actions'),
       key: 'actions',
       width: 120,
       render: (_, record) => (
@@ -561,7 +561,7 @@ const LogsPage: React.FC = () => {
           icon={<HistoryOutlined />}
           onClick={() => handleViewUserLogs(record)}
         >
-          Voir les logs
+          {t('logs.viewLogs')}
         </Button>
       ),
     },
@@ -570,7 +570,7 @@ const LogsPage: React.FC = () => {
   // Colonnes de la table des logs
   const logColumns: ColumnsType<Log> = [
     {
-      title: 'Date/Heure',
+  title: t('logs.columns.dateTime'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
@@ -578,7 +578,7 @@ const LogsPage: React.FC = () => {
       defaultSortOrder: 'descend',
       render: (_: any, record: Log) => {
         const ts = record.createdAt || record.timestamp || record.timeStamp;
-        if (!ts) return '-';
+  if (!ts) return t('common.notProvided');
         return (
           <div>
             <div>{dayjs(ts).format('DD/MM/YYYY')}</div>
@@ -588,18 +588,18 @@ const LogsPage: React.FC = () => {
       },
     },
     {
-      title: 'Action',
+  title: t('logs.columns.action'),
       dataIndex: 'action',
       key: 'action',
       width: 300,
       render: (_: any, record: Log) => (
         <Tag color={getActionColor(record.action, record)}>
-          {formatActionDescription(record)}
+          {formatActionDescriptionLocal(record)}
         </Tag>
       ),
     },
     {
-      title: 'Détails',
+  title: t('logs.columns.details'),
       dataIndex: 'details',
       key: 'details',
       ellipsis: true,
@@ -611,7 +611,7 @@ const LogsPage: React.FC = () => {
         if (record.entityId) {
           blocks.push(
             <div key="entityId" style={{ marginBottom: 6 }}>
-              <span style={{ color: '#8c8c8c' }}>ID: </span>
+              <span style={{ color: '#8c8c8c' }}>{t('common.id')}: </span>
               <span style={{ fontWeight: 600 }}>{record.entityId}</span>
             </div>
           );
@@ -638,17 +638,17 @@ const LogsPage: React.FC = () => {
             <div key="entityName" style={{ marginBottom: 6 }}>
               {typeLabel && <span style={{ color: '#8c8c8c', marginRight: 4 }}>{typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}:</span>}
               <span style={{ fontWeight: 600 }}>{displayName}</span>
-              {record.entityId && <span style={{ marginLeft: 8, color: '#bfbfbf' }}>ID: {record.entityId}</span>}
+              {record.entityId && <span style={{ marginLeft: 8, color: '#bfbfbf' }}>{t('common.id')}: {record.entityId}</span>}
             </div>
           );
         } else if (record.entityId) {
           // Fallback si on n'a pas pu déduire de nom
           blocks.unshift(
-            <div key="entityId" style={{ marginBottom: 6 }}>
-              <span style={{ color: '#8c8c8c' }}>ID: </span>
-              <span style={{ fontWeight: 600 }}>{record.entityId}</span>
-            </div>
-          );
+              <div key="entityId" style={{ marginBottom: 6 }}>
+                <span style={{ color: '#8c8c8c' }}>{t('common.id')}: </span>
+                <span style={{ fontWeight: 600 }}>{record.entityId}</span>
+              </div>
+            );
         }
 
         // 3) Diffs avant/après (old/new)
@@ -684,7 +684,7 @@ const LogsPage: React.FC = () => {
           }
           if (diffPairs.length) {
             blocks.push(
-              <div key="diffTitle" style={{ marginTop: kvs.length ? 8 : 0, marginBottom: 4, fontWeight: 600 }}>Changements</div>
+              <div key="diffTitle" style={{ marginTop: kvs.length ? 8 : 0, marginBottom: 4, fontWeight: 600 }}>{t('logs.changes')}</div>
             );
             blocks.push(
               <div key="diffList" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
@@ -706,13 +706,13 @@ const LogsPage: React.FC = () => {
           const d = extractLastLoginDate(record) || dayjs(record.createdAt || (record as any).timestamp || (record as any).timeStamp);
           blocks.push(
             <div key="lastlogin" style={{ marginTop: 8, fontSize: 13 }}>
-              <span style={{ color: '#8c8c8c' }}>Dernière connexion: </span>
+              <span style={{ color: '#8c8c8c' }}>{t('logs.lastLogin')}: </span>
               <span style={{ fontWeight: 600 }}>{d.format('DD/MM/YYYY HH:mm:ss')}</span>
             </div>
           );
         }
 
-        if (!blocks.length) return '-';
+  if (!blocks.length) return t('common.notProvided');
         return <div>{blocks}</div>;
       },
     },
@@ -731,7 +731,7 @@ const LogsPage: React.FC = () => {
       }}
       loading={loading}
     >
-      Actualiser
+      {t('actions.refresh')}
     </Button>
   ];
 
@@ -742,11 +742,11 @@ const LogsPage: React.FC = () => {
       transition={{ duration: 0.3 }}
     >
       <PageHeader
-        title="Logs utilisateurs"
-        description="Consultez les logs d'activité par utilisateur (créations, modifications, suppressions)"
+  title={t('menu.logs')}
+  description={t('logs.pageDescription')}
         breadcrumbs={[
-          { title: 'Administration' },
-          { title: 'Logs utilisateurs' }
+          { title: t('menu.admin') },
+          { title: t('menu.logs') }
         ]}
         actions={headerActions}
       />
@@ -757,7 +757,7 @@ const LogsPage: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Utilisateurs total"
+                title={t('logs.stats.totalUsers')}
                 value={totalUsers}
                 prefix={<UserOutlined />}
               />
@@ -766,7 +766,7 @@ const LogsPage: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Utilisateurs actifs"
+                title={t('logs.stats.activeUsers')}
                 value={activeUsers}
                 prefix={<UserOutlined />}
                 valueStyle={{ color: '#52c41a' }}
@@ -776,7 +776,7 @@ const LogsPage: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Total logs système"
+                title={t('logs.stats.totalLogs')}
                 value={totalSystemLogs}
                 prefix={<ClockCircleOutlined />}
               />
@@ -785,7 +785,7 @@ const LogsPage: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="Actions aujourd'hui"
+                title={t('logs.stats.todayActions')}
                 value={logs.filter(log => dayjs(log.createdAt || (log as any).timestamp || (log as any).timeStamp).isSame(dayjs(), 'day')).length}
                 prefix={<ClockCircleOutlined />}
                 valueStyle={{ color: '#1890ff' }}
@@ -795,7 +795,7 @@ const LogsPage: React.FC = () => {
         </Row>
 
         {/* Table des utilisateurs */}
-        <Card title="Liste des utilisateurs" style={{ borderRadius: '12px' }}>
+  <Card title={t('logs.usersListTitle')} style={{ borderRadius: '12px' }}>
           <DataTable
             columns={userColumns}
             data={users}
@@ -805,7 +805,7 @@ const LogsPage: React.FC = () => {
               showSizeChanger: true,
               showQuickJumper: true,
               showTotal: (total, range) => 
-                `${range[0]}-${range[1]} sur ${total} utilisateurs`,
+                `${range[0]}-${range[1]} ${t('logs.ofTotal')} ${total} ${t('logs.labelUsers')}`,
             }}
           />
         </Card>
@@ -816,7 +816,7 @@ const LogsPage: React.FC = () => {
         title={
           <Space>
             <HistoryOutlined />
-            {selectedUser && `Logs de ${getUserDisplayName(selectedUser)}`}
+              {selectedUser && `${t('logs.userLogsTitle')} ${getUserDisplayName(selectedUser)}`}
           </Space>
         }
         open={isLogsModalVisible}
@@ -824,7 +824,7 @@ const LogsPage: React.FC = () => {
         width={1200}
         footer={[
           <Button key="close" onClick={handleCloseLogsModal}>
-            Fermer
+            {t('actions.close')}
           </Button>
         ]}
       >
@@ -833,7 +833,7 @@ const LogsPage: React.FC = () => {
           <Select
             mode="multiple"
             allowClear
-            placeholder="Filtrer par action"
+            placeholder={t('logs.filterByAction')}
             style={{ minWidth: 260 }}
             value={actionFilter}
             onChange={(vals) => {
@@ -862,14 +862,14 @@ const LogsPage: React.FC = () => {
               setTotalCount(next.length);
             }}
             options={[
-              { label: 'Création', value: 'creation' },
-              { label: 'Modification', value: 'modification' },
-              { label: 'Suppression', value: 'suppression' },
-              { label: 'Dernière connexion', value: 'derniere-connexion' },
+          { label: t('logs.action.creation'), value: 'creation' },
+          { label: t('logs.action.modification'), value: 'modification' },
+          { label: t('logs.action.suppression'), value: 'suppression' },
+          { label: t('logs.action.lastLogin'), value: 'derniere-connexion' },
             ]}
           />
           <DatePicker.RangePicker
-            placeholder={["Date début", "Date fin"]}
+            placeholder={[t('logs.startDate'), t('logs.endDate')]}
             onChange={(range) => {
               const r: [any, any] = range as any;
               setDateRange(r);
@@ -895,7 +895,7 @@ const LogsPage: React.FC = () => {
             }}
           />
           <DatePicker
-            placeholder="Date ponctuelle"
+            placeholder={t('logs.singleDate')}
             onChange={(d) => {
               setSingleDate(d);
               const next = (rawLogs || []).filter(l => {
@@ -920,17 +920,13 @@ const LogsPage: React.FC = () => {
               setTotalCount(next.length);
             }}
           />
-          <Button
-            onClick={() => {
+          <Button onClick={() => {
               setActionFilter([]);
               setDateRange([null, null]);
               setSingleDate(null);
               setLogs(rawLogs);
               setTotalCount(rawLogs.length);
-            }}
-          >
-            Réinitialiser filtres
-          </Button>
+            }}>{t('logs.resetFilters')}</Button>
         </Space>
         <DataTable
           columns={logColumns}
@@ -943,8 +939,7 @@ const LogsPage: React.FC = () => {
             total: totalCount,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} sur ${total} logs`,
+            showTotal: (total, range) => `${range[0]}-${range[1]} ${t('logs.ofTotal')} ${total} ${t('logs.labelLogs')}`,
             pageSizeOptions: ['10', '20', '50'],
             // Lorsqu'on filtre côté client, on évite de recharger côté serveur
             onChange: (_, __) => {},

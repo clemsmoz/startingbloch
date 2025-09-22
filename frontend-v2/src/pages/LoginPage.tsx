@@ -10,6 +10,7 @@
  */
 
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
   Form, 
@@ -34,6 +35,7 @@ interface LoginForm {
  * Page de connexion
  */
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { login, isLoading, error, isAuthenticated } = useAuthStore();
@@ -53,10 +55,10 @@ const LoginPage: React.FC = () => {
       
       if (success) {
         addNotification({
-          type: 'success',
-          message: 'Connexion réussie',
-          description: 'Bienvenue dans StartingBloch!'
-        });
+            type: 'success',
+            message: t('auth.loginSuccess'),
+            description: t('auth.welcome')
+          });
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
@@ -112,40 +114,40 @@ const LoginPage: React.FC = () => {
         >
           {error && (
             <Alert
-              message="Erreur de connexion"
-              description={error}
-              type="error"
-              showIcon
-              style={{ marginBottom: 24 }}
-            />
+                message={t('auth.loginError')}
+                description={error}
+                type="error"
+                showIcon
+                style={{ marginBottom: 24 }}
+              />
           )}
 
           <Form.Item
-            label="Nom d'utilisateur"
+            label={t('auth.usernameLabel')}
             name="username"
             rules={[
-              { required: true, message: 'Veuillez saisir votre nom d\'utilisateur' },
-              { min: 3, message: 'Le nom d\'utilisateur doit contenir au moins 3 caractères' }
+              { required: true, message: t('auth.usernameRequired') },
+              { min: 3, message: t('auth.usernameMin') }
             ]}
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="admin@startingbloch.com"
+              placeholder={t('auth.usernamePlaceholder')}
               autoComplete="username"
             />
           </Form.Item>
 
           <Form.Item
-            label="Mot de passe"
+            label={t('auth.passwordLabel')}
             name="password"
             rules={[
-              { required: true, message: 'Veuillez saisir votre mot de passe' },
-              { min: 6, message: 'Le mot de passe doit contenir au moins 6 caractères' }
+              { required: true, message: t('auth.passwordRequired') },
+              { min: 6, message: t('auth.passwordMin') }
             ]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               autoComplete="current-password"
             />
           </Form.Item>
@@ -159,13 +161,13 @@ const LoginPage: React.FC = () => {
               icon={<LoginOutlined />}
               size="large"
             >
-              {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+              {isLoading ? t('auth.loggingIn') : t('auth.signIn')}
             </Button>
           </Form.Item>
 
           <div style={{ textAlign: 'center' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Version 2.0 • © 2025 StartingBloch
+              Version 2.0.1 • © 2025 StartingBloch
             </Text>
           </div>
         </Form>
