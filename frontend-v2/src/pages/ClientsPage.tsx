@@ -8,7 +8,7 @@
  * ================================================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -38,6 +38,7 @@ import { AddClientModal, EditClientModal } from '../components/modals';
 
 // Services
 import { clientService } from '../services';
+import { useQuery, useQueryClient } from 'react-query';
 
 // Types
 import type { Client } from '../types';
@@ -64,27 +65,21 @@ const ClientsPage: React.FC = () => {
   
   const { addNotification } = useNotificationStore();
 
-  // Charger les clients avec pagination
-  const loadClients = async (page: number = currentPage, size: number = pageSize) => {
-    setLoading(true);
-    try {
-      const response = await clientService.getAll(page, size);
-      if (response.success && response.data) {
-        setClients(response.data);
-  setTotalCount(response.totalCount ?? 0);
-  setCurrentPage(response.page ?? page);
+  const queryClient = useQueryClient();
+
+  const { isLoading: queryLoading } = useQuery<any, Error>({
+    queryKey: ['clients', currentPage, pageSize],
+    queryFn: async () => await clientService.getAll(currentPage, pageSize),
+    onSuccess: (res: any) => {
+      if (res?.data) {
+        setClients(res.data);
+        setTotalCount(res.totalCount ?? 0);
+        setCurrentPage(res.page ?? currentPage);
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement des clients:', error);
-        addNotification({
-          type: 'error',
-          message: t('clients.loadErrorTitle'),
-          description: t('clients.loadErrorDesc')
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
+
+  // use loading from react-query
 
   // Handlers pour les modales
   const handleAdd = () => {
@@ -118,7 +113,7 @@ const ClientsPage: React.FC = () => {
         type: 'success',
           message: t('clients.deleteSuccess')
       });
-      loadClients();
+  queryClient.invalidateQueries({ queryKey: ['clients'] });
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       addNotification({
@@ -130,7 +125,7 @@ const ClientsPage: React.FC = () => {
 
   const handleAddSuccess = () => {
     setIsAddModalVisible(false);
-    loadClients();
+  queryClient.invalidateQueries({ queryKey: ['clients'] });
     addNotification({
       type: 'success',
       message: t('clients.addSuccess')
@@ -140,23 +135,20 @@ const ClientsPage: React.FC = () => {
   const handleEditSuccess = () => {
     setIsEditModalVisible(false);
     setClientToEdit(null);
-    loadClients();
+  queryClient.invalidateQueries({ queryKey: ['clients'] });
     addNotification({
       type: 'success',
       message: t('clients.editSuccess')
     });
   };
 
-  useEffect(() => {
-    loadClients();
-  }, []);
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
   const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
-    loadClients(page, newPageSize);
+    // useQuery will react to currentPage/pageSize change and fetch automatically
   };
 
   // Recherche
@@ -187,7 +179,7 @@ const ClientsPage: React.FC = () => {
     } else {
       // Retourner à la pagination normale si recherche vide
       setCurrentPage(1);
-      loadClients(1, pageSize);
+      // query will refresh because queryKey depends on currentPage/pageSize
     }
   };
 
@@ -353,7 +345,7 @@ const ClientsPage: React.FC = () => {
         <DataTable
           columns={columns}
           data={clients}
-          loading={loading}
+          loading={loading || queryLoading}
           rowKey="id"
           pagination={{
             current: currentPage,

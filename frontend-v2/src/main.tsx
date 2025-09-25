@@ -21,6 +21,10 @@ import 'dayjs/locale/en';
 
 import App from './App';
 import './i18n';
+import { QueryClientProvider } from 'react-query';
+import queryClient from './services/queryClient';
+// optional devtools
+// import { ReactQueryDevtools } from 'react-query-devtools';
 
 // read saved language or default to fr
 const saved = window.localStorage?.getItem('sb_lang') ?? undefined;
@@ -66,7 +70,10 @@ function RootApp() {
   return (
     <BrowserRouter>
       <ConfigProvider locale={antdLocale} theme={antdTheme} componentSize={'middle'}>
-        <App key={lang} />
+        <QueryClientProvider client={queryClient}>
+          <App key={lang} />
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+        </QueryClientProvider>
       </ConfigProvider>
     </BrowserRouter>
   );

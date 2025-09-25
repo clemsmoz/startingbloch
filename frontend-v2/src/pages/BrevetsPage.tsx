@@ -8,7 +8,8 @@
  * ================================================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 import { 
   Button, 
   Space, 
@@ -52,7 +53,6 @@ import { useTranslation } from 'react-i18next';
 const BrevetsPage: React.FC = () => {
   const [brevets, setBrevets] = useState<Brevet[]>([]);
   const [allBrevets, setAllBrevets] = useState<Brevet[]>([]); // Stockage de tous les brevets
-  const [loading, setLoading] = useState(false);
   const [selectedBrevet, setSelectedBrevet] = useState<Brevet | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -67,6 +67,7 @@ const BrevetsPage: React.FC = () => {
   
   const { addNotification } = useNotificationStore();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
   // Fonction pour obtenir l'image du drapeau du pays (x2)
   const getFlagImage = (codeIso?: string): React.ReactNode => {
@@ -159,27 +160,36 @@ const BrevetsPage: React.FC = () => {
     return 'default';
   };
 
-  // Charger les brevets avec pagination
-  const loadBrevets = async (page: number = currentPage, size: number = pageSize) => {
-    setLoading(true);
-    try {
-      const response = await brevetService.getAll(page, size);
-      if (response.success && response.data) {
-        setBrevets(response.data);
-        setAllBrevets(response.data); // Stocker tous les brevets pour le filtrage local
-        setTotalCount(response.totalCount ?? 0);
-        setCurrentPage(response.page ?? page);
+  // Use react-query to load brevets with pagination
+  const { isLoading: queryLoading } = useQuery(
+    ['brevets', currentPage, pageSize],
+    async () => {
+      return await brevetService.getAll(currentPage, pageSize);
+    },
+    {
+      keepPreviousData: true,
+      onSuccess: (response: any) => {
+        if (response?.success && response?.data) {
+          setBrevets(response.data);
+          setAllBrevets(response.data);
+          setTotalCount(response.totalCount ?? 0);
+          setCurrentPage(response.page ?? currentPage);
+        } else {
+          setBrevets([]);
+          setAllBrevets([]);
+          setTotalCount(0);
+        }
+      },
+      onError: (error: any) => {
+        console.error('Erreur chargement brevets:', error);
+        addNotification({
+          type: 'error',
+          message: t('notifications.error'),
+          description: t('brevets.loadError')
+        });
       }
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        message: t('notifications.error'),
-        description: t('brevets.loadError')
-      });
-    } finally {
-      setLoading(false);
     }
-  };
+  );
 
   // Handlers pour les modales
   const handleAdd = () => {
@@ -189,7 +199,7 @@ const BrevetsPage: React.FC = () => {
   const handleEdit = (brevet: Brevet) => {
     (async () => {
       try {
-        const resp = await brevetService.getById(brevet.id);
+        const resp = await queryClient.fetchQuery(['brevet', brevet.id], () => brevetService.getById(brevet.id));
         if (resp && resp.success && resp.data) {
           setBrevetToEdit(resp.data);
         } else {
@@ -206,12 +216,10 @@ const BrevetsPage: React.FC = () => {
 
   const handleView = async (brevet: Brevet) => {
     try {
-      setLoading(true);
       setIsDetailModalVisible(true);
-      
-      // Récupérer les détails complets du brevet avec toutes les relations
-      const response = await brevetService.getById(brevet.id);
-      if (response.success && response.data) {
+      // Récupérer les détails complets du brevet avec toutes les relations (utilise cache si présent)
+      const response = await queryClient.fetchQuery(['brevet', brevet.id], () => brevetService.getById(brevet.id));
+      if (response?.success && response?.data) {
         setSelectedBrevet(response.data);
       } else {
         // Si erreur, utiliser les données de base
@@ -229,8 +237,6 @@ const BrevetsPage: React.FC = () => {
         type: 'warning',
         message: t('brevets.detailFetchError')
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -241,7 +247,7 @@ const BrevetsPage: React.FC = () => {
         type: 'success',
         message: t('brevets.deleteSuccess') ?? 'Brevet supprimé avec succès'
       });
-      loadBrevets();
+      await queryClient.invalidateQueries({ queryKey: ['brevets'] });
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       addNotification({
@@ -253,7 +259,7 @@ const BrevetsPage: React.FC = () => {
 
   const handleAddSuccess = () => {
     setIsAddModalVisible(false);
-    loadBrevets();
+    queryClient.invalidateQueries({ queryKey: ['brevets'] });
     addNotification({
       type: 'success',
       message: t('brevets.addSuccess') ?? 'Brevet ajouté avec succès'
@@ -263,23 +269,20 @@ const BrevetsPage: React.FC = () => {
   const handleEditSuccess = () => {
     setIsEditModalVisible(false);
     setBrevetToEdit(null);
-    loadBrevets();
+    queryClient.invalidateQueries({ queryKey: ['brevets'] });
     addNotification({
       type: 'success',
       message: t('brevets.editSuccess') ?? 'Brevet modifié avec succès'
     });
   };
 
-  useEffect(() => {
-    loadBrevets();
-  }, []);
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
     const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
-  loadBrevets(page, newPageSize);
+    // query will refetch because key includes currentPage/pageSize
   };
 
   // Recherche locale en temps réel
@@ -433,7 +436,7 @@ const BrevetsPage: React.FC = () => {
         <DataTable
           columns={columns}
           data={brevets}
-          loading={loading}
+          loading={queryLoading}
           rowKey="id"
           pagination={{
             current: currentPage,
@@ -469,7 +472,7 @@ const BrevetsPage: React.FC = () => {
         ]}
         width={900}
       >
-        {loading ? (
+        {(!selectedBrevet || queryLoading) ? (
             <div style={{ textAlign: 'center', padding: '50px' }}>
             <p>{t('brevets.loadingDetails')}</p>
           </div>

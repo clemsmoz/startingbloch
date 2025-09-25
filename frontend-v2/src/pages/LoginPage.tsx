@@ -9,7 +9,7 @@
  * ================================================================================================
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -23,6 +23,8 @@ import {
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@store/authStore';
 import { useNotificationStore } from '@store/notificationStore';
+import prefetchAtLogin from '../hooks/usePrefetchAtLogin';
+import PrefetchOverlay from '../components/PrefetchOverlay';
 
 const { Text } = Typography;
 
@@ -40,6 +42,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading, error, isAuthenticated } = useAuthStore();
   const { addNotification } = useNotificationStore();
+  const [prefetchState, setPrefetchState] = useState({ running: false, done: 0, total: 1 });
 
   // Redirection si déjà connecté
   useEffect(() => {
@@ -54,6 +57,14 @@ const LoginPage: React.FC = () => {
       const success = await login(loginData.username, loginData.password);
       
       if (success) {
+        // start prefetch and show overlay until done
+        setPrefetchState({ running: true, done: 0, total: 1 });
+        try {
+          await prefetchAtLogin((done, total) => setPrefetchState({ running: true, done, total }));
+        } finally {
+          setPrefetchState(prev => ({ ...prev, running: false }));
+        }
+
         addNotification({
             type: 'success',
             message: t('auth.loginSuccess'),
@@ -122,6 +133,7 @@ const LoginPage: React.FC = () => {
               />
           )}
 
+            {prefetchState.running && <PrefetchOverlay done={prefetchState.done} total={prefetchState.total} />}
           <Form.Item
             label={t('auth.usernameLabel')}
             name="username"
