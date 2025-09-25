@@ -404,7 +404,7 @@
     "detailTitle": "Détails du brevet",
     "loadingDetails": "Chargement des détails...",
     "generalInfoTitle": "Informations générales",
-  "columns": { "reference": "Référence famille", "title": "Titre" },
+  "columns": { "reference": "Référence famille", "familyRef": "Référence famille", "title": "Titre" },
     "noTitle": "(Sans titre)",
     "statusNotDefined": "Statut non défini",
     "ofTotal": "sur",
@@ -432,6 +432,7 @@
       "clients": "Clients",
       "title": "Titre",
       "reference": "Référence",
+      "familyRef": "Référence famille",
       "comment": "Commentaire",
       "unknownCabinet": "Cabinet inconnu",
       "inventorsAssociated": "Inventeurs associés",
@@ -464,6 +465,7 @@
       "searchTitulaire": "Rechercher un titulaire",
       "searchDeposant": "Rechercher un déposant"
     },
+    "searchPlaceholderClient": "Rechercher un brevet pour ce client...",
     "tabs": {
       "general": "Général",
       "clients": "Clients",
