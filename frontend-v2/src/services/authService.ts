@@ -11,7 +11,6 @@
 
 import axios from 'axios';
 import jwtDecode from 'jwt-decode';
-import { getAuthToken } from '../utils/auth';
 import { config } from '../config';
 import type { User, LoginRequest, AuthResponse } from '../types';
 
@@ -148,7 +147,7 @@ class AuthService {
    * Obtenir le token stocké
    */
   getStoredToken(): string | null {
-    return getAuthToken();
+    return sessionStorage.getItem(this.tokenKey);
   }
 
   /**

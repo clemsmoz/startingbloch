@@ -12,7 +12,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService } from '../services/authService';
-import { getAuthToken } from '../utils/auth';
 import type { User } from '../types';
 
 interface AuthState {
@@ -63,36 +62,11 @@ export const useAuthStore = create<AuthState>()(
           
           console.log('✅ Réponse de connexion reçue:', result);
           
-          // Extraire proprement le token depuis la réponse (plusieurs formes possibles)
+          // Le backend peut retourner Token (majuscule) au lieu de token (minuscule)
           const resultAny = result as any;
-          const findToken = (obj: any): string | null => {
-            if (!obj) return null;
-            // clés courantes
-            const candidates = [
-              'token', 'Token', 'access_token', 'AccessToken', 'accessToken', 'refreshToken', 'RefreshToken'
-            ];
-            for (const k of candidates) {
-              if (obj[k]) return String(obj[k]);
-            }
-            // nested under data / result
-            if (obj.data) {
-              for (const k of candidates) {
-                if (obj.data[k]) return String(obj.data[k]);
-              }
-            }
-            // shallow search
-            for (const key of Object.keys(obj)) {
-              const v = obj[key];
-              if (v && typeof v === 'string' && /token/i.test(key)) return v;
-            }
-            return null;
-          };
-
-          const tokenRaw = findToken(result) ?? findToken(resultAny) ?? '';
-          const refreshTokenRaw = (result.refreshToken ?? resultAny.RefreshToken ?? resultAny.refreshToken) ?? '';
-          const token = tokenRaw ? String(tokenRaw).trim() : '';
-          const refreshToken = refreshTokenRaw ? String(refreshTokenRaw).trim() : '';
-          const userRaw = (result.user ?? resultAny.User ?? resultAny.user ?? null) as any;
+          const token = result.token ?? resultAny.Token ?? '';
+          const refreshToken = result.refreshToken ?? resultAny.RefreshToken ?? '';
+          const userRaw = (result.user ?? resultAny.User ?? null) as any;
           
           // Mapper les propriétés backend vers frontend
           const user = userRaw ? {
@@ -108,24 +82,17 @@ export const useAuthStore = create<AuthState>()(
           } : null;
           
           console.log('📝 Stockage des tokens...');
-          console.log('Token extrait:', token ? 'OUI' : 'NON');
-          console.log('RefreshToken extrait:', refreshToken ? 'OUI' : 'NON');
+          console.log('Token:', token ? 'présent' : 'absent');
+          console.log('RefreshToken:', refreshToken ? 'présent' : 'absent');
           console.log('User:', user ? user.email : 'absent');
           console.log('User complet:', JSON.stringify(user, null, 2));
-
-          // Ne pas stocker de chaîne vide (évite header Authorization vide)
-          if (token) {
-            sessionStorage.setItem('startingbloch_token', token);
-          } else {
-            console.warn('⚠️ Aucun token valide trouvé dans la réponse de login — les requêtes API seront non authentifiées');
-            sessionStorage.removeItem('startingbloch_token');
-          }
-
-          if (refreshToken) sessionStorage.setItem('startingbloch_refresh_token', refreshToken);
-          else sessionStorage.removeItem('startingbloch_refresh_token');
-
-          if (user) sessionStorage.setItem('startingbloch_user', JSON.stringify(user));
-          else sessionStorage.removeItem('startingbloch_user');
+          
+          // Stocker dans sessionStorage pour la session uniquement
+          sessionStorage.setItem('startingbloch_token', token);
+          sessionStorage.setItem('startingbloch_refresh_token', refreshToken);
+          sessionStorage.setItem('startingbloch_user', JSON.stringify(user));
+          
+          console.log('💾 Tokens stockés dans localStorage');
           
           set({
             user,
@@ -179,11 +146,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refreshAuth: async () => {
-        const storedToken = getAuthToken();
+        const storedToken = sessionStorage.getItem('startingbloch_token');
         const storedRefreshToken = sessionStorage.getItem('startingbloch_refresh_token');
         const storedUser = sessionStorage.getItem('startingbloch_user');
         
-  console.log('🔄 RefreshAuth - Token:', storedToken ? 'présent' : 'absent');
+        console.log('🔄 RefreshAuth - Token:', storedToken ? 'présent' : 'absent');
         console.log('🔄 RefreshAuth - User brut:', storedUser);
         
         // Si nous avons déjà un token valide, l'utiliser

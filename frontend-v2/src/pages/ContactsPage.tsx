@@ -8,8 +8,7 @@
  * ================================================================================================
  */
 
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from 'react-query';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
   Button, 
@@ -52,8 +51,7 @@ import { useTranslation } from 'react-i18next';
 const ContactsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [mutating, setMutating] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   
@@ -69,7 +67,6 @@ const ContactsPage: React.FC = () => {
   
   const { addNotification } = useNotificationStore();
   const { t, i18n } = useTranslation();
-  const queryClient = useQueryClient();
 
   // Récupérer les paramètres d'URL
   const clientId = searchParams.get('clientId');
@@ -119,52 +116,67 @@ const ContactsPage: React.FC = () => {
     return typeof role === 'string' ? role : (role.role ?? '');
   };
 
-  // Use react-query to load contacts (role/client/cabinet-aware)
-  const { isLoading: queryLoading } = useQuery(
-    ['contacts', clientId, cabinetId, currentPage, pageSize],
-    async () => {
+  // Charger les contacts avec pagination et filtrage
+  const loadContacts = async (page: number = currentPage, size: number = pageSize) => {
+    setLoading(true);
+    try {
+      console.log('🔍 Chargement des contacts...', { 
+        clientId, 
+        cabinetId, 
+        page, 
+        size 
+      });
+      
+      let response;
+      
+      // Utiliser les nouveaux endpoints spécialisés
       if (clientId) {
-        return await contactService.getByClient(parseInt(clientId), currentPage, pageSize);
+        console.log('🎯 Chargement contacts par client ID:', clientId);
+        response = await contactService.getByClient(parseInt(clientId), page, size);
+      } else if (cabinetId) {
+        console.log('🎯 Chargement contacts par cabinet ID:', cabinetId);
+        response = await contactService.getByCabinet(parseInt(cabinetId), page, size);
+      } else {
+        console.log('🎯 Chargement tous les contacts');
+        response = await contactService.getAll(page, size);
       }
-      if (cabinetId) {
-        return await contactService.getByCabinet(parseInt(cabinetId), currentPage, pageSize);
-      }
-      return await contactService.getAll(currentPage, pageSize);
-    },
-    {
-      keepPreviousData: true,
-      onSuccess: (response: any) => {
-        if (response?.success && response?.data) {
-          setContacts(response.data);
-          setTotalCount(response.totalCount || 0);
-          const newPage = response.page ?? currentPage;
-          setCurrentPage(newPage);
-        } else {
-          setContacts([]);
-          setTotalCount(0);
-        }
-      },
-      onError: (error: any) => {
-        console.error('Erreur lors du chargement des contacts:', error);
-        addNotification({
-          type: 'error',
-          message: t('notifications.error'),
-          description: t('contacts.loadError')
-        });
+      
+      if (response.success && response.data) {
+        setContacts(response.data);
+        setTotalCount(response.totalCount || 0);
+        setCurrentPage(page);
+        
+        console.log('📊 Contacts chargés:', response.data.length, 'Total:', response.totalCount);
+      } else {
+        console.warn('⚠️ Réponse API:', response);
         setContacts([]);
         setTotalCount(0);
       }
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des contacts:', error);
+      addNotification({
+        type: 'error',
+        message: t('notifications.error'),
+        description: t('contacts.loadError')
+      });
+      setContacts([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
     }
-  );
+  };
 
-  const isAnyLoading = queryLoading || searchLoading || mutating;
+  useEffect(() => {
+    loadContacts();
+  }, []);
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
   const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
-    // query will refetch automatically because the query key includes currentPage/pageSize
+    loadContacts(page, newPageSize);
   };
 
   // Recherche
@@ -172,7 +184,7 @@ const ContactsPage: React.FC = () => {
   const query = value?.trim() ?? '';
     if (query) {
       const normalized = query.toLowerCase();
-      setSearchLoading(true);
+      setLoading(true);
       try {
         const response = await contactService.search(normalized);
         if (response.success && response.data) {
@@ -182,19 +194,19 @@ const ContactsPage: React.FC = () => {
           setTotalCount(response.data.length);
         }
       } catch (error) {
-          console.error('Erreur de recherche:', error);
-          addNotification({
-            type: 'error',
-            message: t('notifications.error'),
-            description: t('contacts.searchError')
-          });
-        } finally {
-          setSearchLoading(false);
-        }
+        console.error('Erreur de recherche:', error);
+        addNotification({
+          type: 'error',
+          message: t('notifications.error'),
+          description: t('contacts.searchError')
+        });
+      } finally {
+        setLoading(false);
+      }
     } else {
       // Retourner à la pagination normale si recherche vide
       setCurrentPage(1);
-      // query will refetch automatically
+      loadContacts(1, pageSize);
     }
   };
 
@@ -209,7 +221,6 @@ const ContactsPage: React.FC = () => {
   };
 
   const handleContactCreated = async (contactData: any) => {
-  setMutating(true);
     try {
       // Ajouter le clientId ou cabinetId selon le contexte
       const enrichedContactData = {
@@ -220,32 +231,28 @@ const ContactsPage: React.FC = () => {
       
       await contactService.create(enrichedContactData);
       setAddModalVisible(false);
-      await queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      await loadContacts();
       addNotification({
         type: 'success',
         message: t('notifications.success'),
         description: t('contacts.createSuccess')
       });
     } catch (error) {
-      console.error('Erreur création contact:', error);
       addNotification({
         type: 'error',
         message: t('notifications.error'),
         description: t('contacts.createError')
       });
-    } finally {
-      setMutating(false);
     }
   };
 
   const handleContactUpdated = async (contactData: any) => {
-  setMutating(true);
     try {
       if (contactToEdit) {
         await contactService.update(contactToEdit.id, contactData);
         setEditModalVisible(false);
         setContactToEdit(null);
-        await queryClient.invalidateQueries({ queryKey: ['contacts'] });
+        await loadContacts();
         addNotification({
           type: 'success',
           message: t('notifications.success'),
@@ -253,14 +260,11 @@ const ContactsPage: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Erreur mise à jour contact:', error);
       addNotification({
         type: 'error',
         message: t('notifications.error'),
         description: t('contacts.updateError')
       });
-    } finally {
-      setMutating(false);
     }
   };
 
@@ -272,7 +276,7 @@ const ContactsPage: React.FC = () => {
         okText: t('actions.delete'),
         okType: 'danger',
         cancelText: t('actions.cancel'),
-          onOk: async () => {
+        onOk: async () => {
         try {
           await contactService.delete(contact.id);
           addNotification({
@@ -280,9 +284,8 @@ const ContactsPage: React.FC = () => {
               message: t('contacts.deleteSuccessTitle'),
               description: t('contacts.deleteSuccessDesc', { name: `${contact.prenom} ${contact.nom}` })
           });
-          await queryClient.invalidateQueries({ queryKey: ['contacts'] });
+          loadContacts();
         } catch (error) {
-          console.error('Erreur suppression contact:', error);
           addNotification({
             type: 'error',
               message: t('notifications.error'),
@@ -466,7 +469,7 @@ const ContactsPage: React.FC = () => {
         <DataTable
           columns={columns}
           data={contacts}
-          loading={isAnyLoading}
+          loading={loading}
           rowKey="id"
           pagination={
             // Désactiver la pagination quand on filtre par client/cabinet
@@ -566,7 +569,7 @@ const ContactsPage: React.FC = () => {
         visible={addModalVisible}
         onCancel={() => setAddModalVisible(false)}
         onSubmit={handleContactCreated}
-        loading={mutating}
+        loading={loading}
         prefilledClientId={clientId ? parseInt(clientId) : undefined}
         prefilledCabinetId={cabinetId ? parseInt(cabinetId) : undefined}
       />
@@ -579,7 +582,7 @@ const ContactsPage: React.FC = () => {
           setContactToEdit(null);
         }}
         onSubmit={handleContactUpdated}
-        loading={mutating}
+        loading={loading}
       />
     </motion.div>
   );

@@ -23,7 +23,6 @@ import {
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@store/authStore';
 import { useNotificationStore } from '@store/notificationStore';
-// prefetch disabled: removed to avoid firing requests at login
 
 const { Text } = Typography;
 
@@ -41,7 +40,6 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isLoading, error, isAuthenticated } = useAuthStore();
   const { addNotification } = useNotificationStore();
-  // prefetch disabled
 
   // Redirection si déjà connecté
   useEffect(() => {
@@ -56,12 +54,11 @@ const LoginPage: React.FC = () => {
       const success = await login(loginData.username, loginData.password);
       
       if (success) {
-        // DO NOT prefetch at login anymore — pages will fetch when mounted
         addNotification({
-          type: 'success',
-          message: t('auth.loginSuccess'),
-          description: t('auth.welcome')
-        });
+            type: 'success',
+            message: t('auth.loginSuccess'),
+            description: t('auth.welcome')
+          });
         navigate('/dashboard', { replace: true });
       }
     } catch (err) {
@@ -125,7 +122,6 @@ const LoginPage: React.FC = () => {
               />
           )}
 
-            {/* prefetch disabled - overlay removed */}
           <Form.Item
             label={t('auth.usernameLabel')}
             name="username"

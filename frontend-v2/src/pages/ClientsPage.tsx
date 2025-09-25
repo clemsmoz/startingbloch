@@ -8,7 +8,7 @@
  * ================================================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -38,7 +38,6 @@ import { AddClientModal, EditClientModal } from '../components/modals';
 
 // Services
 import { clientService } from '../services';
-import { useQuery, useQueryClient } from 'react-query';
 
 // Types
 import type { Client } from '../types';
@@ -65,21 +64,27 @@ const ClientsPage: React.FC = () => {
   
   const { addNotification } = useNotificationStore();
 
-  const queryClient = useQueryClient();
-
-  const { isLoading: queryLoading } = useQuery<any, Error>({
-    queryKey: ['clients', currentPage, pageSize],
-    queryFn: async () => await clientService.getAll(currentPage, pageSize),
-    onSuccess: (res: any) => {
-      if (res?.data) {
-        setClients(res.data);
-        setTotalCount(res.totalCount ?? 0);
-        setCurrentPage(res.page ?? currentPage);
+  // Charger les clients avec pagination
+  const loadClients = async (page: number = currentPage, size: number = pageSize) => {
+    setLoading(true);
+    try {
+      const response = await clientService.getAll(page, size);
+      if (response.success && response.data) {
+        setClients(response.data);
+  setTotalCount(response.totalCount ?? 0);
+  setCurrentPage(response.page ?? page);
       }
-    },
-  });
-
-  // use loading from react-query
+    } catch (error) {
+      console.error('Erreur lors du chargement des clients:', error);
+        addNotification({
+          type: 'error',
+          message: t('clients.loadErrorTitle'),
+          description: t('clients.loadErrorDesc')
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handlers pour les modales
   const handleAdd = () => {
@@ -113,7 +118,7 @@ const ClientsPage: React.FC = () => {
         type: 'success',
           message: t('clients.deleteSuccess')
       });
-  queryClient.invalidateQueries({ queryKey: ['clients'] });
+      loadClients();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       addNotification({
@@ -125,7 +130,7 @@ const ClientsPage: React.FC = () => {
 
   const handleAddSuccess = () => {
     setIsAddModalVisible(false);
-  queryClient.invalidateQueries({ queryKey: ['clients'] });
+    loadClients();
     addNotification({
       type: 'success',
       message: t('clients.addSuccess')
@@ -135,20 +140,23 @@ const ClientsPage: React.FC = () => {
   const handleEditSuccess = () => {
     setIsEditModalVisible(false);
     setClientToEdit(null);
-  queryClient.invalidateQueries({ queryKey: ['clients'] });
+    loadClients();
     addNotification({
       type: 'success',
       message: t('clients.editSuccess')
     });
   };
 
+  useEffect(() => {
+    loadClients();
+  }, []);
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
   const newPageSize = size ?? pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
-    // useQuery will react to currentPage/pageSize change and fetch automatically
+    loadClients(page, newPageSize);
   };
 
   // Recherche
@@ -179,7 +187,7 @@ const ClientsPage: React.FC = () => {
     } else {
       // Retourner à la pagination normale si recherche vide
       setCurrentPage(1);
-      // query will refresh because queryKey depends on currentPage/pageSize
+      loadClients(1, pageSize);
     }
   };
 
@@ -345,7 +353,7 @@ const ClientsPage: React.FC = () => {
         <DataTable
           columns={columns}
           data={clients}
-          loading={loading || queryLoading}
+          loading={loading}
           rowKey="id"
           pagination={{
             current: currentPage,
@@ -401,18 +409,40 @@ const ClientsPage: React.FC = () => {
               console.log('🔄 Création client avec compte utilisateur via UserAdmin');
               const userValues = values as any; // Cast pour accéder aux champs utilisateur
               
-              // données préparées (les champs client sont gérés côté backend via l'endpoint admin)
-              
-              // Utiliser userAdminService pour bénéficier de l'interceptor (ajout du header Authorization)
-              const { userAdminService } = await import('../services/userAdminService');
-              await userAdminService.createClientAccount({
-                clientId: 0,
+              const clientWithUserData = {
+                // Données client
+                nomClient: values.nomClient,
+                referenceClient: values.referenceClient,
+                adresseClient: values.adresseClient,
+                codePostal: values.codePostal,
+                paysClient: values.paysClient,
+                emailClient: values.emailClient,
+                telephoneClient: values.telephoneClient,
+                
+                // Données utilisateur
                 username: userValues.userEmail,
-                email: userValues.userEmail,
+                userEmail: userValues.userEmail,
                 password: userValues.password,
+                
+                // Permissions
                 canWrite: values.canWrite ?? false,
+                canRead: values.canRead ?? true,
                 isActive: !(values.isBlocked ?? false),
+              };
+              
+              // Appel direct à l'endpoint UserAdmin
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/useradmin/create-new-client-with-user`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${sessionStorage.getItem('startingbloch_token')}`
+                },
+                body: JSON.stringify(clientWithUserData)
               });
+              
+              if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+              }
               
             } else {
               // Créer client simple

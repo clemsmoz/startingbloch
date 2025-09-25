@@ -9,8 +9,7 @@ import { useTranslation } from 'react-i18next';
  * ================================================================================================
  */
 
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from 'react-query';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Button, 
@@ -37,7 +36,7 @@ import { PageHeader, DataTable, SearchInput } from '../components/common';
 import { AddCabinetModal, EditCabinetModal } from '../components/modals';
 
 // Services
-import { cabinetService } from '../services';
+import { cabinetService, authService } from '../services';
 
 // Types
 import type { Cabinet, CreateCabinetDto, UpdateCabinetDto } from '../types';
@@ -65,7 +64,7 @@ const CabinetsPage: React.FC = () => {
      if (type === 2 || type === '2') return 'green';
      return 'default';
   };
-  
+  const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [selectedCabinet, setSelectedCabinet] = useState<Cabinet | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
@@ -79,11 +78,6 @@ const CabinetsPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   const { addNotification } = useNotificationStore();
-  const queryClient = useQueryClient();
-
-  // detect role once per render (used by query key)
-  const storedUser = sessionStorage.getItem('startingbloch_user');
-  const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
 
   // Colonnes du tableau
   const columns: ColumnsType<Cabinet> = [
@@ -181,55 +175,98 @@ const CabinetsPage: React.FC = () => {
     },
   ];
 
-  // Use react-query to load cabinets (role-aware)
-  const { isLoading: queryLoading } = useQuery(
-    ['cabinets', role, currentPage, pageSize],
-    async () => {
-      if (role === 'client') {
-        const r = await cabinetService.getMine();
-        return { ...r, page: 1, pageSize: r.data?.length ?? 0, totalCount: r.data?.length ?? 0 } as any;
+  // Charger les cabinets
+  useEffect(() => {
+    loadCabinets();
+  }, []);
+
+  const loadCabinets = async (page: number = currentPage, size: number = pageSize) => {
+    setLoading(true);
+    try {
+      // Vérifier l'utilisateur connecté et ses rôles
+      try {
+        const currentUser = await authService.getCurrentUser();
+        console.log('👤 CabinetsPage - Utilisateur connecté:', currentUser);
+        console.log('🔑 CabinetsPage - Rôle utilisateur:', currentUser.role);
+      } catch (userError) {
+        console.error('❌ CabinetsPage - Erreur récupération utilisateur:', userError);
       }
-      return await cabinetService.getAll(currentPage, pageSize);
-    },
-    {
-      onSuccess: (response: any) => {
-        const data = response?.data || response?.Data;
-        const success = response?.success || response?.Success;
-        if (success && data) {
-          if (Array.isArray(data)) {
-            setCabinets(data as Cabinet[]);
-            const isClient = role === 'client';
-            setTotalCount(isClient ? data.length : (response.totalCount || 0));
-            setCurrentPage(isClient ? 1 : (response.page || currentPage));
-          } else if (data?.data && Array.isArray(data.data)) {
-            setCabinets(data.data);
-            setTotalCount(response.totalCount || 0);
-            setCurrentPage(response.page || currentPage);
-          } else if (data?.items && Array.isArray(data.items)) {
-            setCabinets(data.items);
-            setTotalCount(response.totalCount || 0);
-            setCurrentPage(response.page || currentPage);
-          } else {
-            setCabinets([]);
-            setTotalCount(0);
-          }
+      
+      // Si l'utilisateur est un client, appeler l'endpoint dédié
+      const storedUser = sessionStorage.getItem('startingbloch_user');
+      const role = storedUser ? (JSON.parse(storedUser).role || '').toLowerCase() : '';
+      console.log(`🏢 CabinetsPage - Début du chargement des cabinets (page ${page}, taille ${size})... Rôle=${role}`);
+      const response = role === 'client'
+        ? await (async () => {
+            const r = await cabinetService.getMine();
+            // Adapter en PagedApiResponse minimal pour le code existant
+            return { ...r, page: 1, pageSize: r.data?.length ?? 0, totalCount: r.data?.length ?? 0 } as any;
+          })()
+        : await cabinetService.getAll(page, size);
+      console.log('🏢 CabinetsPage - Réponse reçue:', response);
+      
+      // Le backend retourne un PagedResponse avec des propriétés en PascalCase
+      const success = response.success || (response as any).Success;
+      const data = response.data || (response as any).Data;
+      
+  if (success) {
+        console.log('📊 CabinetsPage - Type de données reçues:', typeof data);
+        console.log('📊 CabinetsPage - Est-ce un tableau?', Array.isArray(data));
+        console.log('📊 CabinetsPage - Données brutes:', data);
+        
+        // S'assurer que nous avons un tableau
+        if (Array.isArray(data)) {
+          console.log('🔍 Premier cabinet pour debug:', data[0]);
+          setCabinets(data);
+          // Pour un client, pas de pagination serveur
+          const storedRole = (JSON.parse(sessionStorage.getItem('startingbloch_user') || 'null')?.role || '').toLowerCase();
+          const isClient = storedRole === 'client';
+          setTotalCount(isClient ? data.length : (response.totalCount || 0));
+          setCurrentPage(isClient ? 1 : (response.page || page));
+          console.log('✅ CabinetsPage - Cabinets chargés directement:', data.length);
+        } else if (data && (data as any).data && Array.isArray((data as any).data)) {
+          setCabinets((data as any).data);
+          setTotalCount(response.totalCount || 0);
+          setCurrentPage(response.page || page);
+          console.log('✅ CabinetsPage - Cabinets trouvés dans data.data:', (data as any).data.length);
+        } else if (data && (data as any).items && Array.isArray((data as any).items)) {
+          setCabinets((data as any).items);
+          setTotalCount(response.totalCount || 0);
+          setCurrentPage(response.page || page);
+          console.log('✅ CabinetsPage - Cabinets trouvés dans data.items:', (data as any).items.length);
         } else {
-          message.error(response?.message || t('cabinets.loadError'));
+          console.warn('⚠️ CabinetsPage - Format de données inattendu, utilisation d\'un tableau vide');
+          console.log('🔍 CabinetsPage - Propriétés disponibles:', Object.keys(data || {}));
+          setCabinets([]);
+          setTotalCount(0);
         }
-      },
-      onError: (error: any) => {
-        console.error('❌ CabinetsPage - Erreur lors du chargement des cabinets:', error);
-        message.error(t('cabinets.loadError'));
-      },
+        
+        console.log('✅ CabinetsPage - Cabinets chargés:', Array.isArray(data) ? data.length : 'Format non-tableau');
+  } else {
+    console.error('❌ CabinetsPage - Réponse sans succès:', response.message);
+    message.error(response.message || t('cabinets.loadError'));
+      }
+    } catch (error) {
+      console.error('❌ CabinetsPage - Erreur lors du chargement des cabinets:', error);
+      if (error instanceof Error) {
+        console.error('Message:', error.message);
+      }
+      if ((error as any).response) {
+        console.error('Status:', (error as any).response?.status);
+        console.error('Data:', (error as any).response?.data);
+      }
+      message.error(t('cabinets.loadError'));
+    } finally {
+      setLoading(false);
     }
-  );
+  };
 
   // Gestionnaire de changement de pagination
   const handleTableChange = (page: number, size?: number) => {
     const newPageSize = size || pageSize;
     setCurrentPage(page);
     setPageSize(newPageSize);
-    // query will refetch because queryKey depends on currentPage/pageSize
+    loadCabinets(page, newPageSize);
   };
 
   // Recherche côté client en attendant l'implémentation côté serveur
@@ -238,8 +275,8 @@ const CabinetsPage: React.FC = () => {
     setSearchValue(query);
     // Normaliser côté client pour la sensibilité à la casse
     if (!query) {
-      // reset to first page; the query will refetch because the key depends on currentPage/pageSize
       setCurrentPage(1);
+      loadCabinets(1, pageSize);
     }
   };
 
@@ -290,7 +327,7 @@ const CabinetsPage: React.FC = () => {
     if (response.success) {
   message.success(t('cabinets.createSuccess'));
         setIsAddModalVisible(false);
-        await queryClient.invalidateQueries({ queryKey: ['cabinets'] });
+        await loadCabinets();
         
         addNotification({
           type: 'success',
@@ -313,7 +350,7 @@ const CabinetsPage: React.FC = () => {
   message.success(t('cabinets.updateSuccess'));
         setIsEditModalVisible(false);
         setSelectedCabinet(null);
-        await queryClient.invalidateQueries({ queryKey: ['cabinets'] });
+        await loadCabinets();
         
         addNotification({
           type: 'success',
@@ -338,7 +375,7 @@ const CabinetsPage: React.FC = () => {
   message.success(t('cabinets.deleteSuccess'));
         setIsDeleteModalVisible(false);
         setSelectedCabinet(null);
-        await queryClient.invalidateQueries({ queryKey: ['cabinets'] });
+        await loadCabinets();
         
         addNotification({
           type: 'success',
@@ -396,7 +433,7 @@ const CabinetsPage: React.FC = () => {
       <DataTable
         columns={columns}
         data={searchValue ? filteredCabinets : cabinets}
-        loading={queryLoading}
+        loading={loading}
         rowKey="id"
         scroll={{ x: 1000 }}
   pagination={(searchValue ? false : ((JSON.parse(sessionStorage.getItem('startingbloch_user') || 'null')?.role || '').toLowerCase() === 'client' ? false : {
