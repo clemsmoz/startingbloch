@@ -10,20 +10,26 @@
 export const getAuthToken = (): string | null => {
   try {
     // D'abord essayer de récupérer le token directement
-    let token = sessionStorage.getItem('startingbloch_token');
-    console.log('🔑 Auth Utils - Token direct:', token ? 'présent' : 'absent');
-    
+    let token = sessionStorage.getItem('startingbloch_token') ?? null;
+    if (token) token = token.trim();
+
+    // Fallback: essayer depuis le store Zustand (persisted state)
     if (!token) {
-      // Fallback: essayer depuis le store Zustand
       const authStore = localStorage.getItem('startingbloch-auth');
       if (authStore) {
-  const { state } = JSON.parse(authStore);
-  token = state?.token ?? null;
-        console.log('🔑 Auth Utils - Token depuis Zustand:', token ? 'présent' : 'absent');
+        try {
+          const parsed = JSON.parse(authStore);
+          const state = parsed?.state ?? parsed ?? null;
+          token = state?.token ?? null;
+          if (token) token = String(token).trim();
+        } catch (e) {
+          console.warn('🔑 Auth Utils - impossible de parser startingbloch-auth', e);
+        }
       }
     }
-    
-    return token;
+
+    console.log('🔑 Auth Utils - token présent:', !!token);
+    return token && token.length > 0 ? token : null;
   } catch (error) {
     console.error('❌ Auth Utils - Erreur lors de la récupération du token:', error);
   }

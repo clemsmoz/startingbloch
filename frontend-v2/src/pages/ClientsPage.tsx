@@ -401,40 +401,18 @@ const ClientsPage: React.FC = () => {
               console.log('🔄 Création client avec compte utilisateur via UserAdmin');
               const userValues = values as any; // Cast pour accéder aux champs utilisateur
               
-              const clientWithUserData = {
-                // Données client
-                nomClient: values.nomClient,
-                referenceClient: values.referenceClient,
-                adresseClient: values.adresseClient,
-                codePostal: values.codePostal,
-                paysClient: values.paysClient,
-                emailClient: values.emailClient,
-                telephoneClient: values.telephoneClient,
-                
-                // Données utilisateur
+              // données préparées (les champs client sont gérés côté backend via l'endpoint admin)
+              
+              // Utiliser userAdminService pour bénéficier de l'interceptor (ajout du header Authorization)
+              const { userAdminService } = await import('../services/userAdminService');
+              await userAdminService.createClientAccount({
+                clientId: 0,
                 username: userValues.userEmail,
-                userEmail: userValues.userEmail,
+                email: userValues.userEmail,
                 password: userValues.password,
-                
-                // Permissions
                 canWrite: values.canWrite ?? false,
-                canRead: values.canRead ?? true,
                 isActive: !(values.isBlocked ?? false),
-              };
-              
-              // Appel direct à l'endpoint UserAdmin
-              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/useradmin/create-new-client-with-user`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${sessionStorage.getItem('startingbloch_token')}`
-                },
-                body: JSON.stringify(clientWithUserData)
               });
-              
-              if (!response.ok) {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-              }
               
             } else {
               // Créer client simple

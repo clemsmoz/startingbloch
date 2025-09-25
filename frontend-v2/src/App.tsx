@@ -36,6 +36,7 @@ import NotificationsPage from './pages/NotificationsPage';
 
 // Stores
 import { useAuthStore } from './store/authStore';
+import { getAuthToken } from './utils/auth';
 
 // Configuration
 import { config } from './config';
@@ -80,12 +81,9 @@ const App: React.FC = () => {
 
   // Vérification de l'authentification au démarrage
   useEffect(() => {
-    const token = sessionStorage.getItem('startingbloch_token');
+    const token = getAuthToken();
     const user = sessionStorage.getItem('startingbloch_user');
-    
-    if (token && user) {
-      refreshAuth();
-    }
+    if (token && user) refreshAuth();
   }, [refreshAuth]);
 
   if (isLoading) {
