@@ -31,6 +31,7 @@ const ClientBrevetsPage: React.FC = () => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [brevetToEdit, setBrevetToEdit] = useState<Brevet | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // Pagination locale
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,6 +192,34 @@ const ClientBrevetsPage: React.FC = () => {
   addNotification({ type: 'error', message: t('brevets.deleteError') });
     }
   };
+
+  const handleBulkDelete = () => {
+    if (!selectedRowKeys || selectedRowKeys.length === 0) {
+      message.info(t('actions.selectAtLeastOne') ?? 'Sélectionnez au moins un brevet');
+      return;
+    }
+    Modal.confirm({
+      title: t('actions.delete') + ' ? ',
+      content: t('brevets.confirmDelete.multiple', { count: selectedRowKeys.length }) ?? `Supprimer ${selectedRowKeys.length} brevets ?`,
+      okText: t('actions.delete'),
+      okType: 'danger',
+      cancelText: t('actions.cancel'),
+      onOk: async () => {
+        try {
+          for (const k of selectedRowKeys) {
+            const id = Number(k);
+            if (!Number.isNaN(id)) await brevetService.delete(id);
+          }
+          addNotification({ type: 'success', message: t('brevets.deleteSuccess') });
+          setSelectedRowKeys([]);
+          loadBrevets();
+        } catch (e) {
+          console.error('Erreur suppression groupée:', e);
+          addNotification({ type: 'error', message: t('brevets.deleteError') });
+        }
+      }
+    });
+  };
   const confirmDelete = (brevet: Brevet) => {
     Modal.confirm({
       title: t('brevets.confirmDelete.title'),
@@ -243,6 +272,9 @@ const ClientBrevetsPage: React.FC = () => {
   // Actions entête
   const headerActions = [
     <Button key="export" icon={<ExportOutlined />} onClick={() => message.info(t('brevets.exportComing'))}>{t('actions.export')}</Button>,
+    <Button key="bulk-delete" danger icon={<DeleteOutlined />} onClick={handleBulkDelete} disabled={selectedRowKeys.length === 0}>
+      {t('actions.deleteSelected') ?? 'Supprimer la sélection'}
+    </Button>,
     <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>{t('brevets.actions.new')}</Button>,
     <Button key="back" icon={<ArrowLeftOutlined />} onClick={() => navigate('/clients')}>{t('actions.back')}</Button>,
   ];
@@ -262,6 +294,7 @@ const ClientBrevetsPage: React.FC = () => {
           columns={columns}
           data={brevets}
           loading={loading}
+          rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys) }}
           rowKey="id"
           pagination={{
             current: currentPage,

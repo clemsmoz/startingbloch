@@ -65,6 +65,7 @@ const CabinetsPage: React.FC = () => {
      return 'default';
   };
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [selectedCabinet, setSelectedCabinet] = useState<Cabinet | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
@@ -417,6 +418,37 @@ const CabinetsPage: React.FC = () => {
     </Button>,
   ];
 
+  // Ajouter le bouton de suppression groupée
+  headerActions.unshift(
+    <Button key="bulk-delete" danger icon={<DeleteOutlined />} onClick={async () => {
+      if (!selectedRowKeys || selectedRowKeys.length === 0) {
+        message.info(t('actions.selectAtLeastOne'));
+        return;
+      }
+      Modal.confirm({
+        title: t('actions.delete') + ' ? ',
+        content: t('cabinets.confirmDelete.multiple', { count: selectedRowKeys.length }) ?? `Supprimer ${selectedRowKeys.length} cabinets ?`,
+        okText: t('actions.delete'),
+        okType: 'danger',
+        cancelText: t('actions.cancel'),
+        onOk: async () => {
+          try {
+            for (const k of selectedRowKeys) {
+              const id = Number(k);
+              if (!Number.isNaN(id)) await cabinetService.delete(id);
+            }
+            message.success(t('cabinets.deleteSuccess'));
+            setSelectedRowKeys([]);
+            await loadCabinets(1, pageSize);
+          } catch (e) {
+            console.error('Erreur suppression groupée cabinets', e);
+            message.error(t('cabinets.deleteError'));
+          }
+        }
+      });
+    }} disabled={selectedRowKeys.length === 0}>{t('actions.deleteSelected')}</Button>
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -434,6 +466,7 @@ const CabinetsPage: React.FC = () => {
         columns={columns}
         data={searchValue ? filteredCabinets : cabinets}
         loading={loading}
+        rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys) }}
         rowKey="id"
         scroll={{ x: 1000 }}
   pagination={(searchValue ? false : ((JSON.parse(sessionStorage.getItem('startingbloch_user') || 'null')?.role || '').toLowerCase() === 'client' ? false : {

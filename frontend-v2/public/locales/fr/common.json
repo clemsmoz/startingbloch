@@ -398,7 +398,7 @@
     "editSuccess": "Brevet modifié avec succès",
     "createError": "Erreur lors de la création du brevet",
     "updateError": "Erreur lors de la modification du brevet",
-    "confirmDelete": { "title": "Confirmer la suppression", "content": "Êtes-vous sûr de vouloir supprimer le brevet \"{{title}}\" ?" },
+    "confirmDelete": { "title": "Confirmer la suppression", "content": "Êtes-vous sûr de vouloir supprimer le brevet \"{{title}}\" ?", "multiple": "Supprimer {{count}} brevets ?" },
   "exportComing": "Export de brevets bientôt disponible",
   "searchPlaceholder": "Rechercher un brevet...",
     "pagination": { "showTotal": "{{from}}-{{to}} sur {{total}}" },
@@ -493,6 +493,10 @@
       "new": "Nouveau brevet"
     },
     "import": {
+      "resultTitle": "Récapitulatif de l'import",
+      "addedCount": "{{count}} références famille ajoutées",
+      "resultListHeader": "Références ajoutées",
+      "backToList": "Retour aux brevets",
       "fromExcel": "Ajouter depuis Excel",
       "title": "Importer depuis Excel",
       "prepare": "Préparer import",
@@ -678,8 +682,17 @@
       }
     }
   },
-  "actions": { "viewDetails": "Voir les détails", "edit": "Modifier", "delete": "Supprimer", "close": "Fermer", "export": "Exporter", "title": "Actions", "actions": "Actions", "create": "Créer", "enable": "Activer", "disable": "Désactiver", "yes": "Oui", "no": "Non", "cancel": "Annuler", "refresh": "Rafraîchir" },
+  "actions": { "view": "Voir", "viewDetails": "Voir les détails", "edit": "Modifier", "delete": "Supprimer", "close": "Fermer", "export": "Exporter", "title": "Actions", "actions": "Actions", "create": "Créer", "enable": "Activer", "disable": "Désactiver", "yes": "Oui", "no": "Non", "cancel": "Annuler", "refresh": "Rafraîchir" },
+  "actions.backToList": "Retour aux brevets",
+  "actions.back": "Retour",
+  "actions.upload": "Téléverser",
+  "actions.deleteSelected": "Supprimer la sélection",
+  "actions.selectAtLeastOne": "Sélectionnez au moins un élément",
   "common": { "description": "Description", "notProvided": "Non renseigné", "exportInProgress": "Export en cours...", "loadingSuggestions": "Chargement des suggestions…", "yes": "✅ Oui", "no": "❌ Non", "enabled": "Activé", "disabled": "Désactivé", "none": "Aucun", "cancel": "Annuler", "countryNotSpecified": "Pays non spécifié", "na": "N/A", "next": "Suivant", "back": "Retour" },
+  "common.actions": "Actions",
+  "common.idPrefix": "Identifiant",
+  "brevets.import.processing": "Import en cours...",
+  "brevets.import.noneAdded": "Aucune référence ajoutée",
   "auth": {
     "loginSuccess": "Connexion réussie",
     "welcome": "Bienvenue",

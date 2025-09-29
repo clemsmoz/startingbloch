@@ -34,6 +34,7 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import SettingsPage from './pages/SettingsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import NumberConverterPage from './pages/NumberConverterPage';
+import ImportResultPage from './pages/ImportResultPage';
 
 // Stores
 import { useAuthStore } from './store/authStore';
@@ -128,6 +129,7 @@ const App: React.FC = () => {
             }
           />
           <Route path="brevets" element={<BrevetsPage />} />
+          <Route path="brevets/import/result" element={<ImportResultPage />} />
           <Route path="clients/:clientId/brevets" element={<ClientBrevetsPage />} />
           <Route path="contacts" element={<ContactsPage />} />
           <Route path="cabinets" element={<CabinetsPage />} />

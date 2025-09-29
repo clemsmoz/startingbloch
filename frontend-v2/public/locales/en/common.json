@@ -304,7 +304,7 @@
     "editSuccess": "Patent updated successfully",
     "createError": "Error creating patent",
     "updateError": "Error updating patent",
-    "confirmDelete": { "title": "Confirm deletion", "content": "Are you sure you want to delete patent \"{{title}}\"?" },
+  "confirmDelete": { "title": "Confirm deletion", "content": "Are you sure you want to delete patent \"{{title}}\"?", "multiple": "Delete {{count}} patents?" },
     "exportComing": "Patent export coming soon",
     "searchPlaceholder": "Search a patent...",
     "searchPlaceholderClient": "Search a patent for this client...",
@@ -400,6 +400,10 @@
       "new": "New patent"
     },
     "import": {
+      "resultTitle": "Import result summary",
+      "addedCount": "{{count}} family references added",
+      "resultListHeader": "Added references",
+      "backToList": "Back to patents",
       "fromExcel": "Add from Excel",
       "title": "Import from Excel",
       "prepare": "Prepare import",
@@ -602,6 +606,7 @@
     }
   },
   "actions": {
+    "view": "View",
     "viewDetails": "View details",
     "edit": "Edit",
     "delete": "Delete",
@@ -615,8 +620,16 @@
     "yes": "Yes",
     "no": "No",
     "cancel": "Cancel",
+    "backToList": "Back to patents",
+    "back": "Back",
+    "upload": "Upload",
     "refresh": "Refresh"
   },
+  "actions.deleteSelected": "Delete selected",
+  "actions.selectAtLeastOne": "Select at least one item",
+  "common.idPrefix": "ID",
+  "brevets.import.processing": "Import in progress...",
+  "brevets.import.noneAdded": "No references added",
   "common": {
     "description": "Description",
     "notProvided": "Not provided",
@@ -631,7 +644,8 @@
     "countryNotSpecified": "Country not specified",
     "na": "N/A",
     "next": "Next",
-    "back": "Back"
+    "back": "Back",
+    "actions": "Actions"
   },
   "auth": {
     "loginSuccess": "Login successful",

@@ -50,6 +50,7 @@ const ClientsPage: React.FC = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   // Recherche contrôlée localement (pas besoin d'état séparé)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
@@ -320,6 +321,37 @@ const ClientsPage: React.FC = () => {
     </Button>
   ];
 
+  // Bouton suppression groupée
+  headerActions.unshift(
+    <Button key="bulk-delete" danger icon={<DeleteOutlined />} onClick={() => {
+      if (!selectedRowKeys || selectedRowKeys.length === 0) {
+        message.info(t('actions.selectAtLeastOne'));
+        return;
+      }
+      Modal.confirm({
+        title: t('actions.delete') + ' ? ',
+        content: t('clients.confirmDelete.multiple', { count: selectedRowKeys.length }) ?? `Supprimer ${selectedRowKeys.length} clients ?`,
+        okText: t('actions.delete'),
+        okType: 'danger',
+        cancelText: t('actions.cancel'),
+        onOk: async () => {
+          try {
+            for (const k of selectedRowKeys) {
+              const id = Number(k);
+              if (!Number.isNaN(id)) await clientService.delete(id);
+            }
+            setSelectedRowKeys([]);
+            loadClients(1, pageSize);
+            addNotification({ type: 'success', message: t('clients.deleteSuccess') });
+          } catch (e) {
+            console.error('Erreur suppression groupée clients', e);
+            addNotification({ type: 'error', message: t('clients.deleteError') });
+          }
+        }
+      });
+    }} disabled={selectedRowKeys.length === 0}>{t('actions.deleteSelected')}</Button>
+  );
+
   // Supprimé le filtrage côté client - la recherche est gérée côté serveur
 
   return (
@@ -348,6 +380,7 @@ const ClientsPage: React.FC = () => {
           columns={columns}
           data={clients}
           loading={loading}
+          rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys) }}
           rowKey="id"
           pagination={{
             current: currentPage,

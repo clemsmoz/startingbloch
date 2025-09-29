@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Button, Select, Upload, message, Space } from 'antd';
+import { Modal, Button, Select, Upload, message, Space, Spin } from 'antd';
 import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { clientService, paysService, statutsService, brevetService } from '../../services';
 import AddClientModal from './AddClientModal';
-import { parseExcelFile, ParsedFamily } from '../../utils/excelImport';
-import AddBrevetModal from './AddBrevetModal';
+import { parseExcelFile } from '../../utils/excelImport';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
@@ -22,9 +22,10 @@ const ImportFromExcelModal: React.FC<ImportFromExcelModalProps> = ({ visible, on
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [createClientVisible, setCreateClientVisible] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [recapClient, setRecapClient] = useState<any | null>(null);
-  const [parsedFamilies, setParsedFamilies] = useState<ParsedFamily[] | null>(null);
-  const [showAddModalForFamily, setShowAddModalForFamily] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
+  // Removed recapClient and parsedFamilies states; import is non-interactive and creates directly.
+  // removed modal-per-family flow - import will be executed automatically
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (visible) loadClients();
@@ -110,26 +111,64 @@ const ImportFromExcelModal: React.FC<ImportFromExcelModalProps> = ({ visible, on
             }))
           }));
 
-          setParsedFamilies(mapped);
           console.info('[ImportFromExcel] parsed families mapped', { families: mapped.length, sample: mapped[0] ?? null });
+          // Automatically create families directly (user requested no per-item modal)
+          (async () => {
+            const created: { familyRef?: string; id?: number }[] = [];
+            setProcessing(true);
+            for (const fam of mapped) {
+              try {
+                // Build payload matching AddBrevetModal's final submit shape
+                const payload: any = {
+                  referenceFamille: fam.referenceFamille,
+                  titre: fam.titre,
+                  // Not setting clientIds here: parent selected clientId is optional
+                  informationsDepot: (fam.deposits || []).map((d: any) => ({
+                    numeroPublication: d.numeroPublication ?? null,
+                    numeroDepot: d.numeroDepot ?? null,
+                    numeroDelivrance: d.numeroDelivrance ?? null,
+                    dateDepot: d.dateDepot ?? null,
+                    datePublication: d.datePublication ?? null,
+                    dateDelivrance: d.dateDelivrance ?? null,
+                    idPays: d.idPays ?? undefined,
+                    idStatuts: d.idStatuts ?? undefined,
+                    licence: d.licence ?? false,
+                    commentaire: d.commentaire ?? undefined,
+                    cabinetsAnnuites: d.cabinetsAnnuites ?? [],
+                    cabinetsProcedures: d.cabinetsProcedures ?? []
+                  }))
+                };
+                // If a client was preselected, include it
+                if (selectedClientId) payload.clientIds = [selectedClientId];
+                const resp = await brevetService.create(payload);
+                      if (resp?.success) {
+                        const dataObj: any = resp.data ?? resp;
+                  created.push({ familyRef: fam.referenceFamille ?? undefined, id: dataObj?.id ?? dataObj?.Id });
+                } else {
+                  // ignore failures as per user's instruction (no error report)
+                }
+              } catch (err) {
+                      console.error('[ImportFromExcel] creation error for family', fam.referenceFamille, err);
+              }
+            }
+            setProcessing(false);
+            // Navigate to recap page with created entries
+            try {
+              navigate('/brevets/import/result', { state: { created, fileName: file?.name ?? null } });
+            } catch (e) {
+              console.info('ImportFromExcel: navigation to result failed', e);
+            }
+            // Close the modal and trigger onComplete
+            // clear file and close modal
+            setFile(null);
+            if (onComplete) onComplete();
+          })();
         } catch (err) {
           console.error('[ImportFromExcel] Erreur mapping pays/statuts', err);
-          setParsedFamilies(families);
+          // fallback: still attempt to create using raw parsed families
         }
   // Determine recap client: prefer selectedClientId if provided, otherwise fallback to found client object
-  if (selectedClientId) {
-    // Try to find full client object in loaded clients
-    const found = clients.find(c => (c.id ?? c.Id) === selectedClientId) ?? null;
-    // If not found, create a minimal object so AddBrevetModal receives the preselected id
-    const clientObj = found ?? { id: selectedClientId };
-    setRecapClient(clientObj);
-  } else {
-    const clientObj = clients.find(c => (c.id ?? c.Id) === selectedClientId) ?? null;
-    setRecapClient(clientObj);
-  }
-  // Open the AddBrevetModal prefilled directly (recap uses the same modal as manual add)
-  console.info('ImportFromExcelModal: recapClient', recapClient, 'selectedClientId', selectedClientId);
-  setShowAddModalForFamily(0);
+  // recapClient logic removed: import creates directly
       })
       .catch((err) => {
         console.error('[ImportFromExcel] Erreur parsing Excel', err);
@@ -153,12 +192,15 @@ const ImportFromExcelModal: React.FC<ImportFromExcelModalProps> = ({ visible, on
         title={t('brevets.import.title') ?? 'Importer depuis Excel'}
         open={visible}
         onCancel={onCancel}
+        maskClosable={!processing}
+        closable={!processing}
         footer={[
-          <Button key="cancel" onClick={onCancel}>{t('actions.cancel') ?? 'Annuler'}</Button>,
-          <Button key="prepare" type="primary" onClick={handlePrepare}>{t('brevets.import.prepare') ?? 'Préparer import'}</Button>
+          <Button key="cancel" onClick={onCancel} disabled={processing}>{t('actions.cancel') ?? 'Annuler'}</Button>,
+          <Button key="prepare" type="primary" onClick={handlePrepare} disabled={processing}>{processing ? (t('brevets.import.processing') ?? 'Import en cours...') : (t('brevets.import.prepare') ?? 'Préparer import')}</Button>
         ]}
         width={700}
       >
+        <Spin spinning={processing} tip={t('brevets.import.processing') ?? 'Import en cours...'}>
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <div>
             <div style={{ marginBottom: 8 }}>{t('brevets.import.chooseClient') ?? 'Client (optionnel)'}</div>
@@ -170,117 +212,57 @@ const ImportFromExcelModal: React.FC<ImportFromExcelModalProps> = ({ visible, on
                 value={selectedClientId ?? undefined}
                 onChange={(v) => setSelectedClientId(v ?? null)}
                 optionFilterProp="children"
-                filterOption={(input, option) => String(option?.children).toLowerCase().includes(String(input).toLowerCase())}
+                filterOption={(input, option) => {
+                  const children = option?.children;
+                  let text = '';
+                  if (typeof children === 'string') text = children;
+                  else if (typeof children === 'number') text = String(children);
+                  else if (React.isValidElement(children)) {
+                    const c: any = children as any;
+                    text = String(c.props?.children ?? c.props?.title ?? '');
+                  }
+                  return text.toLowerCase().includes(String(input).toLowerCase());
+                }}
               >
                 {clients.map(c => (
                   <Option key={c.id ?? c.Id} value={c.id ?? c.Id}>{c.nomClient ?? c.NomClient ?? c.nom ?? c.Nom}</Option>
                 ))}
               </Select>
-              <Button onClick={() => setCreateClientVisible(true)} icon={<PlusOutlined />}>{t('brevets.actions.createClient') ?? 'Créer client'}</Button>
+              <Button onClick={() => setCreateClientVisible(true)} icon={<PlusOutlined />} disabled={processing}>{t('brevets.actions.createClient') ?? 'Créer client'}</Button>
             </Space>
           </div>
 
           <div>
             <div style={{ marginBottom: 8 }}>{t('brevets.import.uploadFile') ?? 'Fichier Excel'}</div>
-            <Upload beforeUpload={handleBeforeUpload} accept=".xlsx,.xls" maxCount={1} showUploadList={{ showRemoveIcon: true }} onRemove={() => setFile(null)}>
-              <Button icon={<UploadOutlined />}>{t('actions.upload') ?? 'Choisir un fichier'}</Button>
+            <Upload beforeUpload={handleBeforeUpload} accept=".xlsx,.xls" maxCount={1} showUploadList={{ showRemoveIcon: true }} onRemove={() => setFile(null)} disabled={processing}>
+              <Button icon={<UploadOutlined />} disabled={processing}>{t('actions.upload') ?? 'Choisir un fichier'}</Button>
             </Upload>
             {file && <div style={{ marginTop: 8 }}>{t('brevets.import.selectedFile') ?? 'Fichier sélectionné'}: {file.name}</div>}
           </div>
 
           <div style={{ color: '#666' }}>{t('brevets.import.note') ?? 'Après préparation vous pourrez vérifier et modifier chaque famille avant envoi.'}</div>
         </Space>
+        </Spin>
       </Modal>
 
       <AddClientModal
         visible={createClientVisible}
         onCancel={() => setCreateClientVisible(false)}
-        onSubmit={async (values: any) => {
+          onSubmit={async (values: any) => {
           try {
             const resp = await clientService.create(values);
-            const created: any = resp?.data ?? resp?.data ?? resp;
+            const created: any = resp?.data ?? resp ?? resp;
             handleClientCreated(created);
             message.success(t('clients.createSuccess') ?? 'Client créé');
           } catch (e) {
+            console.error('[ImportFromExcel] create client error', e);
             message.error(t('clients.createError') ?? 'Erreur création client');
           }
         }}
       />
       {/* Recap replaced by direct AddBrevetModal usage to match exactly the manual add UI */}
 
-      {parsedFamilies && showAddModalForFamily !== null && showAddModalForFamily < parsedFamilies.length && (
-        <AddBrevetModal
-          visible={true}
-          onCancel={() => { setShowAddModalForFamily(null); onCancel(); }}
-          onSubmit={async (values: any) => {
-            // Create the brevet server-side after explicit user validation.
-            // If multiple families were parsed we will advance to the next family
-            // and keep the modal open so the user can review each family in turn.
-            try {
-              console.info('[ImportFromExcel] creating brevet for family index', showAddModalForFamily, 'payload', { titre: values.titre, referenceFamille: values.referenceFamille });
-              const resp = await brevetService.create(values);
-              if (resp?.success) {
-                console.info('[ImportFromExcel] brevet created successfully for index', showAddModalForFamily, 'id', resp?.data?.id ?? null);
-                message.success(t('brevets.addSuccess') ?? 'Brevet ajouté avec succès');
-                // If there are more families, advance to the next one instead of closing
-                if (parsedFamilies && showAddModalForFamily !== null) {
-                  const next = showAddModalForFamily + 1;
-                  if (next < parsedFamilies.length) {
-                    setShowAddModalForFamily(next);
-                    return; // keep the modal open for the next family
-                  }
-                }
-                } else {
-                try { console.error('[ImportFromExcel] brevetService.create returned failure', resp); } catch {}
-                message.error(resp?.message ?? (t('brevets.createError') ?? 'Erreur création brevet'));
-                // Stop the import sequence on error
-                setShowAddModalForFamily(null);
-                onCancel();
-                if (onComplete) onComplete();
-                return;
-              }
-            } catch (err) {
-              try { console.error('[ImportFromExcel] Erreur création via import excel', err); } catch {}
-              message.error(t('brevets.createError') ?? 'Erreur lors de la création du brevet');
-              setShowAddModalForFamily(null);
-              onCancel();
-              if (onComplete) onComplete();
-              return;
-            }
-
-            // If we reached here it means all families were created (or it was a single-family file)
-            setShowAddModalForFamily(null);
-            onCancel();
-            if (onComplete) onComplete();
-          }}
-          // pass preselected client and initialValues mapped from the parsed family
-          preselectedClientIds={recapClient ? [recapClient.id ?? recapClient.Id] : undefined}
-          editing={false}
-          initialValues={{
-            titre: parsedFamilies[showAddModalForFamily]?.titre ?? undefined,
-            referenceFamille: parsedFamilies[showAddModalForFamily]?.referenceFamille ?? undefined,
-            clientIds: recapClient ? [recapClient.id ?? recapClient.Id] : undefined,
-            // Map deposits into the shape expected by AddBrevetModal (CreateInformationDepotDto-ish)
-            informationsDepot: (parsedFamilies[showAddModalForFamily]?.deposits ?? []).map((d, idx) => ({
-              _tempId: `temp_${Date.now()}_${idx}`,
-              numeroPublication: d.numeroPublication ?? null,
-              numeroDepot: d.numeroDepot ?? null,
-              numeroDelivrance: d.numeroDelivrance ?? null,
-              dateDepot: d.dateDepot ?? null,
-              datePublication: d.datePublication ?? null,
-              dateDelivrance: d.dateDelivrance ?? null,
-              idPays: (d as any).idPays ?? undefined,
-              idStatuts: (d as any).idStatuts ?? undefined,
-              licence: (d as any).licence ?? undefined,
-              commentaire: (d as any).commentaire ?? undefined,
-              cabinetsAnnuites: (d as any).cabinetsAnnuites ?? [],
-              cabinetsProcedures: (d as any).cabinetsProcedures ?? [],
-            }))
-          }}
-          title={t('brevets.import.recapAddTitle') ?? 'Vérifier et créer la famille'}
-          submitText={t('brevets.import.createFamily') ?? 'Créer la famille'}
-        />
-      )}
+      {/* per-family AddBrevetModal removed: import now creates entries automatically and navigates to recap page */}
     </>
   );
 };

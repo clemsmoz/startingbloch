@@ -39,7 +39,6 @@ import { motion } from 'framer-motion';
 import { PageHeader, DataTable, SearchInput } from '../components/common';
 import { AddBrevetModal, EditBrevetModal } from '../components/modals';
 import ImportFromExcelModal from '../components/modals/ImportFromExcelModal';
-import { useNavigate } from 'react-router-dom';
 
 // Services
 import { brevetService } from '../services';
@@ -61,6 +60,7 @@ const BrevetsPage: React.FC = () => {
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [brevetToEdit, setBrevetToEdit] = useState<Brevet | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   
   // États pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,7 +70,7 @@ const BrevetsPage: React.FC = () => {
   
   const { addNotification } = useNotificationStore();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  // navigate removed: importFromExcel modal handles navigation to result itself
 
   // Fonction pour obtenir l'image du drapeau du pays (x2)
   const getFlagImage = (codeIso?: string): React.ReactNode => {
@@ -259,6 +259,34 @@ const BrevetsPage: React.FC = () => {
     }
   };
 
+  const handleBulkDelete = () => {
+    if (!selectedRowKeys || selectedRowKeys.length === 0) {
+      message.info(t('actions.selectAtLeastOne') ?? 'Sélectionnez au moins un brevet');
+      return;
+    }
+    Modal.confirm({
+      title: t('actions.delete') + ' ? ',
+      content: t('brevets.confirmDelete.multiple', { count: selectedRowKeys.length }) ?? `Supprimer ${selectedRowKeys.length} brevets ?`,
+      okText: t('actions.delete'),
+      okType: 'danger',
+      cancelText: t('actions.cancel'),
+      onOk: async () => {
+        try {
+          for (const k of selectedRowKeys) {
+            const id = Number(k);
+            if (!Number.isNaN(id)) await brevetService.delete(id);
+          }
+          addNotification({ type: 'success', message: t('brevets.deleteSuccess') ?? 'Brevets supprimés' });
+          setSelectedRowKeys([]);
+          loadBrevets(1, pageSize);
+        } catch (e) {
+          console.error('Erreur suppression groupée:', e);
+          addNotification({ type: 'error', message: t('brevets.deleteError') ?? 'Erreur lors de la suppression' });
+        }
+      }
+    });
+  };
+
   const handleAddSuccess = () => {
     setIsAddModalVisible(false);
     loadBrevets();
@@ -404,6 +432,10 @@ const BrevetsPage: React.FC = () => {
     >
       {t('actions.export')}
     </Button>,
+    // Bulk delete button
+    <Button key="bulk-delete" danger icon={<DeleteOutlined />} onClick={handleBulkDelete} disabled={selectedRowKeys.length === 0}>
+      {t('actions.deleteSelected') ?? 'Supprimer la sélection'}
+    </Button>,
     <Button
       key="add"
       type="primary"
@@ -449,6 +481,10 @@ const BrevetsPage: React.FC = () => {
           columns={columns}
           data={brevets}
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
+          }}
           rowKey="id"
           pagination={{
             current: currentPage,
@@ -780,15 +816,10 @@ const BrevetsPage: React.FC = () => {
           // Refresh the list after import completes
           loadBrevets(1, pageSize).catch(() => {});
         }}
-        onPrepare={({ clientId, file }) => {
-          // For now, navigate to a recap route or open recap flow. We will not parse file here.
+        onPrepare={() => {
+          // Legacy onPrepare behaviour removed: import modal now handles parsing and navigation to result.
+          // Simply close the import modal and let it navigate itself after processing.
           setIsImportModalVisible(false);
-          // Use navigate state to transfer minimal info (filename & clientId). File object isn't serializable.
-          try {
-            navigate('/brevets/import/recap', { state: { clientId, fileName: file?.name ?? null } });
-          } catch (e) {
-            console.log('Prepare import:', { clientId, fileName: file?.name });
-          }
         }}
       />
 

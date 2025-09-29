@@ -52,6 +52,7 @@ const ContactsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   
@@ -434,6 +435,37 @@ const ContactsPage: React.FC = () => {
     </Button>
   ];
 
+  // Bouton suppression groupée
+  headerActions.unshift(
+    <Button key="bulk-delete" danger icon={<DeleteOutlined />} onClick={() => {
+      if (!selectedRowKeys || selectedRowKeys.length === 0) {
+        message.info(t('actions.selectAtLeastOne'));
+        return;
+      }
+      Modal.confirm({
+        title: t('actions.delete') + ' ? ',
+        content: t('contacts.confirmDelete.title') ?? `Supprimer ${selectedRowKeys.length} contacts ?`,
+        okText: t('actions.delete'),
+        okType: 'danger',
+        cancelText: t('actions.cancel'),
+        onOk: async () => {
+          try {
+            for (const k of selectedRowKeys) {
+              const id = Number(k);
+              if (!Number.isNaN(id)) await contactService.delete(id);
+            }
+            setSelectedRowKeys([]);
+            await loadContacts(1, pageSize);
+            addNotification({ type: 'success', message: t('contacts.deleteSuccessTitle') });
+          } catch (e) {
+            console.error('Erreur suppression groupée contacts', e);
+            addNotification({ type: 'error', message: t('contacts.deleteError') });
+          }
+        }
+      });
+    }} disabled={selectedRowKeys.length === 0}>{t('actions.deleteSelected')}</Button>
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -470,6 +502,7 @@ const ContactsPage: React.FC = () => {
           columns={columns}
           data={contacts}
           loading={loading}
+          rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys) }}
           rowKey="id"
           pagination={
             // Désactiver la pagination quand on filtre par client/cabinet
