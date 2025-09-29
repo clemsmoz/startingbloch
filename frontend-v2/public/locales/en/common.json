@@ -43,7 +43,8 @@
     "brevets": "Patents",
     "cabinets": "Offices",
     "adminUsers": "Users",
-    "logs": "Logs"
+    "logs": "Logs",
+    "numberConverter": "Number converter"
   },
   "user": {
     "profile": "Profile",

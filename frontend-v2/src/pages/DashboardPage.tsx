@@ -128,6 +128,16 @@ const DashboardPage: React.FC = () => {
               </ClickableCard>
             </Col>
             <Col xs={24} sm={12} md={6}>
+              <ClickableCard onClick={() => navigate('/number-converter')}>
+                <Statistic
+                  title={t('menu.numberConverter')}
+                  value={' '}
+                  prefix={<FileProtectOutlined />}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </ClickableCard>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
               <ClickableCard onClick={() => navigate('/brevets')}>
                 <Statistic
                   title={t('dashboard.stats.brevets')}

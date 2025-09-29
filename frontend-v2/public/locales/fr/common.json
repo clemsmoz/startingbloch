@@ -51,14 +51,15 @@
     "note_prefix": "Note :",
     "note": "Les préférences sont stockées par client et par type de notification."
   },
-  "menu": {
+    "menu": {
     "dashboard": "Tableau de bord",
     "clients": "Clients",
     "contacts": "Contacts",
     "brevets": "Brevets",
     "cabinets": "Cabinets",
     "adminUsers": "Utilisateurs",
-    "logs": "Journaux"
+    "logs": "Journaux",
+    "numberConverter": "Convertisseur de numéros"
   },
   "user": {
     "profile": "Profil",

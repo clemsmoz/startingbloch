@@ -244,13 +244,7 @@ const ClientsPage: React.FC = () => {
   };
 
   const columns: ColumnsType<Client> = [
-    {
-      title: t('clients.columns.id'),
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      sorter: (a, b) => a.id - b.id,
-    },
+  
     {
       title: t('clients.columns.name'),
       dataIndex: 'nomClient',

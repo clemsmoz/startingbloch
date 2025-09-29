@@ -33,6 +33,7 @@ import LogsPage from './pages/LogsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import SettingsPage from './pages/SettingsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import NumberConverterPage from './pages/NumberConverterPage';
 
 // Stores
 import { useAuthStore } from './store/authStore';
@@ -132,6 +133,7 @@ const App: React.FC = () => {
           <Route path="cabinets" element={<CabinetsPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
+          <Route path="number-converter" element={<NumberConverterPage />} />
           <Route path="settings" element={<SettingsPage />} />
           {/* SettingsNotifications inlined into /settings page */}
           <Route path="notifications" element={<NotificationsPage />} />

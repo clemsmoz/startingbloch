@@ -132,6 +132,8 @@ const getMenuItems = (userRole: string, t: (s: string) => string) => {
     ...(role !== 'client' ? [{ key: '/clients', icon: <TeamOutlined />, label: t('menu.clients') }] : []),
     { key: '/brevets', icon: <FileProtectOutlined />, label: t('menu.brevets') },
     { key: '/cabinets', icon: <BankOutlined />, label: t('menu.cabinets') },
+    // Number converter accessible to Admin and internal Users (not 'client')
+    ...(role !== 'client' ? [{ key: '/number-converter', icon: <FileProtectOutlined />, label: t('menu.numberConverter') }] : []),
   ];
 
   const adminItems = role === 'admin' ? [
