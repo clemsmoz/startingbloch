@@ -7,7 +7,7 @@ const { Option } = Select;
 
 const flag = (code: string, label: React.ReactNode) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-    <img src={`/src/assets/png40px/${code}.png`} alt={typeof label === 'string' ? label : ''} style={{ width: 20, height: 14 }} />
+  <img src={`/assets/png40px/${code}.png`} alt={typeof label === 'string' ? label : ''} style={{ width: 20, height: 14 }} />
     <span>{label}</span>
   </div>
 );

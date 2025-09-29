@@ -120,7 +120,7 @@ const HomePage: React.FC = () => {
           {/* Logo de l'entreprise */}
           <LogoContainer>
             <LogoImage 
-              src="/src/assets/startigbloch_transparent_corrected.png" 
+              src="/assets/startigbloch_transparent_corrected.png" 
               alt="StartingBloch"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';

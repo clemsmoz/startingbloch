@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
       >
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <Image
-            src="/src/assets/icons/startigbloch_transparent_corrected.png"
+            src="/assets/icons/startigbloch_transparent_corrected.png"
             alt="StartingBloch"
             height={120}
             preview={false}

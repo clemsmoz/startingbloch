@@ -229,7 +229,7 @@ const DashboardLayout: React.FC = () => {
           />
           
           <LogoImage 
-            src="/src/assets/icons/startigbloch_transparent_corrected.png" 
+            src="/assets/icons/startigbloch_transparent_corrected.png" 
             alt="StartingBloch"
             onError={(e) => {
               // Fallback SVG si l'image ne charge pas

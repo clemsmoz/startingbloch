@@ -80,7 +80,7 @@ const BrevetsPage: React.FC = () => {
     
     try {
       // Utiliser les images png40px depuis le dossier assets
-      const flagSrc = `/src/assets/png40px/${codeIso.toLowerCase()}.png`;
+  const flagSrc = `/assets/png40px/${codeIso.toLowerCase()}.png`;
       return (
         <img 
           src={flagSrc} 

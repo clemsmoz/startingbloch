@@ -45,7 +45,7 @@ const ClientBrevetsPage: React.FC = () => {
       return <span style={{ fontSize: 24, lineHeight: '32px' }}>🏳️</span>;
     }
     try {
-      const flagSrc = `/src/assets/png40px/${codeIso.toLowerCase()}.png`;
+  const flagSrc = `/assets/png40px/${codeIso.toLowerCase()}.png`;
       return (
         <img
           src={flagSrc}
