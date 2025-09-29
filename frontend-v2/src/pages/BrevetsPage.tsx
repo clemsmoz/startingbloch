@@ -389,6 +389,18 @@ const BrevetsPage: React.FC = () => {
       width: 120,
     },
     {
+      title: t('clients.title') ?? 'Client',
+      key: 'client',
+      dataIndex: 'clients',
+      width: 220,
+      render: (clients: any[]) => {
+        // Try several shapes for client name
+        const first = Array.isArray(clients) && clients.length > 0 ? clients[0] : undefined;
+        const name = first?.nomClient ?? first?.NomClient ?? first?.Nom ?? first?.name ?? '';
+        return <span style={{ maxWidth: 220, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || ''}</span>;
+      }
+    },
+    {
   title: t('brevets.columns.title'),
       dataIndex: 'titreBrevet',
       key: 'titreBrevet',
@@ -396,7 +408,7 @@ const BrevetsPage: React.FC = () => {
       filterSearch: true,
       render: (titre: string) => (
         <Tooltip title={titre}>
-          <span style={{ maxWidth: 200, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ maxWidth: 400, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {titre ?? t('brevets.noTitle')}
           </span>
         </Tooltip>

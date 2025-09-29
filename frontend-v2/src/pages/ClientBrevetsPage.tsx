@@ -243,7 +243,7 @@ const ClientBrevetsPage: React.FC = () => {
       filterSearch: true,
       render: (titre: string) => (
         <Tooltip title={titre}>
-          <span style={{ maxWidth: 200, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ maxWidth: 400, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {titre || t('brevets.noTitle')}
           </span>
         </Tooltip>
