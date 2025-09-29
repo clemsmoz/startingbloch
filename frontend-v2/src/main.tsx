@@ -22,9 +22,10 @@ import 'dayjs/locale/en';
 import App from './App';
 import './i18n';
 
-// read saved language or default to fr
+// At first launch default to French. If the user previously selected a language,
+// it will be stored in localStorage and applied by the effect below when available.
 const saved = window.localStorage?.getItem('sb_lang') ?? undefined;
-const initialLang = saved ?? (navigator.language?.startsWith('en') ? 'en' : 'fr');
+const initialLang = saved ?? 'fr';
 
 const antdTheme = {
   token: {
@@ -51,10 +52,19 @@ function RootApp() {
   // listen for the event dispatched by LanguageSwitcher
   React.useEffect(() => {
     const handler = (e: Event) => {
-      const newLang = (e as CustomEvent).detail as string;
+      // detail used to be an object { language: lng } in some code-paths —
+      // we now standardize on a simple string payload. Handle both for safety.
+      const rawDetail = (e as CustomEvent).detail;
+      let newLang: string | undefined;
+      if (typeof rawDetail === 'string') {
+        newLang = rawDetail;
+      } else if (rawDetail) {
+        const obj = rawDetail as { language?: unknown };
+        if (typeof obj.language === 'string') newLang = obj.language;
+      } else {
+        newLang = undefined;
+      }
       console.log('[RootApp] sb-language-changed event received ->', newLang);
-      // show a visible notification so the user sees the event
-      console.log('[RootApp] would show visible notification for language change (removed)');
       if (newLang && newLang !== lang) setLang(newLang);
     };
     window.addEventListener('sb-language-changed', handler as EventListener);

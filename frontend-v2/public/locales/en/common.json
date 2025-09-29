@@ -72,7 +72,18 @@
     "stats": { "clients": "Clients", "brevets": "Patents", "contacts": "Contacts", "cabinets": "Offices" },
     "recent": { "title": "Recent activity", "empty": "No recent activity" }
   },
-  "countries": { "FR": "France", "US": "United States", "GB": "United Kingdom", "DE": "Germany", "ES": "Spain", "IT": "Italy", "CA": "Canada", "BE": "Belgium", "CH": "Switzerland", "NL": "Netherlands" },
+  "countries": {
+    "FR": "France",
+    "US": "United States",
+    "GB": "United Kingdom",
+    "DE": "Germany",
+    "ES": "Spain",
+    "IT": "Italy",
+    "CA": "Canada",
+    "BE": "Belgium",
+    "CH": "Switzerland",
+    "NL": "Netherlands"
+  },
   "users": {
     "pageTitle": "User administration",
     "pageDescription": "Manage user accounts, roles and permissions",
@@ -172,8 +183,27 @@
     "pagination": { "showTotal": "{{from}}-{{to}} of {{total}}" },
     "detailModal": { "title": "Client details - {{name}}", "close": "Close", "notProvided": "Not provided", "notDefined": "Not defined" },
     "fields": { "name": "Name", "reference": "Reference", "email": "Email", "phone": "Phone", "address": "Address", "postalCode": "Postal code", "country": "Country" },
-    "placeholders": { "name": "Enter the client name", "reference": "Internal reference", "officialName": "Enter official name", "contactEmail": "Enter contact email", "phone": "Enter phone", "address": "Enter address", "postal": "Postal code", "postalAddress": "Enter postal address", "selectCountry": "Select a country" },
-    "validation": { "nameMin": "Name must be at least 2 characters", "nameMax": "Name must be at most 255 characters", "referenceMax": "Reference must be at most 255 characters", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 255 characters", "phoneInvalid": "Invalid phone", "addressMax": "Address must be at most 500 characters", "postalCodeMax": "Postal code must be at most 20 characters" },
+    "placeholders": {
+      "name": "Enter the client name",
+      "reference": "Internal reference",
+      "officialName": "Enter official name",
+      "contactEmail": "Enter contact email",
+      "phone": "Enter phone",
+      "address": "Enter address",
+      "postal": "Postal code",
+      "postalAddress": "Enter postal address",
+      "selectCountry": "Select a country"
+    },
+    "validation": {
+      "nameMin": "Name must be at least 2 characters",
+      "nameMax": "Name must be at most 255 characters",
+      "referenceMax": "Reference must be at most 255 characters",
+      "emailInvalid": "Invalid email",
+      "emailMax": "Email must be at most 255 characters",
+      "phoneInvalid": "Invalid phone",
+      "addressMax": "Address must be at most 500 characters",
+      "postalCodeMax": "Postal code must be at most 20 characters"
+    },
     "tooltips": { "reference": "Internal reference for the client", "country": "Main country of the client" },
     "modals": {
       "add": {
@@ -199,15 +229,68 @@
         "permissions": "Permissions",
         "recapNote": "Verify the information before creating.",
         "recapAccountNote": "A user account will be created for this client.",
-        "errors": { "confirmPasswordRequired": "Password confirmation is required", "passwordPattern": "Password must contain at least one uppercase, one lowercase and one digit" },
-        "labelsVerbose": { "readPermission": "Read permission", "writePermission": "Write permission" }
+        "errors": {
+          "confirmPasswordRequired": "Password confirmation is required",
+          "passwordPattern": "Password must contain at least one uppercase, one lowercase and one digit"
+        },
+        "labelsVerbose": {
+          "readPermission": "Read permission",
+          "writePermission": "Write permission"
+        }
       },
-      "edit": { "title": "Edit client - {{name}}", "tabs": { "general": "General", "contact": "Contact", "address": "Address" }, "permissions": "Permissions", "placeholders": { "name": "Enter client name", "reference": "Internal reference", "email": "Enter email", "phone": "Enter phone", "address": "Enter address", "postal": "Postal code", "country": "Select a country" }, "labels": { "canWrite": "Can write", "canRead": "Can read", "isBlocked": "Blocked" }, "tooltips": { "canWrite": "Write permission for this client", "canRead": "Read permission for this client", "isBlocked": "The client is blocked" }, "submit": "Save" }
+      "edit": {
+        "title": "Edit client - {{name}}",
+        "tabs": { "general": "General", "contact": "Contact", "address": "Address" },
+        "permissions": "Permissions",
+        "placeholders": {
+          "name": "Enter client name",
+          "reference": "Internal reference",
+          "email": "Enter email",
+          "phone": "Enter phone",
+          "address": "Enter address",
+          "postal": "Postal code",
+          "country": "Select a country"
+        },
+        "labels": { "canWrite": "Can write", "canRead": "Can read", "isBlocked": "Blocked" },
+        "tooltips": {
+          "canWrite": "Write permission for this client",
+          "canRead": "Read permission for this client",
+          "isBlocked": "The client is blocked"
+        },
+        "submit": "Save"
+      },
+      "createWithAccount": {
+        "title": "Create a client with account",
+        "finish": "Create and finish"
+      }
     },
     "role": { "client": "Client" },
     "steps": { "titleStep": "Step {{step}}/{{total}}", "clientInfo": "Client information", "recapAndAccount": "Summary & account" },
     "recap": { "title": "Client summary", "description": "Verify the information before creating the client.", "clientInfo": "Client information" },
-    "account": { "title": "User account", "alertTitle": "Create a user account", "alertDescription": "A user account will allow access to the portal for this client.", "fields": { "firstName": "First name", "lastName": "Last name", "email": "Email", "password": "Password", "confirmPassword": "Confirm password" }, "placeholders": { "firstName": "Enter first name", "lastName": "Enter last name", "email": "Enter account email", "password": "Enter a password", "confirmPassword": "Confirm the password" }, "validation": { "firstNameRequired": "First name is required", "firstNameMin": "First name must be at least 2 characters", "firstNameMax": "First name must be at most 100 characters", "lastNameRequired": "Last name is required", "lastNameMin": "Last name must be at least 2 characters", "lastNameMax": "Last name must be at most 100 characters", "emailRequired": "Email is required", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 255 characters", "passwordRequired": "Password is required", "passwordMin": "Password must be at least 8 characters", "confirmPasswordRequired": "Password confirmation is required", "passwordsMismatch": "Passwords do not match" }, "permissionsTitle": "Account permissions", "permissions": { "role": "Role", "read": "Read", "write": "Write", "status": "Status" } }
+    "account": {
+      "title": "User account",
+      "alertTitle": "Create a user account",
+      "alertDescription": "A user account will allow access to the portal for this client.",
+      "fields": { "firstName": "First name", "lastName": "Last name", "email": "Email", "password": "Password", "confirmPassword": "Confirm password" },
+      "placeholders": { "firstName": "Enter first name", "lastName": "Enter last name", "email": "Enter account email", "password": "Enter a password", "confirmPassword": "Confirm the password" },
+      "validation": {
+        "firstNameRequired": "First name is required",
+        "firstNameMin": "First name must be at least 2 characters",
+        "firstNameMax": "First name must be at most 100 characters",
+        "lastNameRequired": "Last name is required",
+        "lastNameMin": "Last name must be at least 2 characters",
+        "lastNameMax": "Last name must be at most 100 characters",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email",
+        "emailMax": "Email must be at most 255 characters",
+        "passwordRequired": "Password is required",
+        "passwordMin": "Password must be at least 8 characters",
+        "confirmPasswordRequired": "Password confirmation is required",
+        "passwordsMismatch": "Passwords do not match"
+      },
+      "permissionsTitle": "Account permissions",
+      "permissions": { "role": "Role", "read": "Read", "write": "Write", "status": "Status" }
+    }
   },
   "brevets": {
     "pageDescription": "Management of patents and their statuses",
@@ -224,29 +307,152 @@
     "confirmDelete": { "title": "Confirm deletion", "content": "Are you sure you want to delete patent \"{{title}}\"?" },
     "exportComing": "Patent export coming soon",
     "searchPlaceholder": "Search a patent...",
+    "searchPlaceholderClient": "Search a patent for this client...",
     "pagination": { "showTotal": "{{from}}-{{to}} of {{total}}" },
     "detailTitle": "Patent details",
     "loadingDetails": "Loading details...",
     "generalInfoTitle": "General information",
-    "columns": { "reference": "Family reference", "title": "Title" },
+    "columns": {
+      "reference": "Family reference",
+      "familyRef": "Family reference",
+      "title": "Title"
+    },
     "noTitle": "(No title)",
     "statusNotDefined": "Status not defined",
     "ofTotal": "of",
     "label": "patents",
     "partialDetailsWarning": "Some details may not be available",
-    "sections": { "general": "General information", "clients": "Clients", "inventors": "Inventors", "depositants": "Filers", "titulaires": "Holders", "depositInfos": "Filing information", "linkedCabinets": "Linked offices", "annuities": "Annuities", "procedures": "Procedures", "filingInfo": "Filing information", "filers": "Filers", "holders": "Holders" },
-    "labels": { "cabinet": "Office", "roles": "Roles", "contacts": "Contacts", "clients": "Clients", "title": "Title", "reference": "Reference", "comment": "Comment", "unknownCabinet": "Unknown office", "inventorsAssociated": "Inventors (associated)", "holdersAssociated": "Holders (associated)", "depositorsAssociated": "Filers (associated)" },
+    "sections": {
+      "general": "General information",
+      "clients": "Clients",
+      "inventors": "Inventors",
+      "depositants": "Filers",
+      "titulaires": "Holders",
+      "depositInfos": "Filing information",
+      "linkedCabinets": "Linked offices",
+      "annuities": "Annuities",
+      "procedures": "Procedures",
+      "filingInfo": "Filing information",
+      "filers": "Filers",
+      "holders": "Holders"
+    },
+    "labels": {
+      "cabinet": "Office",
+      "roles": "Roles",
+      "contacts": "Contacts",
+      "clients": "Clients",
+      "status": "Status",
+      "filingNumber": "Filing number",
+      "publicationNumber": "Publication number",
+      "deliveryNumber": "Grant number",
+      "filingDate": "Filing date",
+      "publicationDate": "Publication date",
+      "deliveryDate": "Grant date",
+      "licence": "Licence",
+      "addedDate": "Added date",
+      "title": "Title",
+      "reference": "Reference",
+      "familyRef": "Family reference",
+      "comment": "Comment",
+      "unknownCabinet": "Unknown office",
+      "inventorsAssociated": "Inventors (associated)",
+      "holdersAssociated": "Holders (associated)",
+      "depositorsAssociated": "Filers (associated)"
+    },
     "cabinet": { "noneForCategory": "No office available for this category" },
-    "form": { "title": "Patent title", "titleMax": "Title must be at most 500 characters", "familyReference": "Family reference", "familyReferenceMax": "Family reference must be at most 255 characters", "internalComment": "Internal comment" },
-    "placeholders": { "chooseCabinet": "Choose an office", "selectRoles": "Select roles", "selectContacts": "Select contacts", "title": "Patent title", "familyReference": "Family reference", "internalComment": "Internal comment", "selectClients": "Select clients", "selectInventors": "Select inventors", "selectTitulaires": "Select holders", "selectDeposants": "Select filers", "selectCountries": "Select countries", "searchInventor": "Search inventor", "searchTitulaire": "Search holder", "searchDeposant": "Search filer" },
-    "tabs": { "general": "General", "clients": "Clients", "depositInfos": "Filing info", "inventors": "Inventors", "titulaires": "Holders", "depositants": "Filers" },
-    "actions": { "createClient": "Create client", "addDepositInfo": "Add deposit info", "createInventor": "Create inventor", "createTitulaire": "Create holder", "createDeposant": "Create filer", "new": "New patent" },
+    "form": {
+      "title": "Patent title",
+      "titleMax": "Title must be at most 500 characters",
+      "familyReference": "Family reference",
+      "familyReferenceMax": "Family reference must be at most 255 characters",
+      "internalComment": "Internal comment"
+    },
+    "placeholders": {
+      "chooseCabinet": "Choose an office",
+      "selectRoles": "Select roles",
+      "selectContacts": "Select contacts",
+      "title": "Patent title",
+      "familyReference": "Family reference",
+      "internalComment": "Internal comment",
+      "selectClients": "Select clients",
+      "selectInventors": "Select inventors",
+      "selectTitulaires": "Select holders",
+      "selectDeposants": "Select filers",
+      "selectCountries": "Select countries",
+      "searchInventor": "Search inventor",
+      "searchTitulaire": "Search holder",
+      "searchDeposant": "Search filer"
+    },
+    "tabs": {
+      "general": "General",
+      "clients": "Clients",
+      "depositInfos": "Filing info",
+      "inventors": "Inventors",
+      "titulaires": "Holders",
+      "depositants": "Filers"
+    },
+    "actions": {
+      "createClient": "Create client",
+      "addDepositInfo": "Add deposit info",
+      "createInventor": "Create inventor",
+      "createTitulaire": "Create holder",
+      "createDeposant": "Create filer",
+      "new": "New patent"
+    },
+    "import": {
+      "fromExcel": "Add from Excel",
+      "title": "Import from Excel",
+      "prepare": "Prepare import",
+      "chooseClient": "Client (optional)",
+      "uploadFile": "Excel file",
+      "selectedFile": "Selected file",
+      "note": "After preparation you will be able to review and edit each family before sending.",
+      "recapTitle": "Excel import summary",
+      "recapAddTitle": "Review and create the family",
+      "createFamily": "Create family",
+      "confirmAndCreate": "Validate and create",
+      "client": "Client",
+      "file": "File",
+      "recapHint": "Review the information before validating. After validation, patents will be created on the server.",
+      "actionPreview": "Preview ready (generation not executed)"
+    },
     "roles": { "first": "First", "second": "Second", "third": "Third" },
-    "modals": { "add": { "title": "Add patent", "submit": "Create", "confirmTitle": "Confirm addition", "recapTitle": "Patent summary", "cardTitle": "Summary", "tabs": { "general": "General", "clients": "Clients", "depositInfos": "Filing info" } }, "edit": { "title": "Edit patent", "titleWithNumber": "Edit patent #{{number}}", "submit": "Save" } },
-    "recap": { "noCabinet": "No office selected", "general": "General", "annuites": "Annuities", "procedures": "Procedures", "verifyBeforeCreate": "Verify information before creating", "confirmTitle": "Confirm creation", "title": "Patent summary" },
-    "card": { "inventors": "Inventors ({{count}})", "titulaires": "Holders ({{count}})", "depositants": "Filers ({{count}})", "cabinetsByDeposit": "Offices by deposit" },
+    "modals": {
+      "add": {
+        "title": "Add patent",
+        "submit": "Create",
+        "confirmTitle": "Confirm addition",
+        "recapTitle": "Patent summary",
+        "cardTitle": "Summary",
+        "tabs": { "general": "General", "clients": "Clients", "depositInfos": "Filing info" }
+      },
+      "edit": {
+        "title": "Edit patent",
+        "titleWithNumber": "Edit patent #{{number}}",
+        "submit": "Save"
+      }
+    },
+    "recap": {
+      "noCabinet": "No office selected",
+      "general": "General",
+      "annuites": "Annuities",
+      "procedures": "Procedures",
+      "verifyBeforeCreate": "Verify information before creating",
+      "confirmTitle": "Confirm creation",
+      "title": "Patent summary"
+    },
+    "card": {
+      "inventors": "Inventors ({{count}})",
+      "titulaires": "Holders ({{count}})",
+      "depositants": "Filers ({{count}})",
+      "cabinetsByDeposit": "Offices by deposit"
+    },
     "suggested": { "alreadyUsed": "Already used" },
-    "notifications": { "cabinetCreated": "Office created successfully", "cabinetCreateError": "Error creating office", "unknownError": "Unknown error" }
+    "notifications": {
+      "cabinetCreated": "Office created successfully",
+      "cabinetCreateError": "Error creating office",
+      "unknownError": "Unknown error"
+    }
   },
   "deposit": {
     "titleWithIndex": "Deposit #{{index}}",
@@ -254,8 +460,29 @@
     "none": "No deposit",
     "noneAdded": "No deposit information added",
     "clickAddInstructions": "Click 'Add' to insert deposit information",
-    "labels": { "country": "Country", "status": "Status", "depositNumber": "Deposit number", "publicationNumber": "Publication number", "deliveryNumber": "Delivery number", "depositDate": "Deposit date", "publicationDate": "Publication date", "deliveryDate": "Delivery date", "licence": "Licence", "comment": "Comment" },
-    "placeholders": { "selectCountry": "Select a country", "selectStatus": "Select a status", "depositExample": "E.g. FR2024001234", "publicationNumber": "Publication number", "deliveryNumber": "Delivery number", "depositDate": "Deposit date", "publicationDate": "Publication date", "deliveryDate": "Delivery date", "comment": "Add a comment" }
+    "labels": {
+      "country": "Country",
+      "status": "Status",
+      "depositNumber": "Deposit number",
+      "publicationNumber": "Publication number",
+      "deliveryNumber": "Delivery number",
+      "depositDate": "Deposit date",
+      "publicationDate": "Publication date",
+      "deliveryDate": "Delivery date",
+      "licence": "Licence",
+      "comment": "Comment"
+    },
+    "placeholders": {
+      "selectCountry": "Select a country",
+      "selectStatus": "Select a status",
+      "depositExample": "E.g. FR2024001234",
+      "publicationNumber": "Publication number",
+      "deliveryNumber": "Delivery number",
+      "depositDate": "Deposit date",
+      "publicationDate": "Publication date",
+      "deliveryDate": "Delivery date",
+      "comment": "Add a comment"
+    }
   },
   "cabinets": {
     "pageDescription": "Management of offices and their information",
@@ -277,13 +504,44 @@
     "detailTitle": "Office details",
     "labels": { "name": "Office name", "type": "Type", "address": "Address", "country": "Country", "email": "Email", "phone": "Phone" },
     "fields": { "name": "Office name", "type": "Type", "address": "Address", "postalCode": "Postal code", "country": "Country", "email": "Email", "phone": "Phone" },
-    "validation": { "nameMax": "Office name must be at most 255 characters", "addressMax": "Address must be at most 500 characters", "postalCodeMax": "Postal code must be at most 20 characters", "countryMax": "Country must be at most 100 characters", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 255 characters", "phoneMax": "Phone must be at most 50 characters" },
-    "placeholders": { "exampleName": "E.g. Dupont office", "selectType": "Select a type", "addressExample": "E.g. 12 Rue de Paris", "postalExample": "75001", "selectCountry": "Select a country", "countryExample": "France", "emailExample": "contact@office.com", "phoneExample": "+33 1 23 45 67 89" },
+    "validation": {
+      "nameMax": "Office name must be at most 255 characters",
+      "addressMax": "Address must be at most 500 characters",
+      "postalCodeMax": "Postal code must be at most 20 characters",
+      "countryMax": "Country must be at most 100 characters",
+      "emailInvalid": "Invalid email",
+      "emailMax": "Email must be at most 255 characters",
+      "phoneMax": "Phone must be at most 50 characters"
+    },
+    "placeholders": {
+      "exampleName": "E.g. Dupont office",
+      "selectType": "Select a type",
+      "addressExample": "E.g. 12 Rue de Paris",
+      "postalExample": "75001",
+      "selectCountry": "Select a country",
+      "countryExample": "France",
+      "emailExample": "contact@office.com",
+      "phoneExample": "+33 1 23 45 67 89"
+    },
     "columns": { "name": "Name", "type": "Type", "email": "Email", "phone": "Phone", "reference": "Reference" },
     "actions": { "viewContacts": "View contacts", "new": "New office" },
     "type": { "annuite": "Annuity", "procedure": "Procedure" },
     "types": { "annuity": "Annuity", "procedure": "Procedure" },
-    "modals": { "add": { "title": "Add office", "tabs": { "general": "General", "address": "Address", "contact": "Contact" }, "recapTitle": "Office summary", "create": "Create", "submit": "Create" }, "edit": { "title": "Edit office", "titleWithName": "Edit office {{name}}", "tabs": { "general": "General", "contact": "Contact" }, "submit": "Save" } },
+    "modals": {
+      "add": {
+        "title": "Add office",
+        "tabs": { "general": "General", "address": "Address", "contact": "Contact" },
+        "recapTitle": "Office summary",
+        "create": "Create",
+        "submit": "Create"
+      },
+      "edit": {
+        "title": "Edit office",
+        "titleWithName": "Edit office {{name}}",
+        "tabs": { "general": "General", "contact": "Contact" },
+        "submit": "Save"
+      }
+    },
     "recap": { "title": "Office summary", "addressTitle": "Address", "contactTitle": "Contact" },
     "pagination": { "showTotal": "{{from}}-{{to}} of {{total}}" }
   },
@@ -306,16 +564,129 @@
     "sections": { "generalInfo": "General information", "emails": "Emails", "phones": "Phones", "roles": "Roles" },
     "labels": { "firstName": "First name", "lastName": "Last name", "position": "Position", "company": "Company", "createdAt": "Created at" },
     "columns": { "contact": "Contact", "company": "Company", "primaryEmail": "Email", "primaryPhone": "Phone", "roles": "Roles" },
-    "placeholders": { "firstName": "Enter first name", "lastName": "Enter last name", "email": "Enter email", "phone": "Enter phone", "roleExample": "E.g. Manager, Technical contact", "selectClient": "Select a client", "selectCabinet": "Select an office" },
+    "placeholders": {
+      "firstName": "Enter first name",
+      "lastName": "Enter last name",
+      "email": "Enter email",
+      "phone": "Enter phone",
+      "roleExample": "E.g. Manager, Technical contact",
+      "selectClient": "Select a client",
+      "selectCabinet": "Select an office"
+    },
     "fields": { "firstName": "First name", "lastName": "Last name", "email": "Email", "phone": "Phone", "client": "Client", "cabinet": "Office", "role": "Role" },
     "tooltips": { "client": "Client associated with the contact", "cabinet": "Office associated with the contact" },
-    "validation": { "firstNameMax": "First name must be at most 100 characters", "lastNameMax": "Last name must be at most 100 characters", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 100 characters", "phoneMax": "Phone must be at most 50 characters", "roleMax": "Role must be at most 100 characters" },
-    "modals": { "add": { "title": "Add contact", "confirmTitle": "Confirm addition", "recapTitle": "Contact summary", "cardTitle": "Summary", "tabs": { "general": "General", "organization": "Organization", "emails": "Emails", "phones": "Phones", "roles": "Roles" }, "labels": { "cabinet": "Office" }, "tooltips": { "cabinet": "Office to attach the contact to" }, "placeholders": { "selectCabinet": "Select an office" }, "create": "Create" }, "edit": { "title": "Edit contact", "tabs": { "general": "General", "organization": "Organization", "emails": "Emails", "phones": "Phones", "roles": "Roles" } } }
+    "validation": {
+      "firstNameMax": "First name must be at most 100 characters",
+      "lastNameMax": "Last name must be at most 100 characters",
+      "emailInvalid": "Invalid email",
+      "emailMax": "Email must be at most 100 characters",
+      "phoneMax": "Phone must be at most 50 characters",
+      "roleMax": "Role must be at most 100 characters"
+    },
+    "modals": {
+      "add": {
+        "title": "Add contact",
+        "confirmTitle": "Confirm addition",
+        "recapTitle": "Contact summary",
+        "cardTitle": "Summary",
+        "tabs": { "general": "General", "organization": "Organization", "emails": "Emails", "phones": "Phones", "roles": "Roles" },
+        "labels": { "cabinet": "Office" },
+        "tooltips": { "cabinet": "Office to attach the contact to" },
+        "placeholders": { "selectCabinet": "Select an office" },
+        "create": "Create"
+      },
+      "edit": {
+        "title": "Edit contact",
+        "tabs": { "general": "General", "organization": "Organization", "emails": "Emails", "phones": "Phones", "roles": "Roles" }
+      }
+    }
   },
-  "actions": { "viewDetails": "View details", "edit": "Edit", "delete": "Delete", "close": "Close", "export": "Export", "title": "Actions", "actions": "Actions", "create": "Create", "enable": "Enable", "disable": "Disable", "yes": "Yes", "no": "No", "cancel": "Cancel", "refresh": "Refresh" },
-  "common": { "description": "Description", "notProvided": "Not provided", "exportInProgress": "Export in progress...", "loadingSuggestions": "Loading suggestions…", "yes": "Yes", "no": "No", "enabled": "Enabled", "disabled": "Disabled", "none": "None", "cancel": "Cancel", "countryNotSpecified": "Country not specified", "na": "N/A", "next": "Next", "back": "Back" },
-  "auth": { "loginSuccess": "Login successful", "welcome": "Welcome", "loginError": "Login error", "usernameLabel": "Username", "usernamePlaceholder": "Enter your username", "usernameRequired": "Username is required", "usernameMin": "Username must be at least 3 characters", "passwordLabel": "Password", "passwordPlaceholder": "Enter your password", "passwordRequired": "Password is required", "passwordMin": "Password must be at least 6 characters", "signIn": "Sign in", "loggingIn": "Signing in..." },
-  "deposants": { "modals": { "create": { "title": "Create filer" } }, "fields": { "lastName": "Last name", "firstName": "First name", "address": "Address", "email": "Email", "phone": "Phone" }, "placeholders": { "lastName": "Enter last name", "firstName": "Enter first name", "address": "Enter address", "email": "Enter email", "phone": "Enter phone" }, "validation": { "nameMax": "Last name must be at most 100 characters", "firstNameMax": "First name must be at most 100 characters", "addressMax": "Address must be at most 500 characters", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 255 characters", "phoneMax": "Phone must be at most 20 characters" }, "messages": { "duplicate": "A filer with those details already exists" } },
-  "inventeurs": { "modals": { "create": { "title": "Create inventor" } }, "fields": { "lastName": "Last name", "firstName": "First name", "address": "Address", "email": "Email", "phone": "Phone" }, "placeholders": { "lastName": "Enter last name", "firstName": "Enter first name", "address": "Enter address", "email": "Enter email", "phone": "Enter phone" }, "validation": { "nameMax": "Last name must be at most 100 characters", "firstNameMax": "First name must be at most 100 characters", "addressMax": "Address must be at most 500 characters", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 255 characters", "phoneMax": "Phone must be at most 20 characters" }, "messages": { "duplicate": "An inventor with those details already exists" } },
-  "titulaires": { "modals": { "create": { "title": "Create holder" } }, "fields": { "lastName": "Last name", "address": "Address", "email": "Email", "phone": "Phone" }, "placeholders": { "lastName": "Enter last name", "address": "Enter address", "email": "Enter email", "phone": "Enter phone" }, "validation": { "nameMax": "Last name must be at most 100 characters", "addressMax": "Address must be at most 500 characters", "emailInvalid": "Invalid email", "emailMax": "Email must be at most 255 characters", "phoneMax": "Phone must be at most 20 characters" }, "messages": { "duplicate": "A holder with those details already exists" } }
+  "actions": {
+    "viewDetails": "View details",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "export": "Export",
+    "title": "Actions",
+    "actions": "Actions",
+    "create": "Create",
+    "enable": "Enable",
+    "disable": "Disable",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "refresh": "Refresh"
+  },
+  "common": {
+    "description": "Description",
+    "notProvided": "Not provided",
+    "exportInProgress": "Export in progress...",
+    "loadingSuggestions": "Loading suggestions…",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "none": "None",
+    "cancel": "Cancel",
+    "countryNotSpecified": "Country not specified",
+    "na": "N/A",
+    "next": "Next",
+    "back": "Back"
+  },
+  "auth": {
+    "loginSuccess": "Login successful",
+    "welcome": "Welcome",
+    "loginError": "Login error",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "usernameRequired": "Username is required",
+    "usernameMin": "Username must be at least 3 characters",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least 6 characters",
+    "signIn": "Sign in",
+    "loggingIn": "Signing in..."
+  },
+  "deposants": {
+    "modals": { "create": { "title": "Create filer" } },
+    "fields": { "lastName": "Last name", "firstName": "First name", "address": "Address", "email": "Email", "phone": "Phone" },
+    "placeholders": { "lastName": "Enter last name", "firstName": "Enter first name", "address": "Enter address", "email": "Enter email", "phone": "Enter phone" },
+    "validation": {
+      "nameMax": "Last name must be at most 100 characters",
+      "firstNameMax": "First name must be at most 100 characters",
+      "addressMax": "Address must be at most 500 characters",
+      "emailInvalid": "Invalid email",
+      "emailMax": "Email must be at most 255 characters",
+      "phoneMax": "Phone must be at most 20 characters"
+    },
+    "messages": { "duplicate": "A filer with those details already exists" }
+  },
+  "inventeurs": {
+    "modals": { "create": { "title": "Create inventor" } },
+    "fields": { "lastName": "Last name", "firstName": "First name", "address": "Address", "email": "Email", "phone": "Phone" },
+    "placeholders": { "lastName": "Enter last name", "firstName": "Enter first name", "address": "Enter address", "email": "Enter email", "phone": "Enter phone" },
+    "validation": {
+      "nameMax": "Last name must be at most 100 characters",
+      "firstNameMax": "First name must be at most 100 characters",
+      "addressMax": "Address must be at most 500 characters",
+      "emailInvalid": "Invalid email",
+      "emailMax": "Email must be at most 255 characters",
+      "phoneMax": "Phone must be at most 20 characters"
+    },
+    "messages": { "duplicate": "An inventor with those details already exists" }
+  },
+  "titulaires": {
+    "modals": { "create": { "title": "Create holder" } },
+    "fields": { "lastName": "Last name", "address": "Address", "email": "Email", "phone": "Phone" },
+    "placeholders": { "lastName": "Enter last name", "address": "Enter address", "email": "Enter email", "phone": "Enter phone" },
+    "validation": {
+      "nameMax": "Last name must be at most 100 characters",
+      "addressMax": "Address must be at most 500 characters",
+      "emailInvalid": "Invalid email",
+      "emailMax": "Email must be at most 255 characters",
+      "phoneMax": "Phone must be at most 20 characters"
+    },
+    "messages": { "duplicate": "A holder with those details already exists" }
+  }
 }

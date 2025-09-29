@@ -22,6 +22,7 @@ import {
 } from 'antd';
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@store/authStore';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useNotificationStore } from '@store/notificationStore';
 
 const { Text } = Typography;
@@ -102,6 +103,11 @@ const LoginPage: React.FC = () => {
             preview={false}
             fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7v10c0 5.55 3.84 10 9 11 1.16.21 2.76.21 3.91 0C20.16 27 24 22.55 24 17V7l-10-5z'/%3E%3C/svg%3E"
           />
+        </div>
+
+        {/* Language selector on login panel (top-right) */}
+        <div style={{ position: 'absolute', top: 18, right: 18 }}>
+          <LanguageSwitcher />
         </div>
 
         <Form

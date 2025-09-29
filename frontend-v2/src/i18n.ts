@@ -40,7 +40,9 @@ console.log('[i18n] fallbackLng -> fr, supported:', ['fr', 'en']);
   console.log('[i18n:event] languageChanged ->', lng);
   try {
     // Dispatch a DOM event so other parts of the app can react to language changes
-    window.dispatchEvent(new CustomEvent('sb-language-changed', { detail: { language: lng } }));
+    // Use a simple string in detail to avoid passing an object which can become
+    // displayed as `[object Object]` when used as Select value elsewhere.
+    window.dispatchEvent(new CustomEvent('sb-language-changed', { detail: lng }));
   } catch (e) {
     console.warn('[i18n] failed to dispatch sb-language-changed event', e);
   }
@@ -64,7 +66,9 @@ export const setAppLanguage = async (lng: string) => {
   }
   await i18n.changeLanguage(lng);
   try {
-    window.dispatchEvent(new CustomEvent('sb-language-changed', { detail: { language: lng } }));
+    // Older code paths previously used { detail: { language: lng } }
+    // Normalize to a simple string payload for compatibility with Select values.
+    window.dispatchEvent(new CustomEvent('sb-language-changed', { detail: lng }));
   } catch (e) {
     console.warn('[i18n] failed to dispatch sb-language-changed event', e);
   }
