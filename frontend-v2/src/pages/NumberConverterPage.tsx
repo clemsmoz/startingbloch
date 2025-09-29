@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Select, Card, Typography } from 'antd';
+import { Button, Input, Select, Card, Typography, message } from 'antd';
 import patman from '../utils/patmanConverter';
 import { useAuthStore } from '../store/authStore';
 
@@ -48,7 +48,21 @@ const NumberConverterPage: React.FC = () => {
       <div style={{ marginTop: 16 }}>
         <Title level={5}>Résultat</Title>
         <Card>
-          <Text code>{output ?? '—'}</Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Text code style={{ wordBreak: 'break-all' }}>{output ?? '—'}</Text>
+            <Button
+              onClick={async () => {
+                if (!output) return;
+                try {
+                  await navigator.clipboard.writeText(output);
+                  message.success('Copié dans le presse-papiers');
+                } catch (err) {
+                  message.error('Impossible de copier');
+                }
+              }}
+              size="small"
+            >Copier</Button>
+          </div>
         </Card>
       </div>
     </Card>
