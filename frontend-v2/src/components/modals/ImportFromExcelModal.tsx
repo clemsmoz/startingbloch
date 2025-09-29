@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Button, Select, Upload, message, Space, Spin } from 'antd';
 import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { clientService, paysService, statutsService, brevetService } from '../../services';
+import { nameToAlpha2 } from '../../utils/countryResolver';
+import { alpha2FromEnglishOrFrench } from '../../utils/countries-map';
 import AddClientModal from './AddClientModal';
 import { parseExcelFile } from '../../utils/excelImport';
 import { useNavigate } from 'react-router-dom';
@@ -33,17 +35,17 @@ const ImportFromExcelModal: React.FC<ImportFromExcelModalProps> = ({ visible, on
 
   // reference onPrepare so it's recognized as used when passed by parent
   useEffect(() => {
-    if (!onPrepare) return;
-    // no-op: parent can use this callback; keep reference to avoid TS unused prop error
-    void onPrepare;
+    // parent may pass onPrepare; nothing to execute here but keep effect for potential future use
+    // we intentionally do not call it here
   }, [onPrepare]);
 
   const loadClients = async () => {
     try {
       const resp = await clientService.getAll();
       if (resp && resp.success && Array.isArray(resp.data)) setClients(resp.data);
-    } catch (e) {
-      // ignore
+    } catch (err) {
+      console.error('[ImportFromExcel] Erreur lors du chargement des clients', err);
+      // non blocking: consumers can see message if necessary
     }
   };
 
@@ -54,126 +56,164 @@ const ImportFromExcelModal: React.FC<ImportFromExcelModalProps> = ({ visible, on
     return false;
   };
 
-  const handlePrepare = () => {
+  const handlePrepare = async () => {
     if (!file) {
       message.error(t('import.errors.noFile') ?? 'Aucun fichier sélectionné');
       return;
     }
-    // Parse the file now (client-side) but do not create anything server-side.
     console.info('[ImportFromExcel] starting parse for file:', file.name);
-    parseExcelFile(file)
-      .then(async (families) => {
-        console.info('[ImportFromExcel] parseExcelFile resolved families count:', families.length);
-        // Resolve countries and statuts
-        try {
-          const [pResp, sResp] = await Promise.all([paysService.getAll(), statutsService.getAll()]);
-          const paysList: any[] = (pResp && pResp.success && Array.isArray(pResp.data)) ? pResp.data : [];
-          const statutsList: any[] = (sResp && sResp.success && Array.isArray(sResp.data)) ? sResp.data : [];
+    try {
+      const families = await parseExcelFile(file);
+      console.info('[ImportFromExcel] parseExcelFile resolved families count:', families.length);
 
-          const codeToPaysId = new Map<string, number>();
-          paysList.forEach((p: any) => {
-            const code = (p.code ?? p.codePays ?? p.CodePays ?? p.Code ?? '').toString().toUpperCase();
-            if (code) codeToPaysId.set(code, p.id ?? p.Id);
-          });
+      // Resolve countries and statuts
+      const [pResp, sResp] = await Promise.all([paysService.getAll(), statutsService.getAll()]);
+      const paysList: any[] = (pResp && pResp.success && Array.isArray(pResp.data)) ? pResp.data : [];
+      const statutsList: any[] = (sResp && sResp.success && Array.isArray(sResp.data)) ? sResp.data : [];
 
-          const normalize = (s?: string) => (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
-          const statutNameToId = new Map<string, number>();
-          statutsList.forEach((st: any) => {
-            // backend Statuts DTO uses 'description' per types
-            const name = (st.description ?? st.Description ?? st.name ?? st.Name ?? '').toString();
-            if (name) statutNameToId.set(normalize(name), st.id ?? st.Id);
-          });
-
-          const findPaysId = (alpha2?: string | null) => {
-            if (!alpha2) return undefined;
-            return codeToPaysId.get(alpha2.toUpperCase());
-          };
-
-          const findStatutId = (statut?: string | null) => {
-            if (!statut) return undefined;
-            const low = normalize(statut);
-            // Try exact match
-            if (statutNameToId.has(low)) return statutNameToId.get(low);
-            // Try contains
-            for (const [name, id] of statutNameToId.entries()) {
-              if (low.includes(name) || name.includes(low)) return id;
-            }
-            return undefined;
-          };
-
-          const mapped = families.map((f) => ({
-            ...f,
-            deposits: (f.deposits || []).map((d) => ({
-              ...d,
-              idPays: findPaysId(d.countryAlpha2) ?? undefined,
-              idStatuts: findStatutId(d.statut) ?? undefined,
-            }))
-          }));
-
-          console.info('[ImportFromExcel] parsed families mapped', { families: mapped.length, sample: mapped[0] ?? null });
-          // Automatically create families directly (user requested no per-item modal)
-          (async () => {
-            const created: { familyRef?: string; id?: number }[] = [];
-            setProcessing(true);
-            for (const fam of mapped) {
-              try {
-                // Build payload matching AddBrevetModal's final submit shape
-                const payload: any = {
-                  referenceFamille: fam.referenceFamille,
-                  titre: fam.titre,
-                  // Not setting clientIds here: parent selected clientId is optional
-                  informationsDepot: (fam.deposits || []).map((d: any) => ({
-                    numeroPublication: d.numeroPublication ?? null,
-                    numeroDepot: d.numeroDepot ?? null,
-                    numeroDelivrance: d.numeroDelivrance ?? null,
-                    dateDepot: d.dateDepot ?? null,
-                    datePublication: d.datePublication ?? null,
-                    dateDelivrance: d.dateDelivrance ?? null,
-                    idPays: d.idPays ?? undefined,
-                    idStatuts: d.idStatuts ?? undefined,
-                    licence: d.licence ?? false,
-                    commentaire: d.commentaire ?? undefined,
-                    cabinetsAnnuites: d.cabinetsAnnuites ?? [],
-                    cabinetsProcedures: d.cabinetsProcedures ?? []
-                  }))
-                };
-                // If a client was preselected, include it
-                if (selectedClientId) payload.clientIds = [selectedClientId];
-                const resp = await brevetService.create(payload);
-                      if (resp?.success) {
-                        const dataObj: any = resp.data ?? resp;
-                  created.push({ familyRef: fam.referenceFamille ?? undefined, id: dataObj?.id ?? dataObj?.Id });
-                } else {
-                  // ignore failures as per user's instruction (no error report)
-                }
-              } catch (err) {
-                      console.error('[ImportFromExcel] creation error for family', fam.referenceFamille, err);
-              }
-            }
-            setProcessing(false);
-            // Navigate to recap page with created entries
-            try {
-              navigate('/brevets/import/result', { state: { created, fileName: file?.name ?? null } });
-            } catch (e) {
-              console.info('ImportFromExcel: navigation to result failed', e);
-            }
-            // Close the modal and trigger onComplete
-            // clear file and close modal
-            setFile(null);
-            if (onComplete) onComplete();
-          })();
-        } catch (err) {
-          console.error('[ImportFromExcel] Erreur mapping pays/statuts', err);
-          // fallback: still attempt to create using raw parsed families
-        }
-  // Determine recap client: prefer selectedClientId if provided, otherwise fallback to found client object
-  // recapClient logic removed: import creates directly
-      })
-      .catch((err) => {
-        console.error('[ImportFromExcel] Erreur parsing Excel', err);
-        message.error(t('import.errors.parse') ?? 'Erreur lecture du fichier Excel');
+      const codeToPaysId = new Map<string, number>();
+      paysList.forEach((p: any) => {
+        const code = (p.code ?? p.codePays ?? p.CodePays ?? p.Code ?? '').toString().toUpperCase();
+        if (code) codeToPaysId.set(code, p.id ?? p.Id);
       });
+
+      const normalize = (s?: string) => (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+      const statutNameToId = new Map<string, number>();
+      statutsList.forEach((st: any) => {
+        const name = (st.description ?? st.Description ?? st.name ?? st.Name ?? '').toString();
+        if (name) statutNameToId.set(normalize(name), st.id ?? st.Id);
+      });
+
+      const findPaysId = (alpha2OrName?: string | null) => {
+        if (!alpha2OrName) return undefined;
+        const raw = String(alpha2OrName).trim();
+        if (!raw) return undefined;
+        const up = raw.toUpperCase();
+        // direct match by code (alpha2)
+        if (codeToPaysId.has(up)) return codeToPaysId.get(up);
+
+        // Try resolve English/French names to alpha2 using countries-map (translates EN->FR)
+        try {
+          const candidateFromMap = alpha2FromEnglishOrFrench(raw);
+          if (candidateFromMap && codeToPaysId.has(candidateFromMap)) return codeToPaysId.get(candidateFromMap);
+        } catch {
+          // ignore
+        }
+        // fallback: try using nameToAlpha2 iso lib
+        try {
+          const candidate = nameToAlpha2(raw);
+          if (candidate && codeToPaysId.has(candidate)) return codeToPaysId.get(candidate);
+        } catch {
+          // ignore
+        }
+
+        // fallback: try to extract 2-letter code tokens from combined cells like "France\nFR2020..."
+        const cleaned = raw.replace(/\t/g, ' ').trim();
+        const parts = cleaned.split(/\r?\n/).map(p => p.trim()).filter(Boolean);
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          const m = /^([A-Za-z]{2,3})/.exec(p);
+          if (m?.[1]) {
+            const cand = m[1].toUpperCase().slice(0, 2);
+            if (codeToPaysId.has(cand)) return codeToPaysId.get(cand);
+          }
+        }
+        return undefined;
+      };
+
+      const findStatutId = (statut?: string | null) => {
+        if (!statut) return undefined;
+        const low = normalize(statut);
+        if (statutNameToId.has(low)) return statutNameToId.get(low);
+        for (const [name, id] of statutNameToId.entries()) {
+          if (low.includes(name) || name.includes(low)) return id;
+        }
+        return undefined;
+      };
+
+      // Deduplication disabled: import every deposit line as-is.
+      const getPublicationForPayload = (d: any) => {
+        const raw = d.numeroPublication ?? d.numeroPublicationNormalized ?? null;
+        if (raw === null || raw === undefined) return null;
+        const str = String(raw).trim();
+        if (str === '') return null;
+        // treat common placeholders as empty
+        const low = str.toLowerCase();
+        if (low === '-' || low === 'n/a' || low === 'na' || low === '--' || low === 'aucun') return null;
+        if (!/[A-Za-z0-9]/.test(str)) return null;
+        return str;
+      };
+
+      const mapped = families.map((f) => ({
+        ...f,
+        deposits: (f.deposits || []).map((d) => ({
+          ...d,
+          idPays: findPaysId(d.countryAlpha2) ?? undefined,
+          idStatuts: findStatutId(d.statut) ?? undefined,
+        }))
+      }));
+
+      console.info('[ImportFromExcel] parsed families mapped', { families: mapped.length, sample: mapped[0] ?? null });
+
+      // Deduplication removed: keep all deposits as parsed
+      let totalIgnored = 0;
+      const mappedDeduped = mapped.map((fam) => ({ ...fam }));
+
+      // Automatically create families directly (user requested no per-item modal)
+      const created: { familyRef?: string; id?: number }[] = [];
+      const createFamilyOnServer = async (fam: any) => {
+        try {
+          const payload: any = {
+            referenceFamille: fam.referenceFamille,
+            titre: fam.titre,
+            informationsDepot: (fam.deposits || []).map((d: any) => ({
+              // Keep publication empty as null when the Excel cell is empty
+              numeroPublication: getPublicationForPayload(d),
+              numeroDepot: d.numeroDepot ?? null,
+              numeroDelivrance: d.numeroDelivrance ?? null,
+              dateDepot: d.dateDepot ?? null,
+              datePublication: d.datePublication ?? null,
+              dateDelivrance: d.dateDelivrance ?? null,
+              idPays: d.idPays ?? undefined,
+              idStatuts: d.idStatuts ?? undefined,
+              licence: d.licence ?? false,
+              commentaire: d.commentaire ?? undefined,
+              cabinetsAnnuites: d.cabinetsAnnuites ?? [],
+              cabinetsProcedures: d.cabinetsProcedures ?? []
+            }))
+          };
+          if (selectedClientId) payload.clientIds = [selectedClientId];
+          const resp = await brevetService.create(payload);
+          if (resp?.success) {
+            const dataObj: any = resp.data ?? resp;
+            return { familyRef: fam.referenceFamille ?? undefined, id: dataObj?.id ?? dataObj?.Id };
+          }
+        } catch (err) {
+          console.error('[ImportFromExcel] creation error for family', fam.referenceFamille, err);
+        }
+        return null;
+      };
+
+      setProcessing(true);
+      for (const fam of mappedDeduped) {
+        const res = await createFamilyOnServer(fam);
+        if (res) created.push(res);
+      }
+      setProcessing(false);
+      // Navigate to recap page with created entries
+      try {
+        navigate('/brevets/import/result', { state: { created, fileName: file?.name ?? null, ignoredDuplicates: totalIgnored } });
+      } catch (e) {
+        console.info('ImportFromExcel: navigation to result failed', e);
+      }
+      // Clear file and notify parent
+      setFile(null);
+      if (onComplete) onComplete();
+    } catch (err) {
+      console.error('[ImportFromExcel] Erreur parsing ou mapping', err);
+      message.error(t('import.errors.parse') ?? 'Erreur lecture du fichier Excel');
+    }
   };
 
   const handleClientCreated = (created: any) => {

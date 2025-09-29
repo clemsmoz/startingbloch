@@ -452,6 +452,11 @@
     "cabinet": {
       "noneForCategory": "Aucun cabinet disponible pour cette catégorie"
     },
+
+    "cabinets": {
+      "annuities": "Annuités",
+      "procedures": "Procédures"
+    },
     "form": {
       "title": "Titre du brevet",
       "titleMax": "Le titre doit contenir au plus 500 caractères",

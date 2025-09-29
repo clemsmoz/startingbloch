@@ -360,6 +360,11 @@
       "depositorsAssociated": "Filers (associated)"
     },
     "cabinet": { "noneForCategory": "No office available for this category" },
+
+    "cabinets": {
+      "annuities": "Annuities",
+      "procedures": "Procedures"
+    },
     "form": {
       "title": "Patent title",
       "titleMax": "Title must be at most 500 characters",

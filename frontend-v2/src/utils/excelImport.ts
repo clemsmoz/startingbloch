@@ -1,6 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: optional dependency - types may not be installed in the workspace
 import * as XLSX from 'xlsx';
+import { alpha2FromEnglishOrFrench } from './countries-map';
+import { nameToAlpha2 } from './countryResolver';
 
 export type ParsedDeposit = {
   refFamille?: string | null;
@@ -16,6 +18,7 @@ export type ParsedDeposit = {
   inventeurs?: string[];
   deposant?: string | null;
   client?: string | null;
+  // Optional images extracted when using exceljs; contains image ids or identifiers
 };
 
 export type ParsedFamily = {
@@ -116,7 +119,7 @@ function formatDateString(v: string | null): string | null {
 export function parseExcelFile(file: File): Promise<ParsedFamily[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+  reader.onload = async (e) => {
       try {
         console.info('[ExcelImport] reader.onload for file:', file.name);
         const data = e.target?.result;
@@ -124,7 +127,8 @@ export function parseExcelFile(file: File): Promise<ParsedFamily[]> {
         // Prefer sheet named 'Synthèse des Statuts' or first sheet
         const sheetName = workbook.SheetNames.find((n: string) => n.toLowerCase().includes('synth')) ?? workbook.SheetNames[0];
         const ws = workbook.Sheets[sheetName];
-        const raw = XLSX.utils.sheet_to_json(ws, { defval: null });
+        // Use SheetJS (xlsx) to read rows only. We do not use embedded images for dedup.
+        const raw = XLSX.utils.sheet_to_json(ws, { defval: null }) as any[];
 
         // Log detected columns and a small sample of raw rows to help mapping
         try {
@@ -147,7 +151,8 @@ export function parseExcelFile(file: File): Promise<ParsedFamily[]> {
 
   let lastReference: string | null = null;
   let lastDateDepot: string | null = null;
-  let lastNumPub: string | null = null;
+  // Note: we intentionally do NOT propagate lastNumPub to subsequent rows —
+  // if the Excel cell for 'numeroPublication' is empty, we must keep it empty/null.
   let lastStatut: string | null = null;
         raw.forEach((row: any) => {
           // Heuristics: possible column names
@@ -157,8 +162,8 @@ export function parseExcelFile(file: File): Promise<ParsedFamily[]> {
           if (refRaw) lastReference = refRaw;
           const titre = tryGetCell(row, ['titre', 'Titre', 'title']) ?? null;
           const numPubRaw = tryGetCell(row, ['numero_publication', 'Numéro de publication', 'Numéro Publication', 'Numéro de Publication', 'NumeroPublication', 'Numero Publication', 'publication', 'Publication']) ?? null;
-          const numPub = numPubRaw ?? lastNumPub ?? null;
-          if (numPubRaw) lastNumPub = numPubRaw;
+          // Do NOT reuse previous row's publication when current cell is empty.
+          const numPub = numPubRaw ?? null;
           let numDep = tryGetCell(row, ['numero_depot', 'NumeroDepot', 'Numero Dépôt', 'depot']) ?? null;
           const statutRaw = tryGetCell(row, ['statut', 'Statut', 'Status']) ?? null;
           const statut = statutRaw ?? lastStatut ?? null;
@@ -190,14 +195,39 @@ export function parseExcelFile(file: File): Promise<ParsedFamily[]> {
             if (exec) alpha2FromPays = exec[1].toUpperCase();
           }
 
-          // Extract alpha2 from numeroPublication prefix if present (e.g., FR3110024)
+          // Determine alpha2 for this row.
+          // Special rule: when the deposit number indicates EP (European publications),
+          // the country prefix is not reliable — use the country name (which can be in English)
+          // to resolve the ISO alpha2.
           let alpha2: string | null = null;
-          if (numPub && typeof numPub === 'string') {
-            const exec = /^([A-Za-z]{2})/.exec(numPub);
-            if (exec) alpha2 = exec[1].toUpperCase();
+          // build a candidate string from available deposit/publication cells
+          const depotCandidate = String((numDep ?? depNumFromPays ?? numPub ?? '')).trim();
+          const depotPrefixMatch = /^([A-Za-z]{2})/.exec(depotCandidate);
+          const depotPrefix = depotPrefixMatch ? depotPrefixMatch[1].toUpperCase() : null;
+
+          if (depotPrefix === 'EP') {
+            // try to extract the country name from the paysCombined first line (e.g. "Europe\nEP2009...")
+            let countryName: string | null = null;
+            if (paysCombined) {
+              const parts = String(paysCombined).split(/\r?\n/).map(p => p.trim()).filter(Boolean);
+              if (parts.length >= 1) countryName = parts[0];
+            }
+            if (countryName) {
+              // first try the custom EN->FR mapping helper, then fallback to iso lib
+              const cand = alpha2FromEnglishOrFrench(countryName) ?? nameToAlpha2(countryName);
+              if (cand) alpha2 = cand;
+              else if (alpha2FromPays) alpha2 = alpha2FromPays; // last-resort fallback
+            } else {
+              if (alpha2FromPays) alpha2 = alpha2FromPays;
+            }
+          } else {
+            // default behavior: try publication prefix then paysCombined-derived code
+            if (numPub && typeof numPub === 'string') {
+              const exec = /^([A-Za-z]{2})/.exec(numPub);
+              if (exec) alpha2 = exec[1].toUpperCase();
+            }
+            if (!alpha2 && alpha2FromPays) alpha2 = alpha2FromPays;
           }
-          // Prefer alpha2 derived from paysCombined if available
-          if (!alpha2 && alpha2FromPays) alpha2 = alpha2FromPays;
 
           const reference = ref ?? '__no_ref__';
           if (!familiesMap.has(reference)) {
@@ -225,6 +255,7 @@ export function parseExcelFile(file: File): Promise<ParsedFamily[]> {
             inventeurs: splitInventeursField(inventeurs),
             deposant: deposant ?? null,
             client: client ?? null,
+            // images removed: import only uses textual fields for deduplication
           });
         });
 
