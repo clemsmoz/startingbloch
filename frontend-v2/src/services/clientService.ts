@@ -22,16 +22,9 @@ export const clientService = {
   // Récupérer tous les clients
   getAll: async (page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Client>> => {
     try {
-      console.log(`👥 Client Service - Récupération des clients (page ${page}, taille ${pageSize})...`);
-      console.log('URL complète:', `${config.api.baseUrl}${config.api.endpoints.clients}`);
-      
       const response = await api.get(config.api.endpoints.clients, {
         params: { page, pageSize }
       });
-      
-      console.log('✅ Client Service - Réponse reçue:', response.data);
-      console.log('🔍 Client Service - Structure complète:', JSON.stringify(response.data, null, 2));
-      
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((client: any) => ({
         id: client.Id,
@@ -48,7 +41,6 @@ export const clientService = {
         brevets: client.Brevets
       })) || [];
       
-      console.log('🔄 Client Service - Données transformées:', transformedData);
       
       // Retourner dans le format attendu par le frontend
       return {
@@ -63,8 +55,6 @@ export const clientService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      console.error('❌ Client Service - Erreur:', error);
-      console.error('Détails de l\'erreur:', error.response?.data);
       
       return {
         data: [],
@@ -95,9 +85,7 @@ export const clientService = {
 
   // Créer un nouveau client avec compte utilisateur
   createWithUser: async (clientWithUser: CreateClientWithUserDto): Promise<ApiResponse<Client>> => {
-    console.log('🚀 Client Service - Création client avec utilisateur:', clientWithUser);
     const response = await api.post('/api/clients/create-with-user', clientWithUser);
-    console.log('✅ Client Service - Réponse création client+user:', response.data);
     return response.data;
   },
 

@@ -55,45 +55,39 @@ export const useAuthStore = create<AuthState>()(
       // Actions
       login: async (email: string, password: string): Promise<boolean> => {
         set({ isLoading: true, error: null });
-        
+
         try {
-          console.log('🔐 Tentative de connexion pour:', email);
           const result = await authService.login({ email, password });
-          
-          console.log('✅ Réponse de connexion reçue:', result);
-          
+
           // Le backend peut retourner Token (majuscule) au lieu de token (minuscule)
           const resultAny = result as any;
           const token = result.token ?? resultAny.Token ?? '';
           const refreshToken = result.refreshToken ?? resultAny.RefreshToken ?? '';
           const userRaw = (result.user ?? resultAny.User ?? null) as any;
-          
+
           // Mapper les propriétés backend vers frontend
-          const user = userRaw ? {
-            id: userRaw.id ?? userRaw.Id,
-            email: userRaw.email ?? userRaw.Email,
-            username: userRaw.username ?? userRaw.Username ?? userRaw.email ?? userRaw.Email,
-            nom: userRaw.nom ?? userRaw.LastName,
-            prenom: userRaw.prenom ?? userRaw.FirstName,
-            role: userRaw.role ?? userRaw.Role,
-            isActive: userRaw.isActive !== undefined ? userRaw.isActive : userRaw.IsActive,
-            createdAt: userRaw.createdAt ?? userRaw.CreatedAt ?? new Date().toISOString(),
-            updatedAt: userRaw.updatedAt ?? userRaw.UpdatedAt ?? new Date().toISOString()
-          } : null;
-          
-          console.log('📝 Stockage des tokens...');
-          console.log('Token:', token ? 'présent' : 'absent');
-          console.log('RefreshToken:', refreshToken ? 'présent' : 'absent');
-          console.log('User:', user ? user.email : 'absent');
-          console.log('User complet:', JSON.stringify(user, null, 2));
-          
+          const user = userRaw
+            ? {
+                id: userRaw.id ?? userRaw.Id,
+                email: userRaw.email ?? userRaw.Email,
+                username:
+                  userRaw.username ?? userRaw.Username ?? userRaw.email ?? userRaw.Email,
+                nom: userRaw.nom ?? userRaw.LastName,
+                prenom: userRaw.prenom ?? userRaw.FirstName,
+                role: userRaw.role ?? userRaw.Role,
+                isActive:
+                  userRaw.isActive !== undefined ? userRaw.isActive : userRaw.IsActive,
+                createdAt:
+                  userRaw.createdAt ?? userRaw.CreatedAt ?? new Date().toISOString(),
+                updatedAt:
+                  userRaw.updatedAt ?? userRaw.UpdatedAt ?? new Date().toISOString(),
+              }
+            : null;
+
           // Stocker dans sessionStorage pour la session uniquement
           sessionStorage.setItem('startingbloch_token', token);
           sessionStorage.setItem('startingbloch_refresh_token', refreshToken);
           sessionStorage.setItem('startingbloch_user', JSON.stringify(user));
-          
-          console.log('💾 Tokens stockés dans localStorage');
-          
           set({
             user,
             token,
@@ -102,13 +96,10 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-          
-          console.log('✅ État d\'authentification mis à jour');
-          
+
           return true;
-        } catch (error) {
-          console.error('❌ Erreur de connexion:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Erreur de connexion';
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Erreur de connexion';
           set({
             user: null,
             token: null,
@@ -120,14 +111,14 @@ export const useAuthStore = create<AuthState>()(
           return false;
         }
       },
-
-      logout: async () => {
+      
+  logout: async () => {
         set({ isLoading: true });
         
         try {
           await authService.logout();
-        } catch (error) {
-          console.error('Erreur lors de la déconnexion:', error);
+        } catch {
+          // ignore logout errors
         }
         
         // Nettoyer aussi le sessionStorage
@@ -150,15 +141,12 @@ export const useAuthStore = create<AuthState>()(
         const storedRefreshToken = sessionStorage.getItem('startingbloch_refresh_token');
         const storedUser = sessionStorage.getItem('startingbloch_user');
         
-        console.log('🔄 RefreshAuth - Token:', storedToken ? 'présent' : 'absent');
-        console.log('🔄 RefreshAuth - User brut:', storedUser);
+  // refresh auth: examine stored tokens/user
         
         // Si nous avons déjà un token valide, l'utiliser
         if (storedToken && storedUser) {
           try {
             const userRaw = JSON.parse(storedUser);
-            console.log('🔄 RefreshAuth - User parsé:', userRaw);
-            
             // Mapper les propriétés comme dans le login
             const user = {
               id: userRaw.id ?? userRaw.Id,
@@ -172,8 +160,6 @@ export const useAuthStore = create<AuthState>()(
               updatedAt: userRaw.updatedAt ?? userRaw.UpdatedAt ?? new Date().toISOString()
             };
             
-            console.log('🔄 RefreshAuth - User mappé:', user);
-            
             set({
               token: storedToken,
               refreshToken: storedRefreshToken,
@@ -182,8 +168,8 @@ export const useAuthStore = create<AuthState>()(
               error: null,
             });
             return;
-          } catch (error) {
-            console.error('Erreur parsing stored user:', error);
+          } catch {
+            // ignore parse error and continue
           }
         }
         
@@ -201,13 +187,13 @@ export const useAuthStore = create<AuthState>()(
               error: null,
             });
           } catch (error) {
-            console.error('Erreur lors du refresh token:', error);
+            // enregistrer l'erreur de refresh dans l'état
             set({
               user: null,
               token: null,
               refreshToken: null,
               isAuthenticated: false,
-              error: null,
+              error: error instanceof Error ? error.message : 'Erreur refresh token',
             });
           }
         } else {

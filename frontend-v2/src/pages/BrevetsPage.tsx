@@ -38,6 +38,8 @@ import { motion } from 'framer-motion';
 // Components
 import { PageHeader, DataTable, SearchInput } from '../components/common';
 import { AddBrevetModal, EditBrevetModal } from '../components/modals';
+import ImportFromExcelModal from '../components/modals/ImportFromExcelModal';
+import { useNavigate } from 'react-router-dom';
 
 // Services
 import { brevetService } from '../services';
@@ -56,6 +58,7 @@ const BrevetsPage: React.FC = () => {
   const [selectedBrevet, setSelectedBrevet] = useState<Brevet | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [brevetToEdit, setBrevetToEdit] = useState<Brevet | null>(null);
   
@@ -67,6 +70,7 @@ const BrevetsPage: React.FC = () => {
   
   const { addNotification } = useNotificationStore();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   // Fonction pour obtenir l'image du drapeau du pays (x2)
   const getFlagImage = (codeIso?: string): React.ReactNode => {
@@ -184,6 +188,10 @@ const BrevetsPage: React.FC = () => {
   // Handlers pour les modales
   const handleAdd = () => {
     setIsAddModalVisible(true);
+  };
+
+  const handleImportFromExcel = () => {
+    setIsImportModalVisible(true);
   };
 
   const handleEdit = (brevet: Brevet) => {
@@ -405,6 +413,13 @@ const BrevetsPage: React.FC = () => {
       {t('brevets.actions.new')}
     </Button>
   ];
+
+  // Ajouter le bouton d'import depuis Excel (à droite du bouton New)
+  headerActions.unshift(
+    <Button key="import-excel" icon={<FileProtectOutlined />} onClick={handleImportFromExcel}>
+      {t('brevets.import.fromExcel') ?? 'Ajouter depuis Excel'}
+    </Button>
+  );
 
   // Supprimé le filtrage côté client - la recherche est gérée côté serveur
 
@@ -754,6 +769,25 @@ const BrevetsPage: React.FC = () => {
               type: 'error',
               message: t('brevets.createError') || 'Erreur lors de la création du brevet'
             });
+          }
+        }}
+      />
+
+      <ImportFromExcelModal
+        visible={isImportModalVisible}
+        onCancel={() => setIsImportModalVisible(false)}
+        onComplete={() => {
+          // Refresh the list after import completes
+          loadBrevets(1, pageSize).catch(() => {});
+        }}
+        onPrepare={({ clientId, file }) => {
+          // For now, navigate to a recap route or open recap flow. We will not parse file here.
+          setIsImportModalVisible(false);
+          // Use navigate state to transfer minimal info (filename & clientId). File object isn't serializable.
+          try {
+            navigate('/brevets/import/recap', { state: { clientId, fileName: file?.name ?? null } });
+          } catch (e) {
+            console.log('Prepare import:', { clientId, fileName: file?.name });
           }
         }}
       />

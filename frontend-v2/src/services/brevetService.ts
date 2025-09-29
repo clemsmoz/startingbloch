@@ -22,17 +22,12 @@ export const brevetService = {
   // Récupérer tous les brevets
   getAll: async (page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Brevet>> => {
     try {
-      console.log(`📋 Brevet Service - Récupération des brevets (page ${page}, taille ${pageSize})...`);
-      
       const response = await api.get(config.api.endpoints.brevets, {
         params: { page, pageSize }
       });
-      
-      console.log('✅ Brevet Service - Réponse reçue:', response.data);
-      
+
       // Transformer les données pour correspondre aux types frontend (camelCase)
   const transformedData = response.data.Data?.map((brevet: any) => {
-        console.log('🔍 Brevet brut depuis API:', brevet); // Debug log
         return {
           id: brevet.Id,
           numeroBrevet: brevet.ReferenceFamille, // Mapping corrigé
@@ -54,9 +49,7 @@ export const brevetService = {
           cabinets: brevet.Cabinets ?? [],
           informationsDepot: brevet.InformationsDepot ?? null
         };
-      }) || [];
-      
-      console.log('🔄 Brevet Service - Données transformées:', transformedData);
+  }) || [];
       
       return {
         success: response.data.Success,
@@ -70,7 +63,6 @@ export const brevetService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      console.error('❌ Brevet Service - Erreur:', error);
       
       return {
         data: [],
@@ -90,11 +82,7 @@ export const brevetService = {
   // Récupérer un brevet par ID avec tous les détails
   getById: async (id: number): Promise<ApiResponse<Brevet>> => {
     try {
-      console.log(`📋 Brevet Service - Récupération du brevet ID ${id}...`);
-      
       const response = await api.get(`${config.api.endpoints.brevets}/${id}`);
-      
-      console.log('✅ Brevet Service - Détails reçus:', response.data);
       
       // Transformer les données pour correspondre aux types frontend
       if (response.data.Success && response.data.Data) {
@@ -121,8 +109,6 @@ export const brevetService = {
           informationsDepot: brevet.InformationsDepot ?? []
         };
         
-        console.log('🔄 Brevet Service - Brevet transformé:', transformedBrevet);
-        
         return {
           success: true,
           data: transformedBrevet,
@@ -132,36 +118,38 @@ export const brevetService = {
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Brevet Service - Erreur getById:', error);
       throw error;
     }
   },
 
   // Créer un nouveau brevet
   create: async (brevet: CreateBrevetDto): Promise<ApiResponse<Brevet>> => {
-    const response = await api.post(config.api.endpoints.brevets, brevet);
-    return response.data;
+    try {
+      const response = await api.post(config.api.endpoints.brevets, brevet);
+      const payload: any = response?.data ?? {};
+      // Normalize common backend shapes (Success/Data/Message) to frontend ApiResponse
+      const success = typeof payload.success !== 'undefined' ? payload.success : (typeof payload.Success !== 'undefined' ? payload.Success : true);
+      const data = payload.data ?? payload.Data ?? payload;
+      const message = payload.message ?? payload.Message ?? undefined;
+      const errors = payload.errors ?? payload.Errors ?? undefined;
+      return {
+        success,
+        data,
+        message,
+        errors,
+      } as ApiResponse<Brevet>;
+    } catch (error: any) {
+      // Preserve throwing behavior for unexpected network/server errors
+      throw error;
+    }
   },
 
   // Mettre à jour un brevet
   update: async (id: number, brevet: UpdateBrevetDto): Promise<ApiResponse<Brevet>> => {
     try {
-      console.log('🔁 Brevet Service - update payload:', { id, brevet });
       const response = await api.put(`${config.api.endpoints.brevets}/${id}`, brevet);
-      console.log('✅ Brevet Service - update response:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Brevet Service - update failed for id=', id, 'payload=', brevet, 'error=', error);
-      // Si axios a une réponse, afficher-la en détail pour debug
-      if (error?.response) {
-        console.error('❌ Brevet Service - axios response data:', error.response.data);
-        console.error('❌ Brevet Service - axios response status:', error.response.status);
-        console.error('❌ Brevet Service - axios response headers:', error.response.headers);
-      } else if (error?.request) {
-        console.error('❌ Brevet Service - no response received, request:', error.request);
-      } else {
-        console.error('❌ Brevet Service - error message:', error.message);
-      }
       throw error;
     }
   },
@@ -216,7 +204,6 @@ export const brevetService = {
         message: payload.Message,
       };
     } catch (error: any) {
-      console.error('❌ Brevet Service - Erreur getByClientId:', error);
       return {
         success: false,
         data: [],

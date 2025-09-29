@@ -256,8 +256,8 @@ const AddBrevetModal: React.FC<AddBrevetModalProps & { editing?: boolean; initia
           loadSuggestionsFromClients(preselectedClientIds).catch(() => {});
         }
 
-        // Si édition, préremplir le formulaire
-        if (editing && initialValues) {
+        // Si des valeurs initiales sont fournies (édition ou import), préremplir le formulaire
+        if (initialValues) {
           try {
             const iv = { ...initialValues };
             // Convertir les dates si nécessaire
@@ -300,7 +300,24 @@ const AddBrevetModal: React.FC<AddBrevetModalProps & { editing?: boolean; initia
         }
       })();
     }
-  }, [visible]);
+  // Re-run init when visible changes or when parent provides new initialValues / preselected clients
+  }, [visible, JSON.stringify(initialValues ?? {}), JSON.stringify(preselectedClientIds ?? [])]);
+
+  // Ensure that if parent provides initialValues with informationsDepot we set them immediately.
+  // This avoids a case where loadReferenceData is still running and the deposits would not be visible.
+  useEffect(() => {
+    if (!visible) return;
+    try {
+      console.debug('AddBrevetModal: initialValues prop', initialValues);
+      if (initialValues && Array.isArray((initialValues as any).informationsDepot)) {
+        const infos = (initialValues as any).informationsDepot.map((i: any) => ({ ...i, _tempId: i._tempId ?? `temp_init_${Date.now()}_${Math.floor(Math.random()*10000)}` }));
+        console.debug('AddBrevetModal: setting informationsDepot from initialValues', infos);
+        setInformationsDepot(infos);
+      }
+    } catch (e) {
+      console.error('AddBrevetModal: error applying initial informationsDepot', e);
+    }
+  }, [visible, JSON.stringify(initialValues ?? {})]);
 
   // Helpers: déduplication par id et normalisation de texte (accents-insensible)
   const dedupeById = <T extends { id: number }>(arr: T[] = []): T[] => {

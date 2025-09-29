@@ -22,16 +22,9 @@ export const contactService = {
   // Récupérer tous les contacts
   getAll: async (page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Contact>> => {
     try {
-      console.log(`📞 Contact Service - Récupération des contacts (page ${page}, taille ${pageSize})...`);
-      console.log('URL complète:', `${config.api.baseUrl}${config.api.endpoints.contacts}`);
-      
       const response = await api.get(config.api.endpoints.contacts, {
         params: { page, pageSize }
       });
-      
-      console.log('✅ Contact Service - Réponse reçue:', response.data);
-      console.log('🔍 Contact Service - Structure complète:', JSON.stringify(response.data, null, 2));
-      
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((contact: any) => ({
         id: contact.Id,
@@ -49,7 +42,6 @@ export const contactService = {
         roles: contact.Roles || []
       })) || [];
       
-      console.log('🔄 Contact Service - Données transformées:', transformedData);
       
       // Retourner dans le format attendu par le frontend
       return {
@@ -64,8 +56,6 @@ export const contactService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      console.error('❌ Contact Service - Erreur:', error);
-      console.error('Détails de l\'erreur:', error.response?.data);
       
       return {
         data: [],
@@ -97,19 +87,10 @@ export const contactService = {
   // Mettre à jour un contact
   update: async (id: number, contact: UpdateContactDto): Promise<ApiResponse<Contact>> => {
     try {
-      console.log(`✏️ Contact Service - Mise à jour contact ${id} avec données:`, contact);
       const response = await api.put(`${config.api.endpoints.contacts}/${id}`, contact);
-      console.log('✅ Contact Service - Réponse mise à jour:', response.data);
       return response.data;
     } catch (error: any) {
-      // Log verbeux pour diagnostiquer les erreurs PUT
-      try {
-        console.error('❌ Contact Service - Erreur lors de la mise à jour du contact:', error?.toString ? error.toString() : error);
-        console.error('❌ Contact Service - HTTP status:', error.response?.status);
-        console.error('❌ Contact Service - Détails (response.data):', JSON.stringify(error.response?.data ?? error.response ?? error, null, 2));
-      } catch (logErr) {
-        console.error('❌ Contact Service - Erreur lors du logging:', logErr);
-      }
+      // return structured error without noisy logs
 
       return {
         data: {} as Contact,
@@ -137,14 +118,9 @@ export const contactService = {
   // Récupérer les contacts d'un client spécifique
   getByClient: async (clientId: number, page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Contact>> => {
     try {
-      console.log(`📞 Contact Service - Récupération des contacts du client ${clientId} (page ${page}, taille ${pageSize})...`);
-      
       const response = await api.get(`${config.api.endpoints.contacts}/client/${clientId}`, {
         params: { page, pageSize }
       });
-      
-      console.log('✅ Contact Service - Réponse contacts client reçue:', response.data);
-      
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((contact: any) => ({
         id: contact.Id,
@@ -176,7 +152,6 @@ export const contactService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      console.error('❌ Contact Service - Erreur récupération contacts client:', error);
       
       return {
         data: [],
@@ -196,14 +171,9 @@ export const contactService = {
   // Récupérer les contacts d'un cabinet spécifique
   getByCabinet: async (cabinetId: number, page: number = 1, pageSize: number = 10): Promise<PagedApiResponse<Contact>> => {
     try {
-      console.log(`📞 Contact Service - Récupération des contacts du cabinet ${cabinetId} (page ${page}, taille ${pageSize})...`);
-      
       const response = await api.get(`${config.api.endpoints.contacts}/cabinet/${cabinetId}`, {
         params: { page, pageSize }
       });
-      
-      console.log('✅ Contact Service - Réponse contacts cabinet reçue:', response.data);
-      
       // Transformer les données pour correspondre aux types frontend (camelCase)
       const transformedData = response.data.Data?.map((contact: any) => ({
         id: contact.Id,
@@ -235,7 +205,6 @@ export const contactService = {
         hasPreviousPage: response.data.HasPreviousPage
       };
     } catch (error: any) {
-      console.error('❌ Contact Service - Erreur récupération contacts cabinet:', error);
       
       return {
         data: [],
