@@ -1,0 +1,31 @@
+{
+	"common": {
+		"notProvided": "Non renseigné",
+		"exportInProgress": "Export en cours...",
+		"loadingSuggestions": "Chargement des suggestions…",
+		"yes": "✅ Oui",
+		"no": "❌ Non",
+		"enabled": "Activé",
+		"disabled": "Désactivé",
+		"none": "Aucun",
+		"cancel": "Annuler",
+		"next": "Suivant",
+		"back": "Retour",
+		"id": "ID"
+	},
+	"actions": {
+		"refresh": "Actualiser",
+		"close": "Fermer",
+		"cancel": "Annuler",
+		"next": "Suivant",
+		"back": "Retour",
+		"yes": "Oui",
+		"no": "Non",
+		"edit": "Modifier",
+		"create": "Créer",
+		"delete": "Supprimer",
+		"enable": "Activer",
+		"disable": "Désactiver",
+		"actions": "Actions"
+	}
+}

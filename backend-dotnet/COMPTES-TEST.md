@@ -1,0 +1,49 @@
+-- ================================================================================================
+-- INFORMATIONS DE CONNEXION POUR LES TESTS
+-- ================================================================================================
+
+-- COMPTES UTILISATEURS CRÉÉS :
+-- ============================
+-- 
+-- 1. ADMINISTRATEUR SYSTÈME
+--    Username: admin
+--    Email: admin@startingbloch.com
+--    Mot de passe: admin123
+--    Rôle: admin (accès complet)
+--
+-- 2. MANAGER PORTFOLIO 
+--    Username: manager
+--    Email: manager@startingbloch.com  
+--    Mot de passe: manager123
+--    Rôle: user (lecture/écriture, lié au client Aryballe)
+--
+-- 3. CLIENT ARYBALLE
+--    Username: client1
+--    Email: client1@aryballe.com
+--    Mot de passe: client123  
+--    Rôle: user (lecture seule, lié au client Aryballe)
+--
+-- 4. LECTEUR GÉNÉRAL
+--    Username: reader
+--    Email: reader@startingbloch.com
+--    Mot de passe: reader123
+--    Rôle: user (lecture seule)
+--
+-- ================================================================================================
+-- ENDPOINTS API POUR TESTS
+-- ================================================================================================
+--
+-- Authentification:
+-- POST http://localhost:5000/api/auth/login
+-- Body: {"username": "admin", "password": "admin123"}
+--
+-- Health Check:
+-- GET http://localhost:5000/api/health
+--
+-- Brevets:
+-- GET http://localhost:5000/api/brevet
+-- 
+-- Clients:
+-- GET http://localhost:5000/api/client
+--
+-- ================================================================================================

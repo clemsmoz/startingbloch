@@ -1,0 +1,29 @@
+{
+  "common": {
+    "notProvided": "Not provided",
+    "exportInProgress": "Export in progress...",
+    "loadingSuggestions": "Loading suggestions...",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "none": "None",
+    "cancel": "Cancel",
+    "next": "Next",
+    "back": "Back",
+    "id": "ID"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "close": "Close",
+    "cancel": "Cancel",
+    "next": "Next",
+    "back": "Back",
+    "edit": "Edit",
+    "create": "Create",
+    "delete": "Delete",
+    "enable": "Enable",
+    "disable": "Disable",
+    "actions": "Actions"
+  }
+}

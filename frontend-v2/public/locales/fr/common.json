@@ -1,0 +1,802 @@
+{
+  "notifications": {
+    "title": "Notifications",
+    "pageTitle": "Notifications",
+    "markAsRead": "Marquer lu",
+    "marked": "Marqué",
+    "markedRead": "Notifications marquées comme lues",
+    "markAsReadAction": "Marquer comme lu",
+    "markVisibleRead": "Marquer visibles comme lus",
+    "allNotifications": "Toutes les notifications",
+    "noNotifications": "Aucune notification",
+    "loadError": "Impossible de charger les notifications",
+    "networkError": "Erreur réseau lors du chargement des notifications",
+    "failed": "Échec de l'opération",
+    "genericError": "Une erreur est survenue",
+    "noneToMark": "Aucune notification à marquer",
+    "filterByClient": "Filtrer par client",
+    "filterByType": "Filtrer par type",
+    "type": { "brevet": "Brevet", "cabinet": "Cabinet", "contact": "Contact", "client": "Client" },
+  "tab": { "unread": "Non lus", "read": "Lu" },
+  "unread": "Non lu",
+  "read": "Lu",
+    "empty": { "unread": "Aucune notification non lue", "read": "Aucune notification lue" },
+    "brevet": "Brevet"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "tabs": {
+      "account": "Compte",
+      "notifications": "Notifications"
+    },
+    "account": {
+      "description": "Gérez les informations de votre compte.",
+      "myProfile": "Mon profil",
+      "language": "Langue"
+    },
+    "notifications": {
+      "title": "Préférences de notification"
+    },
+    "loadError": "Impossible de charger les préférences",
+    "updated": "Préférence mise à jour",
+    "updateFailed": "Échec de la mise à jour",
+    "refresh": "Rafraîchir",
+    "types": {
+      "all": "Tous",
+      "brevet": "Brevet",
+      "cabinet": "Cabinet",
+      "client": "Client",
+      "contact": "Contact"
+    },
+    "note_prefix": "Note :",
+    "note": "Les préférences sont stockées par client et par type de notification."
+  },
+    "menu": {
+    "dashboard": "Tableau de bord",
+    "clients": "Clients",
+    "contacts": "Contacts",
+    "brevets": "Brevets",
+    "cabinets": "Cabinets",
+    "adminUsers": "Utilisateurs",
+    "logs": "Journaux",
+    "numberConverter": "Convertisseur de numéros"
+  },
+  "user": {
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "logout": "Se déconnecter",
+    "defaultName": "Utilisateur",
+    "defaultRole": "User",
+    "language_fr": "Français",
+    "language_en": "English"
+  },
+  "ui": {
+    "navigation": "Navigation"
+  },
+  "home": {
+    "welcome": "Bienvenue sur StartingBloch",
+    "subtitle": "Gérez vos clients, cabinets et brevets en toute simplicité.",
+    "access": "Accéder",
+    "cards": {
+      "offices": { "title": "Cabinets", "desc": "Gérez vos cabinets et collaborateurs." },
+      "clients": { "title": "Clients", "desc": "Accédez à votre portefeuille de clients et suivez vos relations." },
+      "patents": { "title": "Brevets", "desc": "Accédez à votre portefeuille de brevets et gérez vos propriétés intellectuelles." }
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Aperçu rapide de votre activité",
+    "stats": {
+      "clients": "Clients",
+      "brevets": "Brevets",
+      "contacts": "Contacts",
+      "cabinets": "Cabinets"
+    },
+    "recent": {
+      "title": "Activité récente",
+      "empty": "Aucune activité récente"
+    }
+  },
+  "countries": { "FR": "France", "US": "États-Unis", "GB": "Royaume-Uni", "DE": "Allemagne", "ES": "Espagne", "IT": "Italie", "CA": "Canada", "BE": "Belgique", "CH": "Suisse", "NL": "Pays-Bas" },
+  "users": {
+    "pageTitle": "Administration des utilisateurs",
+    "pageDescription": "Gérez les comptes utilisateurs, rôles et permissions",
+    "newUser": "Nouvel utilisateur",
+    "editUser": "Modifier l'utilisateur",
+    "column": {
+      "user": "Utilisateur",
+      "email": "Email",
+      "role": "Rôle",
+      "status": "Statut",
+      "write": "Écriture",
+      "createdAt": "Créé le"
+    },
+    "ofTotal": "sur",
+    "labelUsers": "utilisateurs",
+    "stats": {
+      "total": "Total",
+      "active": "Actifs",
+      "admins": "Administrateurs",
+      "clients": "Clients"
+    },
+    "role": {
+      "admin": "Administrateur",
+      "user": "Utilisateur",
+      "client": "Client"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+    "deleteSuccess": "Utilisateur supprimé avec succès",
+    "deleteError": "Erreur lors de la suppression de l'utilisateur",
+    "loadError": "Impossible de charger la liste des utilisateurs",
+    "createSuccess": "Utilisateur créé avec succès",
+    "updateSuccess": "Utilisateur modifié avec succès",
+    "saveError": "Erreur lors de l'enregistrement",
+    "activated": "Utilisateur activé",
+    "deactivated": "Utilisateur désactivé",
+    "statusChangeError": "Erreur lors du changement de statut",
+    "form": {
+      "firstName": "Prénom",
+      "firstNameRequired": "Le prénom est requis",
+      "firstNamePlaceholder": "Entrez le prénom",
+      "lastName": "Nom",
+      "lastNameRequired": "Le nom est requis",
+      "lastNamePlaceholder": "Entrez le nom",
+      "email": "Email",
+      "emailRequired": "L'email est requis",
+      "emailInvalid": "Email invalide",
+      "emailPlaceholder": "Entrez l'email",
+      "username": "Nom d'utilisateur",
+      "usernameRequired": "Le nom d'utilisateur est requis",
+      "usernamePlaceholder": "Entrez le nom d'utilisateur",
+      "password": "Mot de passe",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordMin": "Le mot de passe doit contenir au moins 6 caractères",
+      "passwordPlaceholder": "Entrez le mot de passe",
+      "role": "Rôle",
+      "roleRequired": "Le rôle est requis",
+      "selectRole": "Sélectionner un rôle",
+      "status": "Statut",
+      "canWrite": "Peut écrire",
+      "client": "Client",
+      "clientRequired": "Le client est requis",
+      "selectClient": "Sélectionner un client"
+    }
+  },
+  "logs": {
+    "pageDescription": "Consultation des logs système et des actions utilisateurs",
+    "action": {
+      "creation": "Création",
+      "modification": "Modification",
+      "suppression": "Suppression",
+      "lastLogin": "Dernière connexion",
+      "lastLoginFull": "Connexion (dernière)"
+    },
+    "ofEntityPreposition": "sur",
+    "viewLogs": "Voir les logs",
+    "columns": {
+      "dateTime": "Date / Heure",
+      "action": "Action",
+      "details": "Détails"
+    },
+    "changes": "Modifications",
+    "lastLogin": "Dernière connexion",
+    "stats": {
+      "totalUsers": "Total utilisateurs",
+      "activeUsers": "Utilisateurs actifs",
+      "totalLogs": "Total logs",
+      "todayActions": "Actions aujourd'hui"
+    },
+    "usersListTitle": "Liste des utilisateurs",
+    "ofTotal": "sur",
+    "labelUsers": "utilisateurs",
+    "userLogsTitle": "Logs de",
+    "filterByAction": "Filtrer par action",
+    "action.creation": "Création",
+    "action.modification": "Modification",
+    "action.suppression": "Suppression",
+    "action.lastLogin": "Dernière connexion",
+    "startDate": "Date début",
+    "endDate": "Date fin",
+    "singleDate": "Date unique",
+    "resetFilters": "Réinitialiser les filtres",
+    "labelLogs": "logs"
+  },
+  "clients": {
+    "title": "Clients",
+    "description": "Gestion des clients et de leurs informations",
+    "loadErrorTitle": "Erreur",
+    "loadErrorDesc": "Impossible de charger la liste des clients",
+    "deleteSuccess": "Client supprimé avec succès",
+    "deleteError": "Erreur lors de la suppression du client",
+    "addSuccess": "Client ajouté avec succès",
+    "editSuccess": "Client modifié avec succès",
+    "createError": "Erreur lors de la création du client",
+    "updateError": "Erreur lors de la modification du client",
+    "searchErrorTitle": "Erreur de recherche",
+    "searchErrorDesc": "Impossible d'effectuer la recherche",
+    "confirmDeleteTitle": "Confirmer la suppression",
+    "confirmDeleteContent": "Êtes-vous sûr de vouloir supprimer le client \"{{name}}\" ?",
+    "cancel": "Annuler",
+    "actions": { "view": "Voir les détails", "contacts": "Voir contacts", "brevets": "Voir brevets", "edit": "Modifier", "delete": "Supprimer" },
+    "status": { "active": "Actif", "inactive": "Inactif" },
+    "searchPlaceholder": "Rechercher un client...",
+    "address": "Adresse",
+    "createdAt": "Date de création",
+    "buttons": { "exportComing": "Fonctionnalité d'export en cours de développement", "export": "Exporter", "new": "Nouveau client" },
+    "columns": { "id": "ID", "name": "Nom", "email": "Email", "phone": "Téléphone", "status": "Statut", "actions": "Actions" },
+    "pagination": { "showTotal": "{{from}}-{{to}} sur {{total}}" },
+    "detailModal": { "title": "Détails du client - {{name}}", "close": "Fermer", "notProvided": "Non renseigné", "notDefined": "Non défini" },
+
+    "fields": {
+      "name": "Nom",
+      "reference": "Référence",
+      "email": "Email",
+      "phone": "Téléphone",
+      "address": "Adresse",
+      "postalCode": "Code postal",
+      "country": "Pays"
+    },
+
+    "placeholders": {
+      "name": "Entrez le nom du client",
+      "reference": "Référence interne",
+      "officialName": "Entrez le nom officiel",
+      "contactEmail": "Entrez l'email de contact",
+      "phone": "Entrez le téléphone",
+      "address": "Entrez l'adresse",
+      "postal": "Code postal",
+      "postalAddress": "Entrez l'adresse postale",
+      "selectCountry": "Sélectionner un pays"
+    },
+
+    "validation": {
+      "nameMin": "Le nom doit contenir au moins 2 caractères",
+      "nameMax": "Le nom doit contenir au plus 255 caractères",
+      "referenceMax": "La référence doit contenir au plus 255 caractères",
+      "emailInvalid": "Email invalide",
+      "emailMax": "L'email doit contenir au plus 255 caractères",
+      "phoneInvalid": "Téléphone invalide",
+      "addressMax": "L'adresse doit contenir au plus 500 caractères",
+      "postalCodeMax": "Le code postal doit contenir au plus 20 caractères"
+    },
+
+    "tooltips": {
+      "reference": "Référence interne du client",
+      "country": "Pays principal du client"
+    },
+
+    "modals": {
+      "add": {
+        "title": "Ajouter un client",
+        "confirmTitle": "Confirmer l'ajout",
+        "recapTitle": "Récapitulatif du client",
+        "clientInfo": "Informations du client",
+        "userAccount": "Compte utilisateur",
+        "fullName": "Nom complet",
+        "roleLabel": "Rôle",
+        "readPermission": "Permission lecture",
+        "writePermission": "Permission écriture",
+        "status": "Statut",
+        "blocked": "Bloqué",
+        "active": "Actif",
+        "next": "Suivant",
+        "back": "Retour",
+        "create": "Créer",
+        "tabs": { "general": "Général", "contact": "Contact", "address": "Adresse", "account": "Compte" },
+        "labels": { "hasAccount": "Créer compte utilisateur", "canRead": "Peut lire", "canWrite": "Peut écrire", "isBlocked": "Bloqué" },
+        "tooltips": { "hasAccount": "Créer un compte utilisateur pour ce client", "canRead": "Permission de lecture", "canWrite": "Permission d'écriture", "isBlocked": "Le client est bloqué" },
+        "accountSection": "Informations du compte",
+        "permissions": "Permissions",
+        "recapNote": "Vérifiez les informations avant création.",
+        "recapAccountNote": "Un compte utilisateur sera créé pour ce client.",
+        "errors": {
+          "confirmPasswordRequired": "La confirmation du mot de passe est requise",
+          "passwordPattern": "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre"
+        },
+        "labelsVerbose": {
+          "readPermission": "Permission de lecture",
+          "writePermission": "Permission d'écriture"
+        }
+      },
+      "edit": {
+        "title": "Modifier le client - {{name}}",
+        "tabs": { "general": "Général", "contact": "Contact", "address": "Adresse" },
+        "permissions": "Permissions",
+        "placeholders": {
+          "name": "Entrez le nom du client",
+          "reference": "Référence interne",
+          "email": "Entrez l'email",
+          "phone": "Entrez le téléphone",
+          "address": "Entrez l'adresse",
+          "postal": "Code postal",
+          "country": "Sélectionner un pays"
+        },
+        "labels": {
+          "canWrite": "Peut écrire",
+          "canRead": "Peut lire",
+          "isBlocked": "Bloqué"
+        },
+        "tooltips": {
+          "canWrite": "Permission d'écriture pour ce client",
+          "canRead": "Permission de lecture pour ce client",
+          "isBlocked": "Le client est bloqué"
+        },
+        "submit": "Enregistrer"
+      },
+      "createWithAccount": {
+        "title": "Créer un client avec compte",
+        "finish": "Créer et terminer"
+      }
+    },
+
+    "role": {
+      "client": "Client"
+    },
+
+    "steps": {
+      "titleStep": "Étape {{step}}/{{total}}",
+      "clientInfo": "Informations client",
+      "recapAndAccount": "Récapitulatif & compte"
+    },
+
+    "recap": {
+      "title": "Récapitulatif du client",
+      "description": "Vérifiez les informations avant de créer le client.",
+      "clientInfo": "Informations du client"
+    },
+
+    "account": {
+      "title": "Compte utilisateur",
+      "alertTitle": "Créer un compte utilisateur",
+      "alertDescription": "Un compte utilisateur permettra l'accès au portail pour ce client.",
+      "fields": {
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "email": "Email",
+        "password": "Mot de passe",
+        "confirmPassword": "Confirmer le mot de passe"
+      },
+      "placeholders": {
+        "firstName": "Entrez le prénom",
+        "lastName": "Entrez le nom",
+        "email": "Entrez l'email du compte",
+        "password": "Entrez un mot de passe",
+        "confirmPassword": "Confirmez le mot de passe"
+      },
+      "validation": {
+        "firstNameRequired": "Le prénom est requis",
+        "firstNameMin": "Le prénom doit contenir au moins 2 caractères",
+        "firstNameMax": "Le prénom doit contenir au plus 100 caractères",
+        "lastNameRequired": "Le nom est requis",
+        "lastNameMin": "Le nom doit contenir au moins 2 caractères",
+        "lastNameMax": "Le nom doit contenir au plus 100 caractères",
+        "emailRequired": "L'email est requis",
+        "emailInvalid": "Email invalide",
+        "emailMax": "L'email doit contenir au plus 255 caractères",
+        "passwordRequired": "Le mot de passe est requis",
+        "passwordMin": "Le mot de passe doit contenir au moins 8 caractères",
+        "confirmPasswordRequired": "La confirmation du mot de passe est requise",
+        "passwordsMismatch": "Les mots de passe ne correspondent pas"
+      },
+      "permissionsTitle": "Permissions du compte",
+      "permissions": { "role": "Rôle", "read": "Lecture", "write": "Écriture", "status": "Statut" }
+    }
+  },
+  "brevets": {
+    "pageDescription": "Gestion des brevets et de leurs statuts",
+    "pageDescriptionClient": "Portefeuille de brevets pour le client",
+    "noneForClient": "Aucun brevet trouvé pour ce client",
+    "loadError": "Impossible de charger les brevets",
+    "detailFetchError": "Impossible de récupérer tous les détails du brevet",
+    "deleteSuccess": "Brevet supprimé avec succès",
+    "deleteError": "Erreur lors de la suppression du brevet",
+    "addSuccess": "Brevet ajouté avec succès",
+    "editSuccess": "Brevet modifié avec succès",
+    "createError": "Erreur lors de la création du brevet",
+    "updateError": "Erreur lors de la modification du brevet",
+    "confirmDelete": { "title": "Confirmer la suppression", "content": "Êtes-vous sûr de vouloir supprimer le brevet \"{{title}}\" ?", "multiple": "Supprimer {{count}} brevets ?" },
+  "exportComing": "Export de brevets bientôt disponible",
+  "searchPlaceholder": "Rechercher un brevet...",
+    "pagination": { "showTotal": "{{from}}-{{to}} sur {{total}}" },
+    "detailTitle": "Détails du brevet",
+    "loadingDetails": "Chargement des détails...",
+    "generalInfoTitle": "Informations générales",
+  "columns": { "reference": "Référence famille", "familyRef": "Référence famille", "title": "Titre" },
+    "noTitle": "(Sans titre)",
+    "statusNotDefined": "Statut non défini",
+    "ofTotal": "sur",
+    "label": "brevets",
+    "partialDetailsWarning": "Certains détails pourraient ne pas être disponibles",
+    "sections": {
+      "general": "Informations générales",
+      "clients": "Clients",
+      "inventors": "Inventeurs",
+      "depositants": "Dépositants",
+      "titulaires": "Titulaires",
+      "depositInfos": "Informations de dépôt",
+      "linkedCabinets": "Cabinets liés",
+      "annuities": "Annuités",
+      "procedures": "Procédures",
+      "filingInfo": "Informations de dépôt",
+      "filers": "Dépositants",
+      "holders": "Titulaires"
+    }
+    ,
+    "labels": {
+      "cabinet": "Cabinet",
+      "roles": "Rôles",
+      "contacts": "Contacts",
+      "clients": "Clients",
+      "status": "Statut",
+      "filingNumber": "N° Dépôt",
+      "publicationNumber": "N° Publication",
+      "deliveryNumber": "N° Délivrance",
+      "filingDate": "Date de dépôt",
+      "publicationDate": "Date de publication",
+      "deliveryDate": "Date de délivrance",
+      "licence": "Licence",
+      "addedDate": "Date d'ajout",
+      "title": "Titre",
+      "reference": "Référence",
+      "familyRef": "Référence famille",
+      "comment": "Commentaire",
+      "unknownCabinet": "Cabinet inconnu",
+      "inventorsAssociated": "Inventeurs associés",
+      "holdersAssociated": "Titulaires associés",
+      "depositorsAssociated": "Dépositants associés"
+    },
+    "cabinet": {
+      "noneForCategory": "Aucun cabinet disponible pour cette catégorie"
+    },
+
+    "cabinets": {
+      "annuities": "Annuités",
+      "procedures": "Procédures"
+    },
+    "form": {
+      "title": "Titre du brevet",
+      "titleMax": "Le titre doit contenir au plus 500 caractères",
+      "familyReference": "Référence famille",
+      "familyReferenceMax": "La référence doit contenir au plus 255 caractères",
+      "internalComment": "Commentaire interne"
+    },
+    "placeholders": {
+      "chooseCabinet": "Choisir un cabinet",
+      "selectRoles": "Sélectionner des rôles",
+      "selectContacts": "Sélectionner des contacts",
+      "title": "Titre du brevet",
+      "familyReference": "Référence famille",
+      "internalComment": "Commentaire interne",
+      "selectClients": "Sélectionner des clients",
+      "selectInventors": "Sélectionner des inventeurs",
+      "selectTitulaires": "Sélectionner des titulaires",
+      "selectDeposants": "Sélectionner des dépositants",
+      "selectCountries": "Sélectionner des pays",
+      "searchInventor": "Rechercher un inventeur",
+      "searchTitulaire": "Rechercher un titulaire",
+      "searchDeposant": "Rechercher un déposant"
+    },
+    "searchPlaceholderClient": "Rechercher un brevet pour ce client...",
+    "tabs": {
+      "general": "Général",
+      "clients": "Clients",
+      "depositInfos": "Informations de dépôt",
+      "inventors": "Inventeurs",
+      "titulaires": "Titulaires",
+      "depositants": "Dépositants"
+    },
+    "actions": {
+      "createClient": "Créer un client",
+      "addDepositInfo": "Ajouter une information de dépôt",
+      "createInventor": "Créer un inventeur",
+      "createTitulaire": "Créer un titulaire",
+      "createDeposant": "Créer un déposant",
+      "new": "Nouveau brevet"
+    },
+    "import": {
+      "resultTitle": "Récapitulatif de l'import",
+      "addedCount": "{{count}} références famille ajoutées",
+      "resultListHeader": "Références ajoutées",
+      "backToList": "Retour aux brevets",
+      "fromExcel": "Ajouter depuis Excel",
+      "title": "Importer depuis Excel",
+      "prepare": "Préparer import",
+      "chooseClient": "Client (optionnel)",
+      "uploadFile": "Fichier Excel",
+      "selectedFile": "Fichier sélectionné",
+      "note": "Après préparation vous pourrez vérifier et modifier chaque famille avant envoi.",
+      "recapTitle": "Récapitulatif import Excel",
+      "recapAddTitle": "Vérifier et créer la famille",
+      "createFamily": "Créer la famille",
+      "confirmAndCreate": "Valider et créer",
+      "client": "Client",
+      "file": "Fichier",
+      "recapHint": "Vérifiez les informations avant de valider. Après validation, les brevets seront créés côté serveur.",
+      "actionPreview": "Aperçu prêt (génération non exécutée)"
+    },
+    "roles": { "first": "Premier", "second": "Deuxième", "third": "Troisième" },
+    "modals": {
+      "add": { "title": "Ajouter un brevet", "submit": "Créer", "confirmTitle": "Confirmer l'ajout", "recapTitle": "Récapitulatif du brevet", "cardTitle": "Récapitulatif", "tabs": { "general": "Général", "clients": "Clients", "depositInfos": "Informations de dépôt" } },
+      "edit": { "title": "Modifier le brevet", "titleWithNumber": "Modifier le brevet n°{{number}}", "submit": "Enregistrer" }
+    },
+    "recap": {
+      "noCabinet": "Aucun cabinet sélectionné",
+      "general": "Général",
+      "annuites": "Annuités",
+      "procedures": "Procédures",
+      "verifyBeforeCreate": "Vérifiez les informations avant création",
+      "confirmTitle": "Confirmer la création",
+      "title": "Récapitulatif des brevets"
+    },
+    "card": {
+      "inventors": "Inventeurs ({{count}})",
+      "titulaires": "Titulaires ({{count}})",
+      "depositants": "Dépositants ({{count}})",
+      "cabinetsByDeposit": "Cabinets par dépôt"
+    },
+    "suggested": { "alreadyUsed": "Déjà utilisé" },
+    "notifications": {
+      "cabinetCreated": "Cabinet créé avec succès",
+      "cabinetCreateError": "Erreur lors de la création du cabinet",
+      "unknownError": "Erreur inconnue"
+    }
+  },
+
+  "deposit": {
+    "titleWithIndex": "Dépôt #{{index}}",
+    "cardTitle": "Informations de dépôt ({{count}})",
+    "none": "Aucun dépôt",
+    "noneAdded": "Aucune information de dépôt ajoutée",
+    "clickAddInstructions": "Cliquez sur 'Ajouter' pour insérer une information de dépôt",
+    "labels": {
+      "country": "Pays",
+      "status": "Statut",
+      "depositNumber": "Numéro de dépôt",
+      "publicationNumber": "Numéro de publication",
+      "deliveryNumber": "Numéro de délivrance",
+      "depositDate": "Date de dépôt",
+      "publicationDate": "Date de publication",
+      "deliveryDate": "Date de délivrance",
+      "licence": "Licence",
+      "comment": "Commentaire"
+    },
+    "placeholders": {
+      "selectCountry": "Sélectionner un pays",
+      "selectStatus": "Sélectionner un statut",
+      "depositExample": "Ex: FR2024001234",
+      "publicationNumber": "Numéro de publication",
+      "deliveryNumber": "Numéro de délivrance",
+      "depositDate": "Date de dépôt",
+      "publicationDate": "Date de publication",
+      "deliveryDate": "Date de délivrance",
+      "comment": "Ajouter un commentaire"
+    }
+  },
+  "cabinets": {
+    "pageDescription": "Gestion des cabinets et de leurs informations",
+    "loadError": "Impossible de charger les cabinets",
+    "createSuccess": "Cabinet créé avec succès",
+    "createSuccessTitle": "Cabinet créé",
+    "createSuccessDesc": "Le cabinet {{name}} a été créé avec succès",
+    "createError": "Erreur lors de la création du cabinet",
+    "updateSuccess": "Cabinet modifié avec succès",
+    "updateSuccessTitle": "Cabinet modifié",
+    "updateSuccessDesc": "Le cabinet a été modifié avec succès",
+    "updateError": "Erreur lors de la modification du cabinet",
+    "deleteSuccess": "Cabinet supprimé avec succès",
+    "deleteSuccessTitle": "Cabinet supprimé",
+    "deleteSuccessDesc": "Le cabinet {{name}} a été supprimé avec succès",
+    "deleteError": "Erreur lors de la suppression du cabinet",
+    "searchPlaceholder": "Rechercher un cabinet...",
+    "confirmDelete": { "title": "Confirmer la suppression", "content": "Êtes-vous sûr de vouloir supprimer le cabinet \"{{name}}\" ?", "warning": "Cette action est irréversible." },
+    "detailTitle": "Détails du cabinet",
+    "labels": { "name": "Nom du cabinet", "type": "Type", "address": "Adresse", "country": "Pays", "email": "Email", "phone": "Téléphone" },
+    "fields": { "name": "Nom du cabinet", "type": "Type", "address": "Adresse", "postalCode": "Code postal", "country": "Pays", "email": "Email", "phone": "Téléphone" },
+    "validation": { "nameMax": "Le nom du cabinet doit contenir au plus 255 caractères", "addressMax": "L'adresse doit contenir au plus 500 caractères", "postalCodeMax": "Le code postal doit contenir au plus 20 caractères", "countryMax": "Le pays doit contenir au plus 100 caractères", "emailInvalid": "Email invalide", "emailMax": "L'email doit contenir au plus 255 caractères", "phoneMax": "Le téléphone doit contenir au plus 50 caractères" },
+    "placeholders": { "exampleName": "Ex: Cabinet Dupont", "selectType": "Sélectionner un type", "addressExample": "Ex: 12 Rue de Paris", "postalExample": "75001", "selectCountry": "Sélectionner un pays", "countryExample": "France", "emailExample": "contact@cabinet.fr", "phoneExample": "+33 1 23 45 67 89" },
+    "columns": { "name": "Nom", "type": "Type", "email": "Email", "phone": "Téléphone", "reference": "Référence" },
+    "actions": { "viewContacts": "Voir les contacts", "new": "Nouveau cabinet" },
+  "type": { "annuite": "Annuité", "procedure": "Procédure" },
+  "types": { "annuity": "Annuité", "procedure": "Procédure" },
+    "modals": { "add": { "title": "Ajouter un cabinet", "tabs": { "general": "Général", "address": "Adresse", "contact": "Contact" }, "recapTitle": "Récapitulatif du cabinet", "create": "Créer", "submit": "Créer" },
+      "edit": { "title": "Modifier le cabinet", "titleWithName": "Modifier le cabinet {{name}}", "tabs": { "general": "Général", "contact": "Contact" }, "submit": "Enregistrer" }
+    },
+    "recap": { "title": "Récapitulatif du cabinet", "addressTitle": "Adresse", "contactTitle": "Contact" },
+    "pagination": { "showTotal": "{{from}}-{{to}} sur {{total}}" }
+  },
+  "contacts": {
+    "description": {
+      "forClient": "Contacts pour le client {{name}}",
+      "forCabinet": "Contacts pour le cabinet {{name}}",
+      "all": "Tous les contacts"
+    },
+    "fallbackId": "Contact #{{id}}",
+    "loadError": "Impossible de charger les contacts",
+    "searchError": "Erreur lors de la recherche de contacts",
+    "createSuccess": "Contact ajouté avec succès",
+    "createError": "Erreur lors de la création du contact",
+    "updateSuccess": "Contact modifié avec succès",
+    "updateError": "Erreur lors de la modification du contact",
+    "deleteSuccessTitle": "Contact supprimé",
+    "deleteSuccessDesc": "Le contact {{name}} a été supprimé avec succès",
+    "deleteError": "Impossible de supprimer le contact",
+    "confirmDelete": {
+      "title": "Confirmer la suppression",
+      "content": "Êtes-vous sûr de vouloir supprimer le contact \"{{name}}\" ?"
+    },
+    "actions": { "new": "Nouveau contact", "addEmail": "Ajouter un email", "addPhone": "Ajouter un téléphone", "addRole": "Ajouter un rôle" },
+    "searchPlaceholder": "Rechercher un contact...",
+    "pagination": { "showTotal": "{{from}}-{{to}} sur {{total}}" },
+    "sections": { "generalInfo": "Informations générales", "emails": "Emails", "phones": "Téléphones", "roles": "Rôles" },
+    "labels": { "firstName": "Prénom", "lastName": "Nom", "position": "Fonction", "company": "Société", "createdAt": "Créé le" },
+    "columns": { "contact": "Contact", "company": "Société", "primaryEmail": "Email", "primaryPhone": "Téléphone", "roles": "Rôles" },
+
+    "placeholders": {
+      "firstName": "Entrez le prénom",
+      "lastName": "Entrez le nom",
+      "email": "Entrez l'email",
+      "phone": "Entrez le téléphone",
+      "roleExample": "Ex: Responsable, Contact technique",
+      "selectClient": "Sélectionner un client",
+      "selectCabinet": "Sélectionner un cabinet"
+    },
+
+    "fields": {
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "client": "Client",
+      "cabinet": "Cabinet",
+      "role": "Rôle"
+    },
+
+    "tooltips": {
+      "client": "Client associé au contact",
+      "cabinet": "Cabinet associé au contact"
+    },
+
+    "validation": {
+      "firstNameMax": "Le prénom doit contenir au plus 100 caractères",
+      "lastNameMax": "Le nom doit contenir au plus 100 caractères",
+      "emailInvalid": "Email invalide",
+      "emailMax": "L'email doit contenir au plus 100 caractères",
+      "phoneMax": "Le téléphone doit contenir au plus 50 caractères",
+      "roleMax": "Le rôle doit contenir au plus 100 caractères"
+    },
+
+    "modals": {
+      "add": {
+        "title": "Ajouter un contact",
+        "confirmTitle": "Confirmer l'ajout",
+        "recapTitle": "Récapitulatif du contact",
+        "cardTitle": "Récapitulatif",
+        "tabs": { "general": "Général", "organization": "Organisation", "emails": "Emails", "phones": "Téléphones", "roles": "Rôles" },
+        "labels": { "cabinet": "Cabinet" },
+        "tooltips": { "cabinet": "Cabinet auquel rattacher le contact" },
+        "placeholders": { "selectCabinet": "Sélectionner un cabinet" },
+        "create": "Créer"
+      },
+      "edit": {
+        "title": "Modifier le contact",
+        "tabs": { "general": "Général", "organization": "Organisation", "emails": "Emails", "phones": "Téléphones", "roles": "Rôles" }
+      }
+    }
+  },
+  "actions": { "view": "Voir", "viewDetails": "Voir les détails", "edit": "Modifier", "delete": "Supprimer", "close": "Fermer", "export": "Exporter", "title": "Actions", "actions": "Actions", "create": "Créer", "enable": "Activer", "disable": "Désactiver", "yes": "Oui", "no": "Non", "cancel": "Annuler", "refresh": "Rafraîchir" },
+  "actions.backToList": "Retour aux brevets",
+  "actions.back": "Retour",
+  "actions.upload": "Téléverser",
+  "actions.deleteSelected": "Supprimer la sélection",
+  "actions.selectAtLeastOne": "Sélectionnez au moins un élément",
+  "common": { "description": "Description", "notProvided": "Non renseigné", "exportInProgress": "Export en cours...", "loadingSuggestions": "Chargement des suggestions…", "yes": "✅ Oui", "no": "❌ Non", "enabled": "Activé", "disabled": "Désactivé", "none": "Aucun", "cancel": "Annuler", "countryNotSpecified": "Pays non spécifié", "na": "N/A", "next": "Suivant", "back": "Retour" },
+  "common.actions": "Actions",
+  "common.idPrefix": "Identifiant",
+  "brevets.import.processing": "Import en cours...",
+  "brevets.import.noneAdded": "Aucune référence ajoutée",
+  "auth": {
+    "loginSuccess": "Connexion réussie",
+    "welcome": "Bienvenue",
+    "loginError": "Erreur de connexion",
+    "usernameLabel": "Nom d'utilisateur",
+    "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+    "usernameRequired": "Le nom d'utilisateur est requis",
+    "usernameMin": "Le nom d'utilisateur doit contenir au moins 3 caractères",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "passwordRequired": "Le mot de passe est requis",
+    "passwordMin": "Le mot de passe doit contenir au moins 6 caractères",
+    "signIn": "Se connecter",
+    "loggingIn": "Connexion..."
+  }
+,
+  "deposants": {
+    "modals": {
+      "create": {
+        "title": "Créer un déposant"
+      }
+    },
+    "fields": {
+      "lastName": "Nom",
+      "firstName": "Prénom",
+      "address": "Adresse",
+      "email": "Email",
+      "phone": "Téléphone"
+    },
+    "placeholders": {
+      "lastName": "Entrez le nom",
+      "firstName": "Entrez le prénom",
+      "address": "Entrez l'adresse",
+      "email": "Entrez l'email",
+      "phone": "Entrez le téléphone"
+    },
+    "validation": {
+      "nameMax": "Le nom doit contenir au plus 100 caractères",
+      "firstNameMax": "Le prénom doit contenir au plus 100 caractères",
+      "addressMax": "L'adresse doit contenir au plus 500 caractères",
+      "emailInvalid": "Email invalide",
+      "emailMax": "L'email doit contenir au plus 255 caractères",
+      "phoneMax": "Le téléphone doit contenir au plus 20 caractères"
+    },
+    "messages": {
+      "duplicate": "Un déposant avec ces informations existe déjà"
+    }
+  }
+  ,
+  "inventeurs": {
+    "modals": {
+      "create": { "title": "Créer un inventeur" }
+    },
+    "fields": {
+      "lastName": "Nom",
+      "firstName": "Prénom",
+      "address": "Adresse",
+      "email": "Email",
+      "phone": "Téléphone"
+    },
+    "placeholders": {
+      "lastName": "Entrez le nom",
+      "firstName": "Entrez le prénom",
+      "address": "Entrez l'adresse",
+      "email": "Entrez l'email",
+      "phone": "Entrez le téléphone"
+    },
+    "validation": {
+      "nameMax": "Le nom doit contenir au plus 100 caractères",
+      "firstNameMax": "Le prénom doit contenir au plus 100 caractères",
+      "addressMax": "L'adresse doit contenir au plus 500 caractères",
+      "emailInvalid": "Email invalide",
+      "emailMax": "L'email doit contenir au plus 255 caractères",
+      "phoneMax": "Le téléphone doit contenir au plus 20 caractères"
+    },
+    "messages": { "duplicate": "Un inventeur avec ces informations existe déjà" }
+  }
+  ,
+  "titulaires": {
+    "modals": { "create": { "title": "Créer un titulaire" } },
+    "fields": {
+      "lastName": "Nom",
+      "address": "Adresse",
+      "email": "Email",
+      "phone": "Téléphone"
+    },
+    "placeholders": {
+      "lastName": "Entrez le nom",
+      "address": "Entrez l'adresse",
+      "email": "Entrez l'email",
+      "phone": "Entrez le téléphone"
+    },
+    "validation": {
+      "nameMax": "Le nom doit contenir au plus 100 caractères",
+      "addressMax": "L'adresse doit contenir au plus 500 caractères",
+      "emailInvalid": "Email invalide",
+      "emailMax": "L'email doit contenir au plus 255 caractères",
+      "phoneMax": "Le téléphone doit contenir au plus 20 caractères"
+    },
+    "messages": { "duplicate": "Un titulaire avec ces informations existe déjà" }
+  }
+}

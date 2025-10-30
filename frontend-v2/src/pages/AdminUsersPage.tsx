@@ -1,0 +1,617 @@
+/*
+ * ================================================================================================
+ * PAGE ADMINISTRATION DES UTILISATEURS - STARTINGBLOCH
+ * ================================================================================================
+ */
+
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Switch,
+  message,
+  Popconfirm,
+  Tag,
+  Avatar,
+  Row,
+  Col,
+  Statistic
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  LockOutlined,
+  UnlockOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined
+} from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { motion } from 'framer-motion';
+import styled from 'styled-components';
+import { PageHeader } from '../components/common';
+import { useNotificationStore } from '../store/notificationStore';
+import { userAdminService, clientService, roleService } from '../services';
+import type { User, UserRole, RoleItem, Client } from '../types';
+
+const { Option } = Select;
+
+// Fonction d'icône pour le champ mot de passe (stabilisée hors composant)
+const passwordIconRender = (visible: boolean) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />);
+
+const StatsCard = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+`;
+
+const TableCard = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  
+  .ant-table {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+`;
+
+interface CreateUserDto {
+  prenom: string;
+  nom: string;
+  email: string;
+  username: string;
+  password: string;
+  role: UserRole; // 'Admin' | 'User' | 'Client'
+  isActive: boolean;
+  canWrite?: boolean;
+  clientId?: number; // obligatoire si role = Client
+}
+
+interface UpdateUserDto {
+  prenom?: string;
+  nom?: string;
+  email?: string;
+  username?: string;
+  role?: UserRole;
+  isActive?: boolean;
+  canWrite?: boolean;
+  clientId?: number | null;
+}
+
+/**
+ * Page d'administration des utilisateurs
+ */
+const AdminUsersPage: React.FC = () => {
+  const { t } = useTranslation();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [form] = Form.useForm();
+  const [roles, setRoles] = useState<RoleItem[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  // Note: pagination serveur future – totalPages non utilisé pour le moment
+  
+  const { addNotification } = useNotificationStore();
+
+  // Statistiques calculées
+  const stats = {
+    total: users.length,
+    active: users.filter(u => u.isActive).length,
+    admins: users.filter(u => u.role === 'Admin').length,
+    clients: users.filter(u => u.role === 'Client').length
+  };
+
+  // Helpers pour lisibilité (évite les ternaires imbriqués)
+  const roleMeta: Record<UserRole, { color: string; label: string }> = {
+    Admin: { color: 'red', label: t('users.role.admin') },
+    User: { color: 'blue', label: t('users.role.user') },
+    Client: { color: 'purple', label: t('users.role.client') },
+  };
+
+  const normalizeRoleFromDb = (name: string): UserRole => {
+    const n = name.trim().toLowerCase();
+    if (n === 'admin') return 'Admin';
+    if (n === 'client') return 'Client';
+    return 'User';
+  };
+
+  // Chargement des utilisateurs avec pagination
+  const loadUsers = async (page: number = currentPage, size: number = pageSize) => {
+    setLoading(true);
+    try {
+      const response = await userAdminService.getAll(page, size);
+      // Le backend retourne un PagedResponse standard
+      const success = response.success ?? (response as any).Success;
+      const data = (response.data ?? (response as any).Data) as any;
+
+      let items: User[] = [];
+      if (Array.isArray(data)) {
+        items = data as User[];
+      } else if (Array.isArray(data?.items)) {
+        items = data.items as User[];
+      } else if (Array.isArray(data?.users)) {
+        items = data.users as User[];
+      }
+
+      if (success) {
+        setUsers(items);
+  setTotalCount(response.totalCount ?? (data?.totalCount ?? items.length) ?? 0);
+  setCurrentPage(response.page ?? data?.page ?? page);
+      }
+    } catch (error) {
+  console.error('❌ AdminUsersPage - Erreur lors du chargement des utilisateurs:', error);
+  addNotification({ type: 'error', message: t('users.loadError') });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      await Promise.all([loadUsers(), loadRoles(), loadClients()]);
+    })();
+  }, []);
+
+  const loadRoles = async () => {
+    const res = await roleService.getAll();
+    if (res.success) setRoles(res.data);
+  };
+
+  const loadClients = async () => {
+    const res = await clientService.getAll(1, 1000);
+    if (res.success) setClients(res.data);
+  };
+
+  // Gestionnaire de changement de pagination
+  const handleTableChange = (page: number, size?: number) => {
+  const newPageSize = size ?? pageSize;
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+    loadUsers(page, newPageSize);
+  };
+
+  // Colonnes du tableau
+  const columns: ColumnsType<User> = [
+    {
+      title: t('users.column.user'),
+      key: 'user',
+      render: (_, record) => (
+        <Space>
+          <Avatar 
+            size="default" 
+            icon={<UserOutlined />}
+            style={{ backgroundColor: '#1890ff' }}
+          />
+          <div>
+            <div style={{ fontWeight: 500 }}>
+              {record.prenom} {record.nom}
+            </div>
+            <div style={{ fontSize: '12px', color: '#888' }}>
+              @{record.username}
+            </div>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: t('users.column.email'),
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: t('users.column.role'),
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: UserRole) => (
+        <Tag color={roleMeta[role].color}>{roleMeta[role].label}</Tag>
+      ),
+    },
+    {
+      title: t('users.column.status'),
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? 'green' : 'red'}>
+          {isActive ? t('users.status.active') : t('users.status.inactive')}
+        </Tag>
+      ),
+    },
+    {
+      title: t('users.column.write'),
+      key: 'canWrite',
+      render: (_, record) => (
+        <Switch
+          checked={!!(record as any).canWrite}
+          onChange={async (checked) => {
+            await userAdminService.updatePermissions(record.id, true, checked);
+            await loadUsers();
+          }}
+          disabled={record.role === 'Admin'}
+          checkedChildren={t('actions.yes')}
+          unCheckedChildren={t('actions.no')}
+        />
+      )
+    },
+    {
+      title: t('users.column.createdAt'),
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: t('actions.actions') || 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            title={t('actions.edit')}
+          />
+          <Button
+            type="text"
+            icon={record.isActive ? <LockOutlined /> : <UnlockOutlined />}
+            onClick={() => handleToggleActive(record)}
+            title={record.isActive ? t('actions.disable') : t('actions.enable')}
+          />
+          <Popconfirm
+            title={t('users.confirmDelete')}
+            onConfirm={() => handleDelete(record.id)}
+            okText={t('actions.yes')}
+            cancelText={t('actions.no')}
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              title={t('actions.delete')}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  // Gestionnaires d'événements
+  const handleCreate = () => {
+    setEditingUser(null);
+    form.resetFields();
+    setIsModalVisible(true);
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    form.setFieldsValue(user);
+    setIsModalVisible(true);
+  };
+
+  const handleSubmit = async (values: CreateUserDto | UpdateUserDto) => {
+    try {
+      if (editingUser) {
+        // Mise à jour via API
+        const selRole = (values as any).role as UserRole | undefined;
+        const payload: UpdateUserDto = {
+          email: (values as any).email,
+          username: (values as any).username,
+          role: selRole,
+          isActive: (values as any).isActive,
+          canWrite: (values as any).canWrite,
+          clientId: (values as any).role === 'Client' ? (values as any).clientId : null,
+        };
+        await userAdminService.update(editingUser.id, payload);
+        await loadUsers();
+  message.success(t('users.updateSuccess'));
+      } else {
+        // Création via API
+        const role = (values as any).role as UserRole;
+        if (role === 'Admin' || role === 'User') {
+          await userAdminService.createEmployee({
+            username: (values as any).username,
+            email: (values as any).email,
+            password: (values as any).password,
+            role: role === 'Admin' ? 'admin' : 'user',
+            canWrite: (values as any).canWrite ?? false,
+            isActive: (values as any).isActive ?? true,
+          });
+        } else {
+          // Client
+          await userAdminService.createClientAccount({
+            clientId: (values as any).clientId,
+            username: (values as any).username,
+            email: (values as any).email,
+            password: (values as any).password,
+            canWrite: (values as any).canWrite ?? false,
+            isActive: (values as any).isActive ?? true,
+          });
+        }
+        await loadUsers();
+  message.success(t('users.createSuccess'));
+      }
+      setIsModalVisible(false);
+      form.resetFields();
+    } catch (error) {
+      console.error(error);
+  message.error(t('users.saveError'));
+    }
+  };
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      if (user.isActive) {
+        await userAdminService.deactivate(user.id);
+      } else {
+        await userAdminService.activate(user.id);
+      }
+      await loadUsers();
+  message.success(!user.isActive ? t('users.activated') : t('users.deactivated'));
+    } catch (error) {
+      console.error(error);
+  message.error(t('users.statusChangeError'));
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+  await userAdminService.delete(id);
+  setUsers(prev => prev.filter(u => u.id !== id));
+  message.success(t('users.deleteSuccess') || 'Utilisateur supprimé avec succès');
+    } catch (error) {
+      console.error(error);
+  message.error(t('users.deleteError') || 'Erreur lors de la suppression');
+    }
+  };
+
+  return (
+    <div style={{ padding: 0 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <PageHeader
+          title={t('users.pageTitle')}
+          description={t('users.pageDescription')}
+          actions={[
+            <Button
+              key="create"
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreate}
+            >
+              {t('users.newUser')}
+            </Button>
+          ]}
+        />
+
+        {/* Statistiques */}
+        <StatsCard>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Statistic
+                title={t('users.stats.total')}
+                value={stats.total}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title={t('users.stats.active')}
+                value={stats.active}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title={t('users.stats.admins')}
+                value={stats.admins}
+                valueStyle={{ color: '#f5222d' }}
+              />
+            </Col>
+            <Col span={6}>
+              <Statistic
+                title={t('users.stats.clients')}
+                value={stats.clients}
+                valueStyle={{ color: '#722ed1' }}
+              />
+            </Col>
+          </Row>
+        </StatsCard>
+
+        {/* Tableau des utilisateurs */}
+        <TableCard>
+          <Table
+            columns={columns}
+            dataSource={users}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalCount,
+              showSizeChanger: true,
+              showQuickJumper: true,
+                showTotal: (total, range) => 
+                `${range[0]}-${range[1]} ${t('users.ofTotal')} ${total} ${t('users.labelUsers')}`,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: handleTableChange,
+              onShowSizeChange: handleTableChange,
+            }}
+          />
+        </TableCard>
+      </motion.div>
+
+      {/* Modal de création/édition */}
+      <Modal
+        title={editingUser ? t('users.editUser') : t('users.newUser')}
+        open={isModalVisible}
+        onCancel={() => {
+          setIsModalVisible(false);
+          form.resetFields();
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          autoComplete="off"
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="prenom"
+                label={t('users.form.firstName')}
+                rules={[{ required: true, message: t('users.form.firstNameRequired') }]}
+              >
+                <Input placeholder={t('users.form.firstNamePlaceholder')} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="nom"
+                label={t('users.form.lastName')}
+                rules={[{ required: true, message: t('users.form.lastNameRequired') }]}
+              >
+                <Input placeholder={t('users.form.lastNamePlaceholder')} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="email"
+            label={t('users.form.email')}
+            rules={[
+              { required: true, message: t('users.form.emailRequired') },
+              { type: 'email', message: t('users.form.emailInvalid') }
+            ]}
+          >
+            <Input placeholder={t('users.form.emailPlaceholder')} />
+          </Form.Item>
+
+          <Form.Item
+            name="username"
+            label={t('users.form.username')}
+            rules={[{ required: true, message: t('users.form.usernameRequired') }]}
+          >
+            <Input placeholder={t('users.form.usernamePlaceholder')} />
+          </Form.Item>
+
+          {!editingUser && (
+            <Form.Item
+              name="password"
+              label={t('users.form.password')}
+              rules={[
+                { required: true, message: t('users.form.passwordRequired') },
+                { min: 6, message: t('users.form.passwordMin') }
+              ]}
+            >
+              <Input.Password
+                placeholder={t('users.form.passwordPlaceholder')}
+                iconRender={passwordIconRender}
+              />
+            </Form.Item>
+          )}
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                  name="role"
+                  label={t('users.form.role')}
+                  rules={[{ required: true, message: t('users.form.roleRequired') }]}
+                >
+                  <Select placeholder={t('users.form.selectRole')} onChange={() => form.validateFields(['clientId'])}>
+                  {roles.map(r => {
+                    const uiRole = normalizeRoleFromDb(r.name);
+                    return (
+                      <Option key={r.id} value={uiRole}>{roleMeta[uiRole].label}</Option>
+                    );
+                  })}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                  name="isActive"
+                  label={t('users.form.status')}
+                valuePropName="checked"
+                initialValue={true}
+              >
+                  <Switch
+                    checkedChildren={t('users.status.active')}
+                    unCheckedChildren={t('users.status.inactive')}
+                  />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Permissions écriture si rôle User ou Client */}
+          <Form.Item shouldUpdate={(prev, curr) => prev.role !== curr.role}>
+            {() => {
+              const role = form.getFieldValue('role') as UserRole;
+              if (role === 'User' || role === 'Client') {
+                return (
+                  <Form.Item name="canWrite" label={t('users.form.canWrite')} valuePropName="checked" initialValue={false}>
+                    <Switch checkedChildren={t('actions.yes')} unCheckedChildren={t('actions.no')} />
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
+
+          {/* Sélecteur Client requis si rôle Client */}
+          <Form.Item shouldUpdate={(prev, curr) => prev.role !== curr.role}>
+            {() => {
+              const role = form.getFieldValue('role') as UserRole;
+              if (role === 'Client') {
+                return (
+                  <Form.Item
+                    name="clientId"
+                    label={t('users.form.client')}
+                    rules={[{ required: true, message: t('users.form.clientRequired') }]}
+                  >
+                    <Select placeholder={t('users.form.selectClient')}>
+                      {clients.map(c => (
+                        <Option key={c.id} value={c.id}>{c.nomClient}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
+
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => setIsModalVisible(false)}>
+                {t('actions.cancel')}
+              </Button>
+              <Button type="primary" htmlType="submit">
+                {editingUser ? t('actions.edit') : t('actions.create')}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default AdminUsersPage;
